@@ -34,7 +34,27 @@ export default function Page() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [view, setView] = useState<"catalog" | "cart">("catalog");
+  const [view, setView] = useState<"catalog" | "cart" | "checkout">("catalog");
+
+  const [tgUserId, setTgUserId] = useState<number | null>(null);
+
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [comment, setComment] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg) return;
+
+    tg.ready();
+    tg.expand();
+
+    const u = tg.initDataUnsafe?.user;
+    if (u?.id) setTgUserId(u.id);
+    if (u?.first_name) setName(u.first_name);
+  }, []);
 
   useEffect(() => {
     async function loadCategories() {
@@ -99,101 +119,70 @@ export default function Page() {
     }, 0);
   }, [cart]);
 
+  async function submitOrder() {
+    if (!tgUserId) return alert("Ошибка авторизации");
+    if (!name || !phone || !address) return alert("Заполните все поля");
+
+    const { data, error } = await supabase
+      .from("orders")
+      .insert([
+        {
+          user_telegram_id: tgUserId,
+          customer_name: name,
+          phone,
+          address,
+          comment,
+          payment_method: paymentMethod,
+          total_amount: total,
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) return alert(error.message);
+
+    const orderId = data.id;
+
+    const items = cart.map((item) => ({
+      order_id: orderId,
+      product_id: item.product.id,
+      product_title: item.product.title,
+      price: item.product.price,
+      quantity: item.quantity,
+    }));
+
+    await supabase.from("order_items").insert(items);
+
+    alert("Заказ оформлен!");
+    setCart([]);
+    setView("catalog");
+  }
+
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: 16,
-        background: "#0b0b0f",
-        color: "#fff",
-        fontFamily: "system-ui",
-      }}
-    >
-      <h1 style={{ margin: 0 }}>🐟 Fish Delivery</h1>
+    <main style={{ minHeight: "100vh", padding: 16, background: "#0b0b0f", color: "#fff", fontFamily: "system-ui" }}>
+      <h1>🐟 Fish Delivery</h1>
 
       <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
-        <button
-          onClick={() => setView("catalog")}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 10,
-            border: "1px solid #444",
-            background: view === "catalog" ? "#222" : "#111",
-            color: "#fff",
-          }}
-        >
-          Каталог
-        </button>
-
-        <button
-          onClick={() => setView("cart")}
-          style={{
-            padding: "8px 12px",
-            borderRadius: 10,
-            border: "1px solid #444",
-            background: view === "cart" ? "#222" : "#111",
-            color: "#fff",
-          }}
-        >
-          Корзина ({cart.length})
-        </button>
+        <button onClick={() => setView("catalog")}>Каталог</button>
+        <button onClick={() => setView("cart")}>Корзина ({cart.length})</button>
       </div>
 
       {view === "catalog" && (
         <>
-          <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+          <div style={{ marginTop: 20 }}>
             {categories.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedCategoryId(c.id)}
-                style={{
-                  padding: "8px 12px",
-                  borderRadius: 20,
-                  border: "1px solid #333",
-                  background:
-                    selectedCategoryId === c.id ? "#333" : "#111",
-                  color: "#fff",
-                }}
-              >
+              <button key={c.id} onClick={() => setSelectedCategoryId(c.id)}>
                 {c.name}
               </button>
             ))}
           </div>
 
-          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ marginTop: 20 }}>
             {products.map((p) => (
-              <div
-                key={p.id}
-                style={{
-                  padding: 12,
-                  borderRadius: 12,
-                  border: "1px solid #333",
-                  background: "#111",
-                }}
-              >
-                <div style={{ fontWeight: 600 }}>{p.title}</div>
-                {p.description && (
-                  <div style={{ fontSize: 13, opacity: 0.7 }}>
-                    {p.description}
-                  </div>
-                )}
-                <div style={{ marginTop: 8 }}>
-                  {formatPriceRub(p.price)}{" "}
-                  {p.unit_type === "weight" ? "за кг" : "за шт"}
-                </div>
-                <button
-                  onClick={() => addToCart(p)}
-                  style={{
-                    marginTop: 10,
-                    padding: "6px 10px",
-                    borderRadius: 8,
-                    border: "1px solid #444",
-                    background: "#222",
-                    color: "#fff",
-                  }}
-                >
-                  Добавить
-                </button>
+              <div key={p.id} style={{ marginBottom: 12 }}>
+                <div>{p.title}</div>
+                <div>{formatPriceRub(p.price)}</div>
+                <button onClick={() => addToCart(p)}>Добавить</button>
               </div>
             ))}
           </div>
@@ -202,56 +191,41 @@ export default function Page() {
 
       {view === "cart" && (
         <div style={{ marginTop: 20 }}>
-          {cart.length === 0 && <div>Корзина пуста</div>}
-
           {cart.map((item) => (
-            <div
-              key={item.product.id}
-              style={{
-                marginBottom: 12,
-                padding: 12,
-                borderRadius: 12,
-                border: "1px solid #333",
-                background: "#111",
-              }}
-            >
-              <div style={{ fontWeight: 600 }}>
-                {item.product.title}
-              </div>
-
-              <div style={{ marginTop: 6 }}>
-                {formatPriceRub(item.product.price)}
-              </div>
-
-              <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                <button
-                  onClick={() =>
-                    changeQuantity(item.product.id, -1)
-                  }
-                >
-                  -
-                </button>
-
-                <div>{item.quantity}</div>
-
-                <button
-                  onClick={() =>
-                    changeQuantity(item.product.id, 1)
-                  }
-                >
-                  +
-                </button>
-              </div>
+            <div key={item.product.id}>
+              {item.product.title} x {item.quantity}
+              <button onClick={() => changeQuantity(item.product.id, -1)}>-</button>
+              <button onClick={() => changeQuantity(item.product.id, 1)}>+</button>
             </div>
           ))}
 
           {cart.length > 0 && (
-            <div style={{ marginTop: 20 }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>
-                Итого: {formatPriceRub(total)}
-              </div>
-            </div>
+            <>
+              <div style={{ marginTop: 20 }}>Итого: {formatPriceRub(total)}</div>
+              <button onClick={() => setView("checkout")}>Оформить</button>
+            </>
           )}
+        </div>
+      )}
+
+      {view === "checkout" && (
+        <div style={{ marginTop: 20 }}>
+          <h3>Оформление заказа</h3>
+
+          <input placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
+          <input placeholder="Телефон" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <input placeholder="Адрес" value={address} onChange={(e) => setAddress(e.target.value)} />
+          <textarea placeholder="Комментарий" value={comment} onChange={(e) => setComment(e.target.value)} />
+
+          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+            <option value="cash">Наличные</option>
+            <option value="transfer">Перевод</option>
+            <option value="qr">QR-код</option>
+          </select>
+
+          <div style={{ marginTop: 20 }}>
+            <button onClick={submitOrder}>Подтвердить заказ</button>
+          </div>
         </div>
       )}
     </main>
