@@ -14,223 +14,246 @@ type Product = {
   category_id: string | null;
   title: string;
   description: string | null;
-  price: string; // supabase numeric приходит как string
+  price: string;
   unit_type: "unit" | "weight";
   is_active: boolean;
 };
 
+type CartItem = {
+  product: Product;
+  quantity: number;
+};
+
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
-  if (Number.isNaN(n)) return String(value);
   return new Intl.NumberFormat("ru-RU").format(n) + " ₽";
 }
 
 export default function Page() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
-
   const [products, setProducts] = useState<Product[]>([]);
-  const [loadingCategories, setLoadingCategories] = useState(false);
-  const [loadingProducts, setLoadingProducts] = useState(false);
-
-  const [error, setError] = useState<string | null>(null);
-
-  const selectedCategory = useMemo(
-    () => categories.find((c) => c.id === selectedCategoryId) || null,
-    [categories, selectedCategoryId]
-  );
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [view, setView] = useState<"catalog" | "cart">("catalog");
 
   useEffect(() => {
     async function loadCategories() {
-      try {
-        setLoadingCategories(true);
-        setError(null);
+      const { data } = await supabase
+        .from("categories")
+        .select("*")
+        .order("sort_order", { ascending: true });
 
-        const { data, error } = await supabase
-          .from("categories")
-          .select("id,name,sort_order")
-          .order("sort_order", { ascending: true });
-
-        if (error) throw error;
-
-        const list = (data || []) as Category[];
-        setCategories(list);
-
-        // Автовыбор первой категории
-        if (!selectedCategoryId && list.length > 0) {
-          setSelectedCategoryId(list[0].id);
-        }
-      } catch (e: any) {
-        setError(e?.message || "Ошибка загрузки категорий");
-      } finally {
-        setLoadingCategories(false);
-      }
+      const list = (data || []) as Category[];
+      setCategories(list);
+      if (list.length > 0) setSelectedCategoryId(list[0].id);
     }
 
     loadCategories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    async function loadProducts(categoryId: string) {
-      try {
-        setLoadingProducts(true);
-        setError(null);
+    async function loadProducts() {
+      if (!selectedCategoryId) return;
 
-        const { data, error } = await supabase
-          .from("products")
-          .select("id,category_id,title,description,price,unit_type,is_active")
-          .eq("category_id", categoryId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("products")
+        .select("*")
+        .eq("category_id", selectedCategoryId)
+        .eq("is_active", true);
 
-        if (error) throw error;
-
-        setProducts(((data || []) as Product[]) ?? []);
-      } catch (e: any) {
-        setError(e?.message || "Ошибка загрузки товаров");
-      } finally {
-        setLoadingProducts(false);
-      }
+      setProducts((data || []) as Product[]);
     }
 
-    if (selectedCategoryId) loadProducts(selectedCategoryId);
-    else setProducts([]);
+    loadProducts();
   }, [selectedCategoryId]);
+
+  function addToCart(product: Product) {
+    setCart((prev) => {
+      const existing = prev.find((c) => c.product.id === product.id);
+      if (existing) {
+        return prev.map((c) =>
+          c.product.id === product.id
+            ? { ...c, quantity: c.quantity + 1 }
+            : c
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  }
+
+  function changeQuantity(productId: string, delta: number) {
+    setCart((prev) =>
+      prev
+        .map((c) =>
+          c.product.id === productId
+            ? { ...c, quantity: c.quantity + delta }
+            : c
+        )
+        .filter((c) => c.quantity > 0)
+    );
+  }
+
+  const total = useMemo(() => {
+    return cart.reduce((sum, item) => {
+      return sum + Number(item.product.price) * item.quantity;
+    }, 0);
+  }, [cart]);
 
   return (
     <main
       style={{
         minHeight: "100vh",
         padding: 16,
-        fontFamily: "system-ui",
         background: "#0b0b0f",
         color: "#fff",
+        fontFamily: "system-ui",
       }}
     >
-      <h1 style={{ margin: 0, fontSize: 20 }}>🐟 Fish Delivery</h1>
-      <div style={{ marginTop: 6, opacity: 0.75, fontSize: 13 }}>
-        Каталог (черновик)
-      </div>
+      <h1 style={{ margin: 0 }}>🐟 Fish Delivery</h1>
 
-      {/* Ошибка */}
-      {error && (
-        <div
+      <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+        <button
+          onClick={() => setView("catalog")}
           style={{
-            marginTop: 12,
-            padding: 12,
-            borderRadius: 12,
-            background: "rgba(255, 0, 0, 0.12)",
-            border: "1px solid rgba(255, 0, 0, 0.25)",
-            color: "#ff6b6b",
-            fontSize: 13,
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid #444",
+            background: view === "catalog" ? "#222" : "#111",
+            color: "#fff",
           }}
         >
-          Ошибка: {error}
-        </div>
-      )}
+          Каталог
+        </button>
 
-      {/* Категории */}
-      <div style={{ marginTop: 16 }}>
-        <div style={{ fontSize: 14, marginBottom: 10, opacity: 0.9 }}>
-          Категории
-        </div>
-
-        {loadingCategories ? (
-          <div style={{ opacity: 0.8 }}>Загрузка категорий...</div>
-        ) : (
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              overflowX: "auto",
-              paddingBottom: 4,
-            }}
-          >
-            {categories.map((c) => {
-              const active = c.id === selectedCategoryId;
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategoryId(c.id)}
-                  style={{
-                    flex: "0 0 auto",
-                    padding: "10px 12px",
-                    borderRadius: 999,
-                    border: active ? "1px solid rgba(255,255,255,0.35)" : "1px solid rgba(255,255,255,0.12)",
-                    background: active ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
-                    color: "#fff",
-                    cursor: "pointer",
-                    fontSize: 14,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {c.name}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <button
+          onClick={() => setView("cart")}
+          style={{
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid #444",
+            background: view === "cart" ? "#222" : "#111",
+            color: "#fff",
+          }}
+        >
+          Корзина ({cart.length})
+        </button>
       </div>
 
-      {/* Товары */}
-      <div style={{ marginTop: 18 }}>
-        <div style={{ fontSize: 14, marginBottom: 10, opacity: 0.9 }}>
-          {selectedCategory ? `Товары: ${selectedCategory.name}` : "Товары"}
-        </div>
+      {view === "catalog" && (
+        <>
+          <div style={{ marginTop: 20, display: "flex", gap: 8 }}>
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCategoryId(c.id)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 20,
+                  border: "1px solid #333",
+                  background:
+                    selectedCategoryId === c.id ? "#333" : "#111",
+                  color: "#fff",
+                }}
+              >
+                {c.name}
+              </button>
+            ))}
+          </div>
 
-        {loadingProducts ? (
-          <div style={{ opacity: 0.8 }}>Загрузка товаров...</div>
-        ) : products.length === 0 ? (
-          <div style={{ opacity: 0.75 }}>Товаров пока нет</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 12 }}>
             {products.map((p) => (
               <div
                 key={p.id}
                 style={{
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  background: "rgba(255,255,255,0.06)",
                   padding: 12,
+                  borderRadius: 12,
+                  border: "1px solid #333",
+                  background: "#111",
                 }}
               >
-                <div style={{ fontWeight: 600, fontSize: 15 }}>{p.title}</div>
-
-                {p.description ? (
-                  <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>
+                <div style={{ fontWeight: 600 }}>{p.title}</div>
+                {p.description && (
+                  <div style={{ fontSize: 13, opacity: 0.7 }}>
                     {p.description}
                   </div>
-                ) : null}
-
-                <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div style={{ fontWeight: 700 }}>
-                    {formatPriceRub(p.price)}{" "}
-                    <span style={{ fontWeight: 500, opacity: 0.75, fontSize: 12 }}>
-                      {p.unit_type === "weight" ? "за кг" : "за шт"}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={() => alert("Скоро: добавление в корзину")}
-                    style={{
-                      padding: "8px 10px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(255,255,255,0.10)",
-                      color: "#fff",
-                      cursor: "pointer",
-                      fontSize: 13,
-                    }}
-                  >
-                    В корзину
-                  </button>
+                )}
+                <div style={{ marginTop: 8 }}>
+                  {formatPriceRub(p.price)}{" "}
+                  {p.unit_type === "weight" ? "за кг" : "за шт"}
                 </div>
+                <button
+                  onClick={() => addToCart(p)}
+                  style={{
+                    marginTop: 10,
+                    padding: "6px 10px",
+                    borderRadius: 8,
+                    border: "1px solid #444",
+                    background: "#222",
+                    color: "#fff",
+                  }}
+                >
+                  Добавить
+                </button>
               </div>
             ))}
           </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {view === "cart" && (
+        <div style={{ marginTop: 20 }}>
+          {cart.length === 0 && <div>Корзина пуста</div>}
+
+          {cart.map((item) => (
+            <div
+              key={item.product.id}
+              style={{
+                marginBottom: 12,
+                padding: 12,
+                borderRadius: 12,
+                border: "1px solid #333",
+                background: "#111",
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>
+                {item.product.title}
+              </div>
+
+              <div style={{ marginTop: 6 }}>
+                {formatPriceRub(item.product.price)}
+              </div>
+
+              <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
+                <button
+                  onClick={() =>
+                    changeQuantity(item.product.id, -1)
+                  }
+                >
+                  -
+                </button>
+
+                <div>{item.quantity}</div>
+
+                <button
+                  onClick={() =>
+                    changeQuantity(item.product.id, 1)
+                  }
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {cart.length > 0 && (
+            <div style={{ marginTop: 20 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>
+                Итого: {formatPriceRub(total)}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </main>
   );
 }
