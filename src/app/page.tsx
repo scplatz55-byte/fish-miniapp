@@ -153,6 +153,19 @@ export default function Page() {
 
     await supabase.from("order_items").insert(items);
 
+await fetch("/api/notify-order", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    customer_name: name,
+    phone,
+    address,
+    comment,
+    payment_method: paymentMethod,
+    total_amount: total,
+  }),
+});
+
     alert("Заказ оформлен!");
     setCart([]);
     setView("catalog");
