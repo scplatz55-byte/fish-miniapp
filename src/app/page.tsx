@@ -53,27 +53,25 @@ export default function Page() {
         Данные Telegram появляются только если открыть через Telegram.
       </p>
 
-      <button
-        onClick={verifyOnServer}
-        disabled={!initData || loading}
-        style={{
-          padding: "10px 14px",
-          borderRadius: 10,
-          border: "1px solid #444",
-          background: loading ? "#333" : "#111",
-          color: "#fff",
-          cursor: !initData || loading ? "not-allowed" : "pointer",
-        }}
-      >
-        {loading ? "Проверяем..." : "Проверить initData на сервере"}
-      </button>
+<button
+  onClick={verifyOnServer}
+  disabled={!initData || loading}
+  style={{
+    padding: "10px 14px",
+    borderRadius: 10,
+    border: "1px solid #444",
+    background: loading ? "#333" : "#111",
+    color: "#fff",
+    cursor: !initData || loading ? "not-allowed" : "pointer",
+  }}
+>
+  {loading ? "Проверяем..." : "Проверить initData на сервере"}
+</button>
 
-      <div style={{ marginTop: 16 }}>
-        <h3>Telegram user (client)</h3>
-        <pre style={{ background: "#111", color: "#0f0", padding: 12, borderRadius: 10 }}>
-          {user ? JSON.stringify(user, null, 2) : "Нет данных. Открой через Telegram."}
-        </pre>
-      </div>
+<div style={{ marginTop: 10, opacity: 0.85 }}>
+  <div>initData length: <b>{initData.length}</b></div>
+  <div>window.Telegram.WebApp: <b>{typeof (window as any)?.Telegram?.WebApp}</b></div>
+</div>
 
       <div style={{ marginTop: 16 }}>
         <h3>initData</h3>
