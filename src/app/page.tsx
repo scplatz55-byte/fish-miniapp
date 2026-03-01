@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type TgUser = {
   id: number;
@@ -10,21 +11,24 @@ type TgUser = {
   language_code?: string;
 };
 
+type Category = {
+  id: string;
+  name: string;
+  sort_order: number;
+};
+
 export default function Page() {
   const [user, setUser] = useState<TgUser | null>(null);
   const [initData, setInitData] = useState<string>("");
-  const [serverCheck, setServerCheck] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [tgWebAppType, setTgWebAppType] = useState<string>("(unknown)");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
+  // Telegram init
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const tgGlobal = (window as any)?.Telegram;
-    const tg = tgGlobal?.WebApp;
-
-    setTgWebAppType(typeof tg);
-
+    const tg = (window as any)?.Telegram?.WebApp;
     if (!tg) return;
 
     tg.ready();
@@ -36,104 +40,70 @@ export default function Page() {
     if (u) setUser(u);
   }, []);
 
-  async function verifyOnServer() {
-    try {
-      setLoading(true);
-      setServerCheck(null);
+  // Загрузка категорий
+  useEffect(() => {
+    async function loadCategories() {
+      try {
+        setLoadingCategories(true);
+        setError(null);
 
-      const res = await fetch("/api/auth/telegram", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData }),
-      });
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .order("sort_order", { ascending: true });
 
-      const data = await res.json();
-      setServerCheck({ status: res.status, data });
-    } catch (e: any) {
-      setServerCheck({ error: e?.message || "Unknown error" });
-    } finally {
-      setLoading(false);
+        if (error) throw error;
+
+        setCategories(data || []);
+      } catch (e: any) {
+        setError(e?.message || "Ошибка загрузки категорий");
+      } finally {
+        setLoadingCategories(false);
+      }
     }
-  }
+
+    loadCategories();
+  }, []);
 
   return (
     <main style={{ padding: 16, fontFamily: "system-ui" }}>
-      <h1 style={{ margin: 0 }}>Fish Mini App (MVP) ✅</h1>
+      <h1 style={{ marginBottom: 8 }}>🐟 Fish Delivery</h1>
 
-      <p style={{ opacity: 0.8 }}>
-        Данные Telegram появляются только если открыть через Telegram.
-      </p>
-
-      <button
-        onClick={verifyOnServer}
-        disabled={!initData || loading}
-        style={{
-          marginTop: 16,
-          padding: "10px 14px",
-          borderRadius: 10,
-          border: "1px solid #444",
-          background: loading ? "#333" : "#111",
-          color: "#fff",
-          cursor: !initData || loading ? "not-allowed" : "pointer",
-        }}
-      >
-        {loading ? "Проверяем..." : "Проверить initData на сервере"}
-      </button>
-
-      <div style={{ marginTop: 10, opacity: 0.85 }}>
-        <div>
-          initData length: <b>{initData.length}</b>
+      {user && (
+        <div style={{ marginBottom: 16, fontSize: 14, opacity: 0.8 }}>
+          Привет, {user.first_name} 👋
         </div>
-        <div>
-          window.Telegram.WebApp: <b>{tgWebAppType}</b>
+      )}
+
+      <h2 style={{ marginTop: 20 }}>Категории</h2>
+
+      {loadingCategories && <p>Загрузка...</p>}
+
+      {error && (
+        <div style={{ color: "red", marginTop: 8 }}>
+          Ошибка: {error}
         </div>
-      </div>
+      )}
 
-      <div style={{ marginTop: 16 }}>
-        <h3>Telegram user (client)</h3>
-        <pre
-          style={{
-            background: "#111",
-            color: "#0f0",
-            padding: 12,
-            borderRadius: 10,
-            overflowX: "auto",
-          }}
-        >
-          {user ? JSON.stringify(user, null, 2) : "Нет данных. Открой через Telegram."}
-        </pre>
-      </div>
+      {!loadingCategories && categories.length === 0 && (
+        <p>Категории не найдены</p>
+      )}
 
-      <div style={{ marginTop: 16 }}>
-        <h3>initData</h3>
-        <pre
-          style={{
-            background: "#111",
-            color: "#fff",
-            padding: 12,
-            borderRadius: 10,
-            overflowX: "auto",
-          }}
-        >
-          {initData || "Нет initData. Открой через Telegram."}
-        </pre>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <h3>Server verification result</h3>
-        <pre
-          style={{
-            background: "#111",
-            color: "#fff",
-            padding: 12,
-            borderRadius: 10,
-            overflowX: "auto",
-          }}
-        >
-          {serverCheck
-            ? JSON.stringify(serverCheck, null, 2)
-            : "Нажми кнопку проверки выше"}
-        </pre>
+      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        {categories.map((cat) => (
+          <div
+            key={cat.id}
+            style={{
+              padding: 14,
+              borderRadius: 12,
+              border: "1px solid #ddd",
+              background: "#f5f5f5",
+              fontWeight: 500,
+            }}
+          >
+            {cat.name}
+          </div>
+        ))}
       </div>
     </main>
   );
