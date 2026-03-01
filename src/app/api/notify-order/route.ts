@@ -126,11 +126,11 @@ export async function POST(req: Request) {
     const total = Number(order.total_amount);
 
     const payLabel =
-      order.payment_method === "cash"
+      order.payment_method === "Наличные"
         ? "Наличные"
         : order.payment_method === "qr"
         ? "QR-код"
-        : order.payment_method === "transfer"
+        : order.payment_method === "Перевод"
         ? "Перевод"
         : String(order.payment_method);
 
