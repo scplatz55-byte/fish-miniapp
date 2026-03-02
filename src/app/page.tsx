@@ -123,14 +123,21 @@ export default function Page() {
   const [tgUserId, setTgUserId] = useState<number | null>(null);
   const [initData, setInitData] = useState<string>("");
 
-  // Brand colors (по твоему бренду)
+  // Brand colors
   const BRAND_BG = "#2B80A4";
   const BRAND_ACCENT = "#D43314";
   const BRAND_INK = "#0A1317";
   const CARD_BG = "#FFFFFF";
 
-  // Верхняя панель: фиксируем высоту, чтобы контент не залезал под системные кнопки
+  // Header sizing: безопасный верх (safe area + запас под телеграм кнопки)
   const HEADER_H = 64;
+  const HEADER_TOP_PAD = 12; // запас, чтобы не лезло под телеграмные кнопки
+
+  // Floating nav sizing
+  const NAV_BTN_W = 56;
+  const NAV_BTN_H = 46;
+  const NAV_GAP = 10;
+  const NAV_PAD = 10; // внутренний паддинг пилюли
 
   // Shop
   const [categories, setCategories] = useState<Category[]>([]);
@@ -144,7 +151,7 @@ export default function Page() {
     [cart]
   );
 
-  // Checkout overlay (на экране корзины)
+  // Checkout overlay
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Checkout fields
@@ -154,7 +161,7 @@ export default function Page() {
   const [comment, setComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
 
-  // Admin visibility (определяем через сервер)
+  // Admin visibility
   const [isAdmin, setIsAdmin] = useState(false);
 
   // Profile (my orders)
@@ -177,7 +184,7 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
-  // Telegram init + внешний вид Telegram WebApp
+  // Telegram init + colors
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
     if (!tg) return;
@@ -185,13 +192,11 @@ export default function Page() {
     tg.ready();
     tg.expand();
 
-    // Цвета в Telegram (чтобы не было "телеграмной" шапки по цвету)
     try {
       tg.setHeaderColor?.(BRAND_BG);
       tg.setBackgroundColor?.(BRAND_BG);
     } catch {}
 
-    // Попросим fullscreen (где поддерживается)
     try {
       tg.requestFullscreen?.();
     } catch {}
@@ -201,9 +206,17 @@ export default function Page() {
     const u = tg.initDataUnsafe?.user;
     if (u?.id) setTgUserId(u.id);
     if (u?.first_name) setName(u.first_name);
+
+    // Важно: чтобы body не "переезжал", скроллим внутри контента
+    try {
+      document.documentElement.style.height = "100%";
+      document.body.style.height = "100%";
+      document.body.style.margin = "0";
+      document.body.style.overflow = "hidden";
+    } catch {}
   }, []);
 
-  // Определяем админа (сервер решает)
+  // Detect admin
   async function detectAdmin() {
     if (!initData) return;
     try {
@@ -455,48 +468,56 @@ export default function Page() {
     }
   }
 
-  // When switching views: load needed data
   useEffect(() => {
     if (view === "profile") loadMyOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // ===== UI Styles =====
-
-  // Контейнер страницы: фон бренда + safe area
-  const pageStyle: React.CSSProperties = {
-    minHeight: "100vh",
+  // ===== Layout styles =====
+  const root: React.CSSProperties = {
+    height: "100vh",
     background: BRAND_BG,
     color: BRAND_INK,
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
+    overflow: "hidden",
   };
 
-  // Фиксированная верхняя панель: контент всегда ниже неё
-  const headerStyle: React.CSSProperties = {
+  const header: React.CSSProperties = {
     position: "fixed",
     top: 0,
     left: 0,
     right: 0,
-    height: HEADER_H,
-    paddingTop: "env(safe-area-inset-top, 0px)",
-    boxSizing: "border-box",
     zIndex: 50,
+    height: HEADER_H,
+    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
+    boxSizing: "border-box",
     display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
+    alignItems: "flex-end",
+    justifyContent: "flex-start",
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
     backdropFilter: "blur(10px)",
   };
 
-  // Основной контент ниже header + отступ снизу под floating nav
-  const contentStyle: React.CSSProperties = {
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H}px + 12px)`,
-    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 120px)",
+  // Лого адаптивно: не “угадываем”, а задаём диапазон
+  const logoStyle: React.CSSProperties = {
+    height: "clamp(28px, 5vw, 42px)",
+    width: "auto",
+    display: "block",
+    filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
+  };
+
+  // Скролл только внутри контента. Контент всегда ниже header.
+  const content: React.CSSProperties = {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px + ${HEADER_H}px)`,
+    bottom: `calc(env(safe-area-inset-bottom, 0px) + 98px)`,
+    overflowY: "auto",
+    WebkitOverflowScrolling: "touch",
+    padding: 16,
     boxSizing: "border-box",
   };
 
@@ -507,10 +528,7 @@ export default function Page() {
     boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
   };
 
-  const smallMuted: React.CSSProperties = {
-    fontSize: 12,
-    opacity: 0.75,
-  };
+  const smallMuted: React.CSSProperties = { fontSize: 12, opacity: 0.75 };
 
   const btnPrimary: React.CSSProperties = {
     padding: "12px 14px",
@@ -526,7 +544,7 @@ export default function Page() {
     padding: "10px 12px",
     borderRadius: 14,
     border: "1px solid rgba(0,0,0,0.10)",
-    background: "rgba(255,255,255,0.80)",
+    background: "rgba(255,255,255,0.85)",
     color: BRAND_INK,
     fontWeight: 900,
     cursor: "pointer",
@@ -542,8 +560,8 @@ export default function Page() {
     fontSize: 14,
   };
 
-  // Floating bottom nav как на примере: не у края, без полосы на всю ширину
-  const floatingNavWrap: React.CSSProperties = {
+  // ===== Floating nav with animated indicator =====
+  const navWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
     right: 0,
@@ -552,15 +570,16 @@ export default function Page() {
     paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
     display: "flex",
     justifyContent: "center",
-    pointerEvents: "none", // чтобы клики принимала только пилюля
+    pointerEvents: "none",
   };
 
-  const floatingNav: React.CSSProperties = {
+  const navPill: React.CSSProperties = {
     pointerEvents: "auto",
+    position: "relative",
     display: "flex",
-    gap: 10,
+    gap: NAV_GAP,
     alignItems: "center",
-    padding: "10px 12px",
+    padding: NAV_PAD,
     borderRadius: 18,
     background: "rgba(255,255,255,0.55)",
     border: "1px solid rgba(10,19,23,0.10)",
@@ -568,76 +587,55 @@ export default function Page() {
     boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
   };
 
-  const navBtn = (active: boolean): React.CSSProperties => ({
-    width: 54,
-    height: 44,
+  const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
+  const indicatorLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
+
+  const indicator: React.CSSProperties = {
+    position: "absolute",
+    top: NAV_PAD,
+    left: indicatorLeft,
+    width: NAV_BTN_W,
+    height: NAV_BTN_H,
+    borderRadius: 14,
+    background: "rgba(212,51,20,0.14)",
+    border: "1px solid rgba(212,51,20,0.18)",
+    boxShadow: "0 10px 24px rgba(212,51,20,0.18)",
+    transition: "left 200ms ease, width 200ms ease",
+  };
+
+  const navBtn: React.CSSProperties = {
+    width: NAV_BTN_W,
+    height: NAV_BTN_H,
     borderRadius: 14,
     border: "1px solid rgba(10,19,23,0.10)",
-    background: active ? "rgba(212,51,20,0.14)" : "rgba(255,255,255,0.75)",
+    background: "rgba(255,255,255,0.75)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    transform: active ? "translateY(-2px)" : "translateY(0px)",
-    transition: "all 160ms ease",
-  });
+    transition: "transform 140ms ease",
+  };
 
-  // ===== RENDER =====
+  // ===== Render =====
   return (
-    <div style={pageStyle}>
-      {/* Верхняя панель */}
-      <div style={headerStyle}>
-        {/* Лого */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-          <img
-            src="/logo.png"
-            alt="Рыба на районе"
-            style={{
-              height: 30,
-              width: "auto",
-              display: "block",
-              filter: "drop-shadow(0 8px 18px rgba(0,0,0,0.18))",
-            }}
-            onError={(e) => {
-              // Если логотип не положили в public — чтобы не ломать интерфейс
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
-        </div>
-
-        {/* Кнопка закрыть в стиле приложения */}
-        <button
-          onClick={() => {
-            const tg = (window as any)?.Telegram?.WebApp;
-            try {
-              tg?.close?.();
-            } catch {}
+    <div style={root}>
+      <div style={header}>
+        <img
+          src="/logo.png"
+          alt="Рыба на районе"
+          style={logoStyle}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
-          title="Закрыть"
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 14,
-            border: "1px solid rgba(255,255,255,0.35)",
-            background: "rgba(255,255,255,0.18)",
-            color: "#fff",
-            cursor: "pointer",
-            fontWeight: 900,
-            fontSize: 18,
-            lineHeight: "42px",
-          }}
-        >
-          ✕
-        </button>
+        />
       </div>
 
-      {/* Контент */}
-      <div style={contentStyle}>
+      <div style={content}>
         {/* CATALOG */}
         {view === "catalog" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
-              <div style={{ fontWeight: 900, fontSize: 16, color: BRAND_INK }}>Категории</div>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>Категории</div>
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {categories.map((c) => {
                   const active = selectedCategoryId === c.id;
@@ -648,7 +646,9 @@ export default function Page() {
                       style={{
                         padding: "8px 12px",
                         borderRadius: 999,
-                        border: `1px solid ${active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"}`,
+                        border: `1px solid ${
+                          active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
+                        }`,
                         background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
                         color: BRAND_INK,
                         cursor: "pointer",
@@ -663,7 +663,7 @@ export default function Page() {
             </div>
 
             <div style={card}>
-              <div style={{ fontWeight: 900, fontSize: 16, color: BRAND_INK }}>Товары</div>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>Товары</div>
               <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
                 {products.map((p) => (
                   <div
@@ -755,17 +755,13 @@ export default function Page() {
                     <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(total)}</div>
                   </div>
 
-                  <button
-                    style={{ ...btnPrimary, width: "100%", marginTop: 12 }}
-                    onClick={() => setCheckoutOpen(true)}
-                  >
+                  <button style={{ ...btnPrimary, width: "100%", marginTop: 12 }} onClick={() => setCheckoutOpen(true)}>
                     Оформить заказ
                   </button>
                 </>
               )}
             </div>
 
-            {/* Checkout overlay */}
             {checkoutOpen && (
               <div style={card}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
@@ -796,20 +792,13 @@ export default function Page() {
                     onChange={(e) => setComment(e.target.value)}
                   />
 
-                  <select
-                    style={inputStyle}
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  >
+                  <select style={inputStyle} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                     <option value="cash">Наличные</option>
                     <option value="transfer">Перевод</option>
                     <option value="qr">QR-код</option>
                   </select>
 
-                  <div style={{ marginTop: 4, fontWeight: 900 }}>
-                    Итого: {formatPriceRub(total)}
-                  </div>
-
+                  <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
                   <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
                     Подтвердить заказ
                   </button>
@@ -892,9 +881,7 @@ export default function Page() {
                         </button>
                       ))}
 
-                      {myOrders.length === 0 && (
-                        <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
-                      )}
+                      {myOrders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>}
                     </div>
                   )}
 
@@ -940,13 +927,7 @@ export default function Page() {
             <div style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
-                <button
-                  style={btnGhost}
-                  onClick={() => {
-                    setSelectedOrderId(null);
-                    setView("profile");
-                  }}
-                >
+                <button style={btnGhost} onClick={() => { setSelectedOrderId(null); setView("profile"); }}>
                   ← В профиль
                 </button>
               </div>
@@ -1050,14 +1031,29 @@ export default function Page() {
         )}
       </div>
 
-      {/* Floating bottom nav */}
-      <div style={floatingNavWrap}>
-        <div style={floatingNav}>
-          <button style={navBtn(view === "catalog")} onClick={() => setView("catalog")} aria-label="Каталог">
+      <div style={navWrap}>
+        <div style={navPill}>
+          <div style={indicator} />
+
+          <button
+            style={navBtn}
+            onClick={() => setView("catalog")}
+            aria-label="Каталог"
+            onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(0.96)")}
+            onMouseUp={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+          >
             <IconCatalog active={view === "catalog"} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
 
-          <button style={navBtn(view === "cart")} onClick={() => setView("cart")} aria-label="Корзина">
+          <button
+            style={navBtn}
+            onClick={() => setView("cart")}
+            aria-label="Корзина"
+            onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(0.96)")}
+            onMouseUp={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+          >
             <div style={{ position: "relative" }}>
               <IconCart active={view === "cart"} ink={BRAND_INK} accent={BRAND_ACCENT} />
               {cart.length > 0 && (
@@ -1086,7 +1082,14 @@ export default function Page() {
             </div>
           </button>
 
-          <button style={navBtn(view === "profile")} onClick={() => setView("profile")} aria-label="Профиль">
+          <button
+            style={navBtn}
+            onClick={() => setView("profile")}
+            aria-label="Профиль"
+            onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(0.96)")}
+            onMouseUp={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+          >
             <IconProfile active={view === "profile"} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
         </div>
