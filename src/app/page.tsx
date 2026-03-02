@@ -131,7 +131,7 @@ export default function Page() {
 
   // Header sizing: безопасный верх (safe area + запас под телеграм кнопки)
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 12; // запас, чтобы не лезло под телеграмные кнопки
+  const HEADER_TOP_PAD = 18; // запас, чтобы не лезло под телеграмные кнопки
 
   // Floating nav sizing
   const NAV_BTN_W = 56;
