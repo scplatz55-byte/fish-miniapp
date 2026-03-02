@@ -552,7 +552,7 @@ export default function Page() {
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
     display: "flex",alignItems: "flex-end",
-    paddingBottom: 25,
+    paddingBottom: 8,
     justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
