@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
 type Category = {
@@ -65,7 +65,7 @@ function statusLabel(s: OrderStatus) {
   return s;
 }
 
-/** Иконки внизу (SVG). Потом легко заменить на свои SVG */
+/** Иконки (SVG) */
 function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
   const stroke = active ? accent : `${ink}A6`;
   return (
@@ -129,18 +129,16 @@ export default function Page() {
   const BRAND_INK = "#0A1317";
   const CARD_BG = "#FFFFFF";
 
-  // Header: safe top + запас под телеграм-кнопки
+  // Header
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 24;
+  const HEADER_TOP_PAD = 24; // ты поднял до 24 — закрепляем
 
-  // Bottom nav (пилюля)
+  // Bottom nav
   const NAV_BTN_W = 58;
   const NAV_BTN_H = 48;
   const NAV_GAP = 10;
   const NAV_PAD = 10;
-
-  // Поднять пилюлю выше от home-indicator
-  const NAV_LIFT = 26; // было 14 — поднимаем выше
+  const NAV_LIFT = 26;
 
   // Shop
   const [categories, setCategories] = useState<Category[]>([]);
@@ -164,10 +162,10 @@ export default function Page() {
   const [comment, setComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
 
-  // Admin visibility
+  // Admin
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Profile (my orders)
+  // Profile orders
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [myOrders, setMyOrders] = useState<OrderForUi[]>([]);
@@ -187,7 +185,66 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
-  // Telegram init + colors
+  // ===== Spring indicator animation (пружинка) =====
+  const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
+
+  const targetLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
+
+  const [indicatorLeft, setIndicatorLeft] = useState<number>(targetLeft);
+  const animRef = useRef<number | null>(null);
+  const xRef = useRef<number>(targetLeft);
+  const vRef = useRef<number>(0);
+
+  useEffect(() => {
+    const target = targetLeft;
+
+    if (animRef.current) cancelAnimationFrame(animRef.current);
+
+    const stiffness = 0.12; // жесткость
+    const damping = 0.78; // затухание (чем ниже — тем сильнее "пружинит")
+    const maxStep = 24; // ограничение рывка, чтобы не улетал
+
+    const tick = () => {
+      const x = xRef.current;
+      let v = vRef.current;
+
+      // spring force
+      const force = (target - x) * stiffness;
+      v = v * damping + force;
+
+      // clamp speed
+      if (v > maxStep) v = maxStep;
+      if (v < -maxStep) v = -maxStep;
+
+      const nextX = x + v;
+
+      xRef.current = nextX;
+      vRef.current = v;
+
+      setIndicatorLeft(nextX);
+
+      const done = Math.abs(target - nextX) < 0.25 && Math.abs(v) < 0.25;
+      if (!done) {
+        animRef.current = requestAnimationFrame(tick);
+      } else {
+        // snap идеально в цель
+        xRef.current = target;
+        vRef.current = 0;
+        setIndicatorLeft(target);
+        animRef.current = null;
+      }
+    };
+
+    animRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current);
+      animRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [targetLeft]);
+
+  // Telegram init
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
     if (!tg) return;
@@ -210,7 +267,7 @@ export default function Page() {
     if (u?.id) setTgUserId(u.id);
     if (u?.first_name) setName(u.first_name);
 
-    // Важно: скроллим только внутри контента, а не body
+    // Скролл только внутри контента
     try {
       document.documentElement.style.height = "100%";
       document.body.style.height = "100%";
@@ -496,25 +553,25 @@ export default function Page() {
     boxSizing: "border-box",
     display: "flex",
     alignItems: "flex-end",
-    justifyContent: "flex-start",
+    justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
     backdropFilter: "blur(10px)",
   };
 
+  // Лого: чуть увеличили
   const logoStyle: React.CSSProperties = {
-    height: "clamp(30px, 5.5vw, 46px)",
+    height: "clamp(34px, 6.2vw, 52px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
+    pointerEvents: "none",
+    userSelect: "none",
   };
 
-  /**
-   * ВАЖНО: чтобы контент НЕ уходил "под" нижнее меню,
-   * делаем нижний паддинг большой: safe-area + высота пилюли + подъем + запас.
-   */
-  const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H; // примерно высота пилюли
+  // Контент: снизу оставляем место под пилюлю + safe area + lift
+  const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
   const contentBottomPadding = `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px + ${navTotalHeight}px + 22px)`;
 
   const content: React.CSSProperties = {
@@ -569,7 +626,7 @@ export default function Page() {
     fontSize: 14,
   };
 
-  // ===== Floating nav with animated indicator =====
+  // ===== Bottom nav =====
   const navWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
@@ -596,28 +653,23 @@ export default function Page() {
     boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
   };
 
-  // В админке подсветку держим на "Профиле"
-  const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
-
-  // Индикатор теперь ВИДИМЫЙ (а не под белыми кнопками)
-  const indicatorLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
-
+  // Индикатор делаем ЧУТЬ МЕНЬШЕ кнопки, чтобы не торчал угол (inset = 1)
+  const IND_INSET = 1;
   const indicator: React.CSSProperties = {
     position: "absolute",
-    top: NAV_PAD,
-    left: indicatorLeft,
-    width: NAV_BTN_W,
-    height: NAV_BTN_H,
-    borderRadius: 14,
-
-    // Более заметная подсветка как в примерах
+    top: NAV_PAD + IND_INSET,
+    left: indicatorLeft + IND_INSET,
+    width: NAV_BTN_W - IND_INSET * 2,
+    height: NAV_BTN_H - IND_INSET * 2,
+    borderRadius: 13, // кнопка 14 -> индикатор 13
     background: "rgba(212,51,20,0.22)",
     border: "1px solid rgba(212,51,20,0.35)",
     boxShadow: "0 12px 28px rgba(212,51,20,0.25)",
-    transition: "left 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+    // transition отключен, потому что у нас пружинка через requestAnimationFrame
+    transition: "none",
   };
 
-  // Кнопки БЕЗ белых плиток — чтобы подсветка была видна
+  // Кнопки прозрачные
   const navBtnBase: React.CSSProperties = {
     width: NAV_BTN_W,
     height: NAV_BTN_H,
@@ -674,7 +726,9 @@ export default function Page() {
                       style={{
                         padding: "8px 12px",
                         borderRadius: 999,
-                        border: `1px solid ${active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"}`,
+                        border: `1px solid ${
+                          active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
+                        }`,
                         background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
                         color: BRAND_INK,
                         cursor: "pointer",
@@ -1066,7 +1120,6 @@ export default function Page() {
       {/* Bottom pill */}
       <div style={navWrap}>
         <div style={navPill}>
-          {/* Индикатор под активной вкладкой */}
           <div style={indicator} />
 
           <button
