@@ -553,7 +553,7 @@ export default function Page() {
     boxSizing: "border-box",
     display: "flex",alignItems: "flex-end",
     paddingBottom: 8,
-	marginTop: 28, // 👈 опустит только лого
+	marginTop: 36, // 👈 опустит только лого
     justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
