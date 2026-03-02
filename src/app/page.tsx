@@ -551,8 +551,8 @@ export default function Page() {
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
-    display: "flex",
-    alignItems: "flex-end",
+    display: "flex",alignItems: "flex-end",
+    paddingBottom: 8,
     justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
@@ -562,7 +562,7 @@ export default function Page() {
 
   // Лого: чуть увеличили
   const logoStyle: React.CSSProperties = {
-    height: "clamp(38px, 7vw, 60px)",
+    height: "clamp(44px, 8vw, 72px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
