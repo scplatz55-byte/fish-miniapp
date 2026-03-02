@@ -65,55 +65,50 @@ function statusLabel(s: OrderStatus) {
   return s;
 }
 
-/** Простые иконки (SVG). Потом легко заменить на свои SVG 1:1 */
-function IconCatalog({ active }: { active: boolean }) {
+/** Иконки внизу (SVG). Потом легко заменить на свои SVG */
+function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
+  const stroke = active ? accent : `${ink}99`;
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M4 7.5C4 6.12 5.12 5 6.5 5h11C18.88 5 20 6.12 20 7.5v9C20 17.88 18.88 19 17.5 19h-11C5.12 19 4 17.88 4 16.5v-9Z"
-        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        stroke={stroke}
         strokeWidth="2"
         strokeLinejoin="round"
       />
-      <path
-        d="M7 9h10M7 12h10M7 15h6"
-        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
+      <path d="M7 9h10M7 12h10M7 15h6" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
 
-function IconCart({ active }: { active: boolean }) {
+function IconCart({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
+  const stroke = active ? accent : `${ink}99`;
+  const fill = active ? accent : `${ink}99`;
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M7 8h14l-1.4 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.6L6 3H3"
-        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        stroke={stroke}
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M10 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-        fill={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        fill={fill}
       />
     </svg>
   );
 }
 
-function IconProfile({ active }: { active: boolean }) {
+function IconProfile({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
+  const stroke = active ? accent : `${ink}99`;
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
-        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
-        strokeWidth="2"
-      />
+      <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke={stroke} strokeWidth="2" />
       <path
         d="M4.5 20c1.8-3 4.3-4.5 7.5-4.5S17.7 17 19.5 20"
-        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        stroke={stroke}
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -128,11 +123,14 @@ export default function Page() {
   const [tgUserId, setTgUserId] = useState<number | null>(null);
   const [initData, setInitData] = useState<string>("");
 
-  // Branding colors (по твоему бренду)
-  const BRAND_BG = "#2B80A4"; // бирюзовый фон
-  const BRAND_ACCENT = "#D43314"; // оранжево-красный
-  const BRAND_INK = "#0A1317"; // тёмный
+  // Brand colors (по твоему бренду)
+  const BRAND_BG = "#2B80A4";
+  const BRAND_ACCENT = "#D43314";
+  const BRAND_INK = "#0A1317";
   const CARD_BG = "#FFFFFF";
+
+  // Верхняя панель: фиксируем высоту, чтобы контент не залезал под системные кнопки
+  const HEADER_H = 64;
 
   // Shop
   const [categories, setCategories] = useState<Category[]>([]);
@@ -187,7 +185,7 @@ export default function Page() {
     tg.ready();
     tg.expand();
 
-    // Цвета приложения в Telegram
+    // Цвета в Telegram (чтобы не было "телеграмной" шапки по цвету)
     try {
       tg.setHeaderColor?.(BRAND_BG);
       tg.setBackgroundColor?.(BRAND_BG);
@@ -209,7 +207,6 @@ export default function Page() {
   async function detectAdmin() {
     if (!initData) return;
     try {
-      // Пытаемся получить admin list (limit 1). Если 403 — не админ.
       const res = await fetch("/api/admin/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -222,7 +219,6 @@ export default function Page() {
       const data = await res.json();
       setIsAdmin(Boolean(res.ok && data?.ok));
     } catch {
-      // если сеть упала — лучше скрыть админку
       setIsAdmin(false);
     }
   }
@@ -244,7 +240,6 @@ export default function Page() {
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
     }
-
     loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -262,7 +257,6 @@ export default function Page() {
 
       setProducts((data || []) as Product[]);
     }
-
     loadProducts();
   }, [selectedCategoryId]);
 
@@ -327,7 +321,6 @@ export default function Page() {
     const { error: itemsErr } = await supabase.from("order_items").insert(items);
     if (itemsErr) return alert(itemsErr.message);
 
-    // notify admin (server reads from DB)
     try {
       await fetch("/api/notify-order", {
         method: "POST",
@@ -465,20 +458,46 @@ export default function Page() {
   // When switching views: load needed data
   useEffect(() => {
     if (view === "profile") loadMyOrders();
-    // adminLoad вызываем только когда реально открыли админку из профиля
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   // ===== UI Styles =====
+
+  // Контейнер страницы: фон бренда + safe area
   const pageStyle: React.CSSProperties = {
     minHeight: "100vh",
     background: BRAND_BG,
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingTop: "calc(env(safe-area-inset-top, 0px) + 14px)",
-    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)", // место под нижнюю панель
     color: BRAND_INK,
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
+  };
+
+  // Фиксированная верхняя панель: контент всегда ниже неё
+  const headerStyle: React.CSSProperties = {
+    position: "fixed",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: HEADER_H,
+    paddingTop: "env(safe-area-inset-top, 0px)",
+    boxSizing: "border-box",
+    zIndex: 50,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingLeft: 16,
+    paddingRight: 16,
+    background: "rgba(43,128,164,0.92)",
+    backdropFilter: "blur(10px)",
+  };
+
+  // Основной контент ниже header + отступ снизу под floating nav
+  const contentStyle: React.CSSProperties = {
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H}px + 12px)`,
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 120px)",
+    boxSizing: "border-box",
   };
 
   const card: React.CSSProperties = {
@@ -488,27 +507,9 @@ export default function Page() {
     boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
   };
 
-  const titleStyle: React.CSSProperties = {
-    margin: 0,
-    color: CARD_BG,
-    fontWeight: 900,
-    letterSpacing: 0.2,
-    fontSize: 18,
-  };
-
   const smallMuted: React.CSSProperties = {
     fontSize: 12,
     opacity: 0.75,
-  };
-
-  const pillBtn: React.CSSProperties = {
-    padding: "8px 12px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.35)",
-    background: "rgba(255,255,255,0.16)",
-    color: "#fff",
-    cursor: "pointer",
-    fontWeight: 800,
   };
 
   const btnPrimary: React.CSSProperties = {
@@ -525,7 +526,7 @@ export default function Page() {
     padding: "10px 12px",
     borderRadius: 14,
     border: "1px solid rgba(0,0,0,0.10)",
-    background: "rgba(255,255,255,0.70)",
+    background: "rgba(255,255,255,0.80)",
     color: BRAND_INK,
     fontWeight: 900,
     cursor: "pointer",
@@ -541,66 +542,100 @@ export default function Page() {
     fontSize: 14,
   };
 
-  const bottomNavWrap: React.CSSProperties = {
+  // Floating bottom nav как на примере: не у края, без полосы на всю ширину
+  const floatingNavWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
     right: 0,
     bottom: 0,
-    paddingLeft: 14,
-    paddingRight: 14,
-    paddingTop: 10,
-    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
-    background: "rgba(255,255,255,0.78)",
-    borderTop: "1px solid rgba(10,19,23,0.08)",
-    backdropFilter: "blur(10px)",
+    zIndex: 60,
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
+    display: "flex",
+    justifyContent: "center",
+    pointerEvents: "none", // чтобы клики принимала только пилюля
   };
 
-  const bottomNav: React.CSSProperties = {
-    maxWidth: 720,
-    margin: "0 auto",
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
+  const floatingNav: React.CSSProperties = {
+    pointerEvents: "auto",
+    display: "flex",
     gap: 10,
+    alignItems: "center",
+    padding: "10px 12px",
+    borderRadius: 18,
+    background: "rgba(255,255,255,0.55)",
+    border: "1px solid rgba(10,19,23,0.10)",
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
   };
 
   const navBtn = (active: boolean): React.CSSProperties => ({
-    borderRadius: 16,
-    border: "1px solid rgba(10,19,23,0.08)",
-    background: active ? "rgba(212,51,20,0.12)" : "rgba(255,255,255,0.92)",
-    padding: "10px 10px",
-    cursor: "pointer",
+    width: 54,
+    height: 44,
+    borderRadius: 14,
+    border: "1px solid rgba(10,19,23,0.10)",
+    background: active ? "rgba(212,51,20,0.14)" : "rgba(255,255,255,0.75)",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
-    boxShadow: active ? "0 10px 24px rgba(212,51,20,0.18)" : "none",
-    transform: active ? "translateY(-2px)" : "none",
+    justifyContent: "center",
+    cursor: "pointer",
+    transform: active ? "translateY(-2px)" : "translateY(0px)",
     transition: "all 160ms ease",
   });
 
   // ===== RENDER =====
   return (
-    <>
-      <main style={pageStyle}>
-        {/* Заголовок (не шапка телеги, а просто наш текст) */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-          <h1 style={titleStyle}>Рыба на районе</h1>
-          <button
-            style={pillBtn}
-            onClick={() => {
-              const tg = (window as any)?.Telegram?.WebApp;
-              try {
-                tg?.close?.();
-              } catch {}
+    <div style={pageStyle}>
+      {/* Верхняя панель */}
+      <div style={headerStyle}>
+        {/* Лого */}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+          <img
+            src="/logo.png"
+            alt="Рыба на районе"
+            style={{
+              height: 30,
+              width: "auto",
+              display: "block",
+              filter: "drop-shadow(0 8px 18px rgba(0,0,0,0.18))",
             }}
-            title="Закрыть"
-          >
-            ✕
-          </button>
+            onError={(e) => {
+              // Если логотип не положили в public — чтобы не ломать интерфейс
+              (e.currentTarget as HTMLImageElement).style.display = "none";
+            }}
+          />
         </div>
 
+        {/* Кнопка закрыть в стиле приложения */}
+        <button
+          onClick={() => {
+            const tg = (window as any)?.Telegram?.WebApp;
+            try {
+              tg?.close?.();
+            } catch {}
+          }}
+          title="Закрыть"
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: 14,
+            border: "1px solid rgba(255,255,255,0.35)",
+            background: "rgba(255,255,255,0.18)",
+            color: "#fff",
+            cursor: "pointer",
+            fontWeight: 900,
+            fontSize: 18,
+            lineHeight: "42px",
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Контент */}
+      <div style={contentStyle}>
         {/* CATALOG */}
         {view === "catalog" && (
-          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16, color: BRAND_INK }}>Категории</div>
               <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -674,7 +709,7 @@ export default function Page() {
 
         {/* CART */}
         {view === "cart" && (
-          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Корзина</div>
               {cart.length === 0 ? (
@@ -786,19 +821,18 @@ export default function Page() {
 
         {/* PROFILE */}
         {view === "profile" && (
-          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Профиль карточка */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Профиль</div>
               <div style={{ marginTop: 8, opacity: 0.85 }}>
                 Telegram ID: <strong>{tgUserId ?? "—"}</strong>
               </div>
+
               <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button style={btnGhost} onClick={loadMyOrders}>
                   Обновить заказы
                 </button>
 
-                {/* Админка показывается ТОЛЬКО админу */}
                 {isAdmin && (
                   <button
                     style={{ ...btnPrimary, background: BRAND_INK }}
@@ -814,10 +848,10 @@ export default function Page() {
                   </button>
                 )}
               </div>
+
               {isAdmin && <div style={{ marginTop: 8, ...smallMuted }}>Админ-режим включён</div>}
             </div>
 
-            {/* История заказов */}
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
 
@@ -900,9 +934,9 @@ export default function Page() {
           </div>
         )}
 
-        {/* ADMIN (только через кнопку в профиле) */}
+        {/* ADMIN */}
         {view === "admin" && (
-          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
@@ -917,7 +951,7 @@ export default function Page() {
                 </button>
               </div>
 
-              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ marginTop: 10 }}>
                 <button style={btnGhost} onClick={adminLoad}>
                   Обновить
                 </button>
@@ -1014,18 +1048,18 @@ export default function Page() {
             </div>
           </div>
         )}
-      </main>
+      </div>
 
-      {/* Нижняя навигация (3 кнопки, только иконки, без текста) */}
-      <div style={bottomNavWrap}>
-        <div style={bottomNav}>
+      {/* Floating bottom nav */}
+      <div style={floatingNavWrap}>
+        <div style={floatingNav}>
           <button style={navBtn(view === "catalog")} onClick={() => setView("catalog")} aria-label="Каталог">
-            <IconCatalog active={view === "catalog"} />
+            <IconCatalog active={view === "catalog"} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
 
           <button style={navBtn(view === "cart")} onClick={() => setView("cart")} aria-label="Корзина">
             <div style={{ position: "relative" }}>
-              <IconCart active={view === "cart"} />
+              <IconCart active={view === "cart"} ink={BRAND_INK} accent={BRAND_ACCENT} />
               {cart.length > 0 && (
                 <div
                   style={{
@@ -1053,10 +1087,10 @@ export default function Page() {
           </button>
 
           <button style={navBtn(view === "profile")} onClick={() => setView("profile")} aria-label="Профиль">
-            <IconProfile active={view === "profile"} />
+            <IconProfile active={view === "profile"} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }
