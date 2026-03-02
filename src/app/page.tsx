@@ -200,9 +200,9 @@ export default function Page() {
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
-    const stiffness = 0.12; // жесткость
-    const damping = 0.96; // затухание (чем ниже — тем сильнее "пружинит")
-    const maxStep = 8; // ограничение рывка, чтобы не улетал
+    const stiffness = 0.16; // жесткость
+    const damping = 0.78; // затухание (чем ниже — тем сильнее "пружинит")
+    const maxStep = 16; // ограничение рывка, чтобы не улетал
 
     const tick = () => {
       const x = xRef.current;
