@@ -40,6 +40,7 @@ type AdminOrder = {
 
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
+  if (Number.isNaN(n)) return String(value);
   return new Intl.NumberFormat("ru-RU").format(n) + " ₽";
 }
 
@@ -67,7 +68,7 @@ export default function Page() {
   const [tgUserId, setTgUserId] = useState<number | null>(null);
   const [initData, setInitData] = useState<string>("");
 
-  // Basic shop data
+  // Shop
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -129,7 +130,7 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load products per category
+  // Load products
   useEffect(() => {
     async function loadProducts() {
       if (!selectedCategoryId) return;
@@ -145,7 +146,7 @@ export default function Page() {
     loadProducts();
   }, [selectedCategoryId]);
 
-  // Add to cart
+  // Cart ops
   function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
@@ -221,18 +222,24 @@ export default function Page() {
     setView("catalog");
   }
 
-  // Admin helpers
-  async function adminCheckAndLoad() {
-    if (!initData) return;
+  // Admin loaders
+  async function adminLoad() {
+    if (!initData) {
+      setIsAdmin(false);
+      setOrders([]);
+      setSelectedOrderId(null);
+      setAdminError("Нет initData — открой через Telegram.");
+      return;
+    }
+
     setAdminLoading(true);
     setAdminError(null);
 
     try {
-      // Проверяем, админ ли (через admin/orders list — если 403, значит не админ)
       const res = await fetch("/api/admin/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, action: { type: "list", limit: 30 } }),
+        body: JSON.stringify({ initData, action: { type: "list", limit: 50 } }),
       });
 
       const data = await res.json();
@@ -240,6 +247,7 @@ export default function Page() {
       if (res.status === 403) {
         setIsAdmin(false);
         setOrders([]);
+        setSelectedOrderId(null);
         setAdminError("У вас нет доступа к админке");
         return;
       }
@@ -247,16 +255,26 @@ export default function Page() {
       if (!res.ok || !data.ok) {
         setIsAdmin(false);
         setOrders([]);
-        setAdminError(data?.error || "Ошибка загрузки заказов");
+        setSelectedOrderId(null);
+        setAdminError(data?.error || `Ошибка загрузки (HTTP ${res.status})`);
         return;
       }
 
+      const list = (data.orders || []) as AdminOrder[];
       setIsAdmin(true);
-      setOrders((data.orders || []) as AdminOrder[]);
-      if (!selectedOrderId && (data.orders || []).length) {
-        setSelectedOrderId(data.orders[0].id);
+      setOrders(list);
+
+      // ВАЖНО: всегда выбираем первый заказ, если ничего не выбрано или выбранный исчез
+      if (list.length === 0) {
+        setSelectedOrderId(null);
+      } else {
+        const stillExists = selectedOrderId && list.some((o) => o.id === selectedOrderId);
+        setSelectedOrderId(stillExists ? selectedOrderId : list[0].id);
       }
     } catch (e: any) {
+      setIsAdmin(false);
+      setOrders([]);
+      setSelectedOrderId(null);
       setAdminError(e?.message || "Ошибка сети");
     } finally {
       setAdminLoading(false);
@@ -281,12 +299,11 @@ export default function Page() {
 
       const data = await res.json();
       if (!res.ok || !data.ok) {
-        setAdminError(data?.error || "Не удалось изменить статус");
+        setAdminError(data?.error || `Не удалось изменить статус (HTTP ${res.status})`);
         return;
       }
 
-      // Обновим локально + перезагрузим список
-      await adminCheckAndLoad();
+      await adminLoad();
     } catch (e: any) {
       setAdminError(e?.message || "Ошибка сети");
     } finally {
@@ -294,9 +311,9 @@ export default function Page() {
     }
   }
 
-  // When open admin view — load
+  // Load admin when opening tab
   useEffect(() => {
-    if (view === "admin") adminCheckAndLoad();
+    if (view === "admin") adminLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
@@ -329,7 +346,7 @@ export default function Page() {
     <main style={pageStyle}>
       <h1 style={{ margin: 0 }}>🐟 Fish Delivery</h1>
 
-      {/* Top tabs */}
+      {/* Tabs */}
       <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
         <button style={pillBtn(view === "catalog")} onClick={() => setView("catalog")}>
           Каталог
@@ -339,23 +356,22 @@ export default function Page() {
         </button>
         <button
           style={pillBtn(view === "checkout")}
-          onClick={() => setView("checkout")}
-          disabled={cart.length === 0}
+          onClick={() => {
+            if (cart.length === 0) return alert("Сначала добавь товары в корзину");
+            setView("checkout");
+          }}
         >
           Оформление
         </button>
-
-        {/* Admin tab (we still show it, but access checked on open) */}
         <button style={pillBtn(view === "admin")} onClick={() => setView("admin")}>
           Админ
         </button>
       </div>
 
-      {/* CATALOG */}
+      {/* Catalog */}
       {view === "catalog" && (
         <>
           <div style={{ marginTop: 18, opacity: 0.85 }}>Категории</div>
-
           <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
             {categories.map((c) => (
               <button
@@ -369,7 +385,6 @@ export default function Page() {
           </div>
 
           <div style={{ marginTop: 18, opacity: 0.85 }}>Товары</div>
-
           <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
             {products.map((p) => (
               <div key={p.id} style={card}>
@@ -385,7 +400,6 @@ export default function Page() {
                     {p.unit_type === "weight" ? "за кг" : "за шт"}
                   </span>
                 </div>
-
                 <button
                   onClick={() => addToCart(p)}
                   style={{
@@ -407,7 +421,7 @@ export default function Page() {
         </>
       )}
 
-      {/* CART */}
+      {/* Cart */}
       {view === "cart" && (
         <div style={{ marginTop: 18 }}>
           {cart.length === 0 ? (
@@ -439,28 +453,12 @@ export default function Page() {
               <div style={{ marginTop: 16, fontWeight: 900, fontSize: 16 }}>
                 Итого: {formatPriceRub(total)}
               </div>
-
-              <button
-                onClick={() => setView("checkout")}
-                style={{
-                  marginTop: 12,
-                  padding: "12px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.14)",
-                  color: "#fff",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                Перейти к оформлению
-              </button>
             </>
           )}
         </div>
       )}
 
-      {/* CHECKOUT */}
+      {/* Checkout */}
       {view === "checkout" && (
         <div style={{ marginTop: 18 }}>
           <h3 style={{ marginTop: 0 }}>Оформление заказа</h3>
@@ -495,36 +493,40 @@ export default function Page() {
         </div>
       )}
 
-      {/* ADMIN */}
+      {/* Admin */}
       {view === "admin" && (
         <div style={{ marginTop: 18 }}>
           <h3 style={{ marginTop: 0 }}>Админка</h3>
 
-          {!initData ? (
-            <div style={{ opacity: 0.85 }}>Нет initData — открой через Telegram.</div>
-          ) : adminLoading ? (
-            <div style={{ opacity: 0.85 }}>Загрузка...</div>
-          ) : adminError ? (
-            <div style={{ color: "#ff6b6b" }}>Ошибка: {adminError}</div>
-          ) : !isAdmin ? (
-            <div style={{ opacity: 0.85 }}>У вас нет доступа к админке.</div>
-          ) : (
-            <>
-              <button
-                onClick={adminCheckAndLoad}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  background: "rgba(255,255,255,0.10)",
-                  color: "#fff",
-                  fontWeight: 800,
-                  cursor: "pointer",
-                }}
-              >
-                Обновить
-              </button>
+          <button
+            onClick={adminLoad}
+            style={{
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.18)",
+              background: "rgba(255,255,255,0.10)",
+              color: "#fff",
+              fontWeight: 800,
+              cursor: "pointer",
+            }}
+          >
+            Обновить
+          </button>
 
+          {adminLoading && <div style={{ marginTop: 10, opacity: 0.85 }}>Загрузка...</div>}
+
+          {adminError && (
+            <div style={{ marginTop: 10, color: "#ff6b6b", whiteSpace: "pre-wrap" }}>
+              Ошибка: {adminError}
+            </div>
+          )}
+
+          {!adminLoading && !adminError && !isAdmin && (
+            <div style={{ marginTop: 10, opacity: 0.85 }}>У вас нет доступа к админке.</div>
+          )}
+
+          {isAdmin && (
+            <>
               <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                 {orders.map((o) => {
                   const active = o.id === selectedOrderId;
@@ -581,194 +583,6 @@ export default function Page() {
               )}
             </>
           )}
-        </div>
-      )}
-    </main>
-  );
-}
-
-"use client";
-
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
-
-type AdminOrder = {
-  id: string;
-  customer_name: string;
-  phone: string;
-  address: string;
-  comment: string | null;
-  payment_method: string;
-  total_amount: string;
-  status: "new" | "in_progress" | "delivered" | "canceled";
-  created_at: string;
-  items_text?: string;
-};
-
-function formatRub(n: string | number) {
-  const value = typeof n === "string" ? Number(n) : n;
-  return new Intl.NumberFormat("ru-RU").format(value) + " ₽";
-}
-
-export default function Page() {
-  const [view, setView] = useState<"admin">("admin");
-
-  const [initData, setInitData] = useState("");
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const tg = (window as any)?.Telegram?.WebApp;
-    if (!tg) return;
-    tg.ready();
-    tg.expand();
-    setInitData(tg.initData || "");
-  }, []);
-
-  async function loadOrders() {
-    if (!initData) return;
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch("/api/admin/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          initData,
-          action: { type: "list", limit: 30 },
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.ok) {
-        setError(data.error || "Ошибка загрузки");
-        return;
-      }
-
-      setOrders(data.orders || []);
-      setSelectedOrder(null); // сбрасываем выбранный
-    } catch (e: any) {
-      setError(e?.message || "Ошибка сети");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function changeStatus(orderId: string, status: AdminOrder["status"]) {
-    const res = await fetch("/api/admin/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        initData,
-        action: { type: "setStatus", orderId, status },
-      }),
-    });
-
-    const data = await res.json();
-    if (!res.ok || !data.ok) {
-      alert(data.error || "Не удалось изменить статус");
-      return;
-    }
-
-    await loadOrders();
-  }
-
-  useEffect(() => {
-    loadOrders();
-  }, [initData]);
-
-  return (
-    <main
-      style={{
-        padding: 16,
-        minHeight: "100vh",
-        background: "#0b0b0f",
-        color: "#fff",
-        fontFamily: "system-ui",
-      }}
-    >
-      <h1>Админка заказов</h1>
-
-      <button
-        onClick={loadOrders}
-        style={{ marginBottom: 12 }}
-      >
-        Обновить
-      </button>
-
-      {loading && <div>Загрузка...</div>}
-      {error && <div style={{ color: "red" }}>{error}</div>}
-
-      {!selectedOrder && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {orders.map((o) => (
-            <div
-              key={o.id}
-              onClick={() => setSelectedOrder(o)}
-              style={{
-                padding: 12,
-                border: "1px solid #333",
-                borderRadius: 10,
-                cursor: "pointer",
-              }}
-            >
-              <div><strong>#{o.id.slice(0, 8)}</strong></div>
-              <div>{o.customer_name}</div>
-              <div>{o.status} • {formatRub(o.total_amount)}</div>
-              <div style={{ fontSize: 12, opacity: 0.6 }}>
-                {new Date(o.created_at).toLocaleString()}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {selectedOrder && (
-        <div style={{ marginTop: 20 }}>
-          <button onClick={() => setSelectedOrder(null)}>
-            ← Назад к списку
-          </button>
-
-          <h2 style={{ marginTop: 12 }}>
-            Заказ #{selectedOrder.id.slice(0, 8)}
-          </h2>
-
-          <div>Имя: {selectedOrder.customer_name}</div>
-          <div>Телефон: {selectedOrder.phone}</div>
-          <div>Адрес: {selectedOrder.address}</div>
-          <div>Оплата: {selectedOrder.payment_method}</div>
-          <div>Сумма: {formatRub(selectedOrder.total_amount)}</div>
-
-          {selectedOrder.comment && (
-            <div>Комментарий: {selectedOrder.comment}</div>
-          )}
-
-          <div style={{ marginTop: 12 }}>
-            <strong>Состав:</strong>
-            <pre style={{ whiteSpace: "pre-wrap" }}>
-              {selectedOrder.items_text || "Нет данных"}
-            </pre>
-          </div>
-
-          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
-            <button onClick={() => changeStatus(selectedOrder.id, "new")}>
-              Новый
-            </button>
-            <button onClick={() => changeStatus(selectedOrder.id, "in_progress")}>
-              В работе
-            </button>
-            <button onClick={() => changeStatus(selectedOrder.id, "delivered")}>
-              Доставлен
-            </button>
-            <button onClick={() => changeStatus(selectedOrder.id, "canceled")}>
-              Отменён
-            </button>
-          </div>
         </div>
       )}
     </main>
