@@ -24,6 +24,8 @@ type CartItem = {
   quantity: number;
 };
 
+type OrderStatus = "assembling" | "on_the_way" | "delivered" | "canceled";
+
 type AdminOrder = {
   id: string;
   user_telegram_id: number;
@@ -33,7 +35,7 @@ type AdminOrder = {
   comment: string | null;
   payment_method: string;
   total_amount: string;
-  status: "new" | "in_progress" | "delivered" | "canceled";
+  status: OrderStatus;
   created_at: string;
   items_text?: string;
 };
@@ -53,9 +55,9 @@ function formatDateTime(iso: string) {
   }
 }
 
-function statusLabel(s: AdminOrder["status"]) {
-  if (s === "new") return "Новый";
-  if (s === "in_progress") return "В работе";
+function statusLabel(s: OrderStatus) {
+  if (s === "assembling") return "Собирается";
+  if (s === "on_the_way") return "В пути";
   if (s === "delivered") return "Доставлен";
   if (s === "canceled") return "Отменён";
   return s;
@@ -126,7 +128,6 @@ export default function Page() {
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
     }
-
     loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -144,7 +145,6 @@ export default function Page() {
 
       setProducts((data || []) as Product[]);
     }
-
     loadProducts();
   }, [selectedCategoryId]);
 
@@ -188,6 +188,7 @@ export default function Page() {
           comment,
           payment_method: paymentMethod,
           total_amount: total,
+          status: "assembling", // ✅ новый дефолтный статус
         },
       ])
       .select()
@@ -208,7 +209,7 @@ export default function Page() {
     const { error: itemsErr } = await supabase.from("order_items").insert(items);
     if (itemsErr) return alert(itemsErr.message);
 
-    // notify admin (server reads from DB)
+    // notify admin with composition (server reads from DB)
     try {
       await fetch("/api/notify-order", {
         method: "POST",
@@ -224,7 +225,7 @@ export default function Page() {
     setView("catalog");
   }
 
-  // Admin
+  // Admin loaders
   async function adminLoad() {
     if (!initData) {
       setIsAdmin(false);
@@ -280,7 +281,7 @@ export default function Page() {
     }
   }
 
-  async function setOrderStatus(orderId: string, status: AdminOrder["status"]) {
+  async function setOrderStatus(orderId: string, status: OrderStatus) {
     if (!initData) return;
 
     setAdminLoading(true);
@@ -316,7 +317,7 @@ export default function Page() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // UI styles
+  // UI styles (оставляю как в “большом” варианте)
   const pageStyle: React.CSSProperties = {
     minHeight: "100vh",
     padding: 16,
@@ -389,7 +390,9 @@ export default function Page() {
               <div key={p.id} style={card}>
                 <div style={{ fontWeight: 800 }}>{p.title}</div>
                 {p.description && (
-                  <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>{p.description}</div>
+                  <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>
+                    {p.description}
+                  </div>
                 )}
                 <div style={{ marginTop: 10, fontWeight: 800 }}>
                   {formatPriceRub(p.price)}{" "}
@@ -472,9 +475,14 @@ export default function Page() {
               <option value="qr">QR-код</option>
             </select>
 
-            <div style={{ marginTop: 6, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
+            <div style={{ marginTop: 6, fontWeight: 900 }}>
+              Итого: {formatPriceRub(total)}
+            </div>
 
-            <button onClick={submitOrder} style={{ padding: "12px 12px", borderRadius: 12, fontWeight: 900 }}>
+            <button
+              onClick={submitOrder}
+              style={{ padding: "12px 12px", borderRadius: 12, fontWeight: 900 }}
+            >
               Подтвердить заказ
             </button>
 
@@ -589,11 +597,20 @@ export default function Page() {
                         {selectedOrder.items_text || "Нет данных"}
                       </div>
 
+                      {/* ✅ КНОПКИ НОВЫХ СТАТУСОВ */}
                       <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "new")}>Новый</button>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "in_progress")}>В работе</button>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>Доставлен</button>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>Отменён</button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>
+                          Собирается
+                        </button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>
+                          В пути
+                        </button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
+                          Доставлен
+                        </button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
+                          Отменён
+                        </button>
                       </div>
                     </div>
                   ) : (

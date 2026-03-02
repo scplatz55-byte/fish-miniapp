@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
@@ -18,9 +20,11 @@ function verifyTelegramInitData(initData: string, botToken: string) {
   params.delete("hash");
 
   const pairs: string[] = [];
-  for (const [key, value] of params.entries()) pairs.push(`${key}=${value}`);
-  pairs.sort();
+  for (const [key, value] of params.entries()) {
+    pairs.push(`${key}=${value}`);
+  }
 
+  pairs.sort();
   const dataCheckString = pairs.join("\n");
 
   const secretKey = crypto
@@ -37,26 +41,17 @@ function verifyTelegramInitData(initData: string, botToken: string) {
   return ok ? { ok: true as const } : { ok: false as const, error: "Invalid hash" };
 }
 
-function parseTelegramUserId(initData: string): number | null {
-  const params = new URLSearchParams(initData);
-  const userRaw = params.get("user");
-  if (!userRaw) return null;
-  try {
-    const u = JSON.parse(userRaw);
-    return u?.id ? Number(u.id) : null;
-  } catch {
-    return null;
-  }
-}
-
 function formatRub(n: number) {
   return new Intl.NumberFormat("ru-RU").format(Math.round(n)) + " ₽";
 }
 
-type Action =
-  | { type: "list"; limit?: number }
-  | { type: "get"; orderId: string }
-  | { type: "setStatus"; orderId: string; status: "new" | "in_progress" | "delivered" | "canceled" };
+function statusLabel(status: string) {
+  if (status === "assembling") return "Собирается";
+  if (status === "on_the_way") return "В пути";
+  if (status === "delivered") return "Доставлен";
+  if (status === "canceled") return "Отменён";
+  return status;
+}
 
 export async function POST(req: Request) {
   try {
@@ -66,69 +61,81 @@ export async function POST(req: Request) {
 
     if (!botToken || !supabaseUrl || !serviceKey) {
       return NextResponse.json(
-        { ok: false, error: "Server not configured (missing env vars)" },
+        { ok: false, error: "Server not configured" },
         { status: 500 }
       );
     }
 
-    const body = (await req.json()) as { initData?: string; action?: Action };
+    const body = await req.json();
     const initData = String(body.initData || "");
-    const action = body.action as Action | undefined;
+    const action = body.action;
 
     if (!initData || !action) {
-      return NextResponse.json({ ok: false, error: "initData and action are required" }, { status: 400 });
+      return NextResponse.json(
+        { ok: false, error: "initData and action required" },
+        { status: 400 }
+      );
     }
 
     const verify = verifyTelegramInitData(initData, botToken);
     if (!verify.ok) {
-      return NextResponse.json({ ok: false, error: verify.error }, { status: 401 });
+      return NextResponse.json(
+        { ok: false, error: verify.error },
+        { status: 401 }
+      );
     }
 
-    const tgUserId = parseTelegramUserId(initData);
-    if (!tgUserId) {
-      return NextResponse.json({ ok: false, error: "Cannot parse Telegram user id" }, { status: 401 });
+    const params = new URLSearchParams(initData);
+    const userRaw = params.get("user");
+    if (!userRaw) {
+      return NextResponse.json(
+        { ok: false, error: "No user in initData" },
+        { status: 401 }
+      );
     }
+
+    const telegramUser = JSON.parse(userRaw);
+    const telegramUserId = telegramUser.id;
 
     const supabase = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false },
     });
 
-    // Проверяем, что пользователь — админ
-    const { data: adminRow, error: adminErr } = await supabase
+    // Проверка админа
+    const { data: adminRow } = await supabase
       .from("admins")
       .select("telegram_id")
-      .eq("telegram_id", tgUserId)
+      .eq("telegram_id", telegramUserId)
       .maybeSingle();
 
-    if (adminErr) {
-      return NextResponse.json({ ok: false, error: adminErr.message }, { status: 500 });
-    }
     if (!adminRow) {
-      return NextResponse.json({ ok: false, error: "Forbidden (not admin)" }, { status: 403 });
+      return NextResponse.json(
+        { ok: false, error: "Forbidden (not admin)" },
+        { status: 403 }
+      );
     }
 
-    // ACTIONS
+    // LIST
     if (action.type === "list") {
-      const limit = Math.min(Math.max(action.limit ?? 30, 1), 100);
-
       const { data: orders, error } = await supabase
         .from("orders")
-        .select("id,user_telegram_id,customer_name,phone,address,comment,payment_method,total_amount,status,created_at")
+        .select("*")
         .order("created_at", { ascending: false })
-        .limit(limit);
+        .limit(50);
 
-      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      if (error) {
+        return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+      }
 
       const orderIds = (orders || []).map((o: any) => o.id);
+
       let itemsByOrder: Record<string, any[]> = {};
 
       if (orderIds.length) {
-        const { data: items, error: itemsErr } = await supabase
+        const { data: items } = await supabase
           .from("order_items")
           .select("order_id,product_title,price,quantity")
           .in("order_id", orderIds);
-
-        if (itemsErr) return NextResponse.json({ ok: false, error: itemsErr.message }, { status: 500 });
 
         itemsByOrder = (items || []).reduce((acc: any, it: any) => {
           acc[it.order_id] = acc[it.order_id] || [];
@@ -143,9 +150,9 @@ export async function POST(req: Request) {
           const lt = Number(it.price) * Number(it.quantity);
           return `• ${it.product_title} × ${it.quantity} — ${formatRub(lt)}`;
         });
+
         return {
           ...o,
-          items,
           items_text: lines.join("\n"),
         };
       });
@@ -153,53 +160,61 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true, orders: enriched });
     }
 
-    if (action.type === "get") {
-      const orderId = String(action.orderId || "");
-      if (!orderId) return NextResponse.json({ ok: false, error: "orderId required" }, { status: 400 });
+    // SET STATUS + уведомление клиенту
+    if (action.type === "setStatus") {
+      const { orderId, status } = action;
+
+      const allowed = ["assembling", "on_the_way", "delivered", "canceled"];
+      if (!allowed.includes(status)) {
+        return NextResponse.json(
+          { ok: false, error: "Invalid status" },
+          { status: 400 }
+        );
+      }
 
       const { data: order, error } = await supabase
         .from("orders")
-        .select("id,user_telegram_id,customer_name,phone,address,comment,payment_method,total_amount,status,created_at")
+        .update({ status })
         .eq("id", orderId)
+        .select()
         .single();
 
-      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-
-      const { data: items, error: itemsErr } = await supabase
-        .from("order_items")
-        .select("order_id,product_title,price,quantity")
-        .eq("order_id", orderId);
-
-      if (itemsErr) return NextResponse.json({ ok: false, error: itemsErr.message }, { status: 500 });
-
-      return NextResponse.json({ ok: true, order, items: items || [] });
-    }
-
-    if (action.type === "setStatus") {
-      const orderId = String(action.orderId || "");
-      const status = action.status;
-
-      if (!orderId || !status) {
-        return NextResponse.json({ ok: false, error: "orderId and status required" }, { status: 400 });
+      if (error || !order) {
+        return NextResponse.json(
+          { ok: false, error: error?.message || "Order not found" },
+          { status: 500 }
+        );
       }
 
-      const allowed = ["new", "in_progress", "delivered", "canceled"];
-      if (!allowed.includes(status)) {
-        return NextResponse.json({ ok: false, error: "Invalid status" }, { status: 400 });
-      }
+      // Отправляем клиенту уведомление
+      const message = `
+🛒 Обновление по заказу #${order.id.slice(0, 8)}
 
-      const { error } = await supabase
-        .from("orders")
-        .update({ status })
-        .eq("id", orderId);
+Статус: ${statusLabel(status)}
 
-      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+Сумма: ${formatRub(Number(order.total_amount))}
+`;
+
+      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: order.user_telegram_id,
+          text: message,
+        }),
+      });
 
       return NextResponse.json({ ok: true });
     }
 
-    return NextResponse.json({ ok: false, error: "Unknown action" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Unknown action" },
+      { status: 400 }
+    );
   } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Unknown error" }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: e?.message || "Unknown error" },
+      { status: 500 }
+    );
   }
 }
