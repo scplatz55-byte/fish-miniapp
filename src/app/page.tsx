@@ -131,7 +131,7 @@ export default function Page() {
 
   // Header: safe top + запас под телеграм-кнопки
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 14;
+  const HEADER_TOP_PAD = 24;
 
   // Bottom nav (пилюля)
   const NAV_BTN_W = 58;
