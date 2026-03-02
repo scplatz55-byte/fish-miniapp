@@ -586,3 +586,191 @@ export default function Page() {
     </main>
   );
 }
+
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabase";
+
+type AdminOrder = {
+  id: string;
+  customer_name: string;
+  phone: string;
+  address: string;
+  comment: string | null;
+  payment_method: string;
+  total_amount: string;
+  status: "new" | "in_progress" | "delivered" | "canceled";
+  created_at: string;
+  items_text?: string;
+};
+
+function formatRub(n: string | number) {
+  const value = typeof n === "string" ? Number(n) : n;
+  return new Intl.NumberFormat("ru-RU").format(value) + " ₽";
+}
+
+export default function Page() {
+  const [view, setView] = useState<"admin">("admin");
+
+  const [initData, setInitData] = useState("");
+  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const tg = (window as any)?.Telegram?.WebApp;
+    if (!tg) return;
+    tg.ready();
+    tg.expand();
+    setInitData(tg.initData || "");
+  }, []);
+
+  async function loadOrders() {
+    if (!initData) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          initData,
+          action: { type: "list", limit: 30 },
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        setError(data.error || "Ошибка загрузки");
+        return;
+      }
+
+      setOrders(data.orders || []);
+      setSelectedOrder(null); // сбрасываем выбранный
+    } catch (e: any) {
+      setError(e?.message || "Ошибка сети");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function changeStatus(orderId: string, status: AdminOrder["status"]) {
+    const res = await fetch("/api/admin/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        initData,
+        action: { type: "setStatus", orderId, status },
+      }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) {
+      alert(data.error || "Не удалось изменить статус");
+      return;
+    }
+
+    await loadOrders();
+  }
+
+  useEffect(() => {
+    loadOrders();
+  }, [initData]);
+
+  return (
+    <main
+      style={{
+        padding: 16,
+        minHeight: "100vh",
+        background: "#0b0b0f",
+        color: "#fff",
+        fontFamily: "system-ui",
+      }}
+    >
+      <h1>Админка заказов</h1>
+
+      <button
+        onClick={loadOrders}
+        style={{ marginBottom: 12 }}
+      >
+        Обновить
+      </button>
+
+      {loading && <div>Загрузка...</div>}
+      {error && <div style={{ color: "red" }}>{error}</div>}
+
+      {!selectedOrder && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {orders.map((o) => (
+            <div
+              key={o.id}
+              onClick={() => setSelectedOrder(o)}
+              style={{
+                padding: 12,
+                border: "1px solid #333",
+                borderRadius: 10,
+                cursor: "pointer",
+              }}
+            >
+              <div><strong>#{o.id.slice(0, 8)}</strong></div>
+              <div>{o.customer_name}</div>
+              <div>{o.status} • {formatRub(o.total_amount)}</div>
+              <div style={{ fontSize: 12, opacity: 0.6 }}>
+                {new Date(o.created_at).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div style={{ marginTop: 20 }}>
+          <button onClick={() => setSelectedOrder(null)}>
+            ← Назад к списку
+          </button>
+
+          <h2 style={{ marginTop: 12 }}>
+            Заказ #{selectedOrder.id.slice(0, 8)}
+          </h2>
+
+          <div>Имя: {selectedOrder.customer_name}</div>
+          <div>Телефон: {selectedOrder.phone}</div>
+          <div>Адрес: {selectedOrder.address}</div>
+          <div>Оплата: {selectedOrder.payment_method}</div>
+          <div>Сумма: {formatRub(selectedOrder.total_amount)}</div>
+
+          {selectedOrder.comment && (
+            <div>Комментарий: {selectedOrder.comment}</div>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <strong>Состав:</strong>
+            <pre style={{ whiteSpace: "pre-wrap" }}>
+              {selectedOrder.items_text || "Нет данных"}
+            </pre>
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+            <button onClick={() => changeStatus(selectedOrder.id, "new")}>
+              Новый
+            </button>
+            <button onClick={() => changeStatus(selectedOrder.id, "in_progress")}>
+              В работе
+            </button>
+            <button onClick={() => changeStatus(selectedOrder.id, "delivered")}>
+              Доставлен
+            </button>
+            <button onClick={() => changeStatus(selectedOrder.id, "canceled")}>
+              Отменён
+            </button>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}
