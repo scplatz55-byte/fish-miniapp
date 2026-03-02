@@ -65,12 +65,74 @@ function statusLabel(s: OrderStatus) {
   return s;
 }
 
+/** Простые иконки (SVG). Потом легко заменить на свои SVG 1:1 */
+function IconCatalog({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 7.5C4 6.12 5.12 5 6.5 5h11C18.88 5 20 6.12 20 7.5v9C20 17.88 18.88 19 17.5 19h-11C5.12 19 4 17.88 4 16.5v-9Z"
+        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        strokeWidth="2"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 9h10M7 12h10M7 15h6"
+        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconCart({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M7 8h14l-1.4 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.6L6 3H3"
+        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
+        fill={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+      />
+    </svg>
+  );
+}
+
+function IconProfile({ active }: { active: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        strokeWidth="2"
+      />
+      <path
+        d="M4.5 20c1.8-3 4.3-4.5 7.5-4.5S17.7 17 19.5 20"
+        stroke={active ? "#D43314" : "rgba(10,19,23,0.65)"}
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function Page() {
   const [view, setView] = useState<View>("catalog");
 
   // Telegram
   const [tgUserId, setTgUserId] = useState<number | null>(null);
   const [initData, setInitData] = useState<string>("");
+
+  // Branding colors (по твоему бренду)
+  const BRAND_BG = "#2B80A4"; // бирюзовый фон
+  const BRAND_ACCENT = "#D43314"; // оранжево-красный
+  const BRAND_INK = "#0A1317"; // тёмный
+  const CARD_BG = "#FFFFFF";
 
   // Shop
   const [categories, setCategories] = useState<Category[]>([]);
@@ -84,7 +146,7 @@ export default function Page() {
     [cart]
   );
 
-  // Checkout modal-like state (same page)
+  // Checkout overlay (на экране корзины)
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Checkout fields
@@ -93,6 +155,9 @@ export default function Page() {
   const [address, setAddress] = useState("");
   const [comment, setComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+
+  // Admin visibility (определяем через сервер)
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Profile (my orders)
   const [profileLoading, setProfileLoading] = useState(false);
@@ -104,8 +169,7 @@ export default function Page() {
     [myOrders, selectedMyOrderId]
   );
 
-  // Admin
-  const [isAdmin, setIsAdmin] = useState(false);
+  // Admin orders
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderForUi[]>([]);
@@ -115,7 +179,7 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
-  // Telegram init
+  // Telegram init + внешний вид Telegram WebApp
   useEffect(() => {
     const tg = (window as any)?.Telegram?.WebApp;
     if (!tg) return;
@@ -123,12 +187,50 @@ export default function Page() {
     tg.ready();
     tg.expand();
 
+    // Цвета приложения в Telegram
+    try {
+      tg.setHeaderColor?.(BRAND_BG);
+      tg.setBackgroundColor?.(BRAND_BG);
+    } catch {}
+
+    // Попросим fullscreen (где поддерживается)
+    try {
+      tg.requestFullscreen?.();
+    } catch {}
+
     setInitData(tg.initData || "");
 
     const u = tg.initDataUnsafe?.user;
     if (u?.id) setTgUserId(u.id);
     if (u?.first_name) setName(u.first_name);
   }, []);
+
+  // Определяем админа (сервер решает)
+  async function detectAdmin() {
+    if (!initData) return;
+    try {
+      // Пытаемся получить admin list (limit 1). Если 403 — не админ.
+      const res = await fetch("/api/admin/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, action: { type: "list", limit: 1 } }),
+      });
+      if (res.status === 403) {
+        setIsAdmin(false);
+        return;
+      }
+      const data = await res.json();
+      setIsAdmin(Boolean(res.ok && data?.ok));
+    } catch {
+      // если сеть упала — лучше скрыть админку
+      setIsAdmin(false);
+    }
+  }
+
+  useEffect(() => {
+    if (initData) detectAdmin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initData]);
 
   // Load categories
   useEffect(() => {
@@ -225,21 +327,19 @@ export default function Page() {
     const { error: itemsErr } = await supabase.from("order_items").insert(items);
     if (itemsErr) return alert(itemsErr.message);
 
-    // notify admin with composition (server reads from DB)
+    // notify admin (server reads from DB)
     try {
       await fetch("/api/notify-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ initData, orderId }),
       });
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     alert("Заказ оформлен!");
     setCart([]);
     setCheckoutOpen(false);
-    setView("profile"); // логично после заказа показать профиль/историю
+    setView("profile");
     await loadMyOrders();
   }
 
@@ -283,12 +383,9 @@ export default function Page() {
     }
   }
 
-  // Admin loaders
+  // Admin: list orders
   async function adminLoad() {
     if (!initData) {
-      setIsAdmin(false);
-      setOrders([]);
-      setSelectedOrderId(null);
       setAdminError("Нет initData — открой через Telegram.");
       return;
     }
@@ -306,33 +403,30 @@ export default function Page() {
       const data = await res.json();
 
       if (res.status === 403) {
-        setIsAdmin(false);
+        setAdminError("У вас нет доступа к админке");
         setOrders([]);
         setSelectedOrderId(null);
-        setAdminError("У вас нет доступа к админке");
+        setIsAdmin(false);
         return;
       }
 
       if (!res.ok || !data.ok) {
-        setIsAdmin(false);
+        setAdminError(data?.error || `Ошибка загрузки (HTTP ${res.status})`);
         setOrders([]);
         setSelectedOrderId(null);
-        setAdminError(data?.error || `Ошибка загрузки (HTTP ${res.status})`);
         return;
       }
 
       const list = (data.orders || []) as OrderForUi[];
-      setIsAdmin(true);
       setOrders(list);
 
       if (selectedOrderId && !list.some((o) => o.id === selectedOrderId)) {
         setSelectedOrderId(null);
       }
     } catch (e: any) {
-      setIsAdmin(false);
+      setAdminError(e?.message || "Ошибка сети");
       setOrders([]);
       setSelectedOrderId(null);
-      setAdminError(e?.message || "Ошибка сети");
     } finally {
       setAdminLoading(false);
     }
@@ -370,472 +464,596 @@ export default function Page() {
 
   // When switching views: load needed data
   useEffect(() => {
-    if (view === "admin") adminLoad();
     if (view === "profile") loadMyOrders();
+    // adminLoad вызываем только когда реально открыли админку из профиля
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // UI styles
+  // ===== UI Styles =====
   const pageStyle: React.CSSProperties = {
     minHeight: "100vh",
-    padding: 16,
-    paddingBottom: 88, // место под нижнюю навигацию
-    background: "#0b0b0f",
-    color: "#fff",
-    fontFamily: "system-ui",
+    background: BRAND_BG,
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingTop: "calc(env(safe-area-inset-top, 0px) + 14px)",
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 96px)", // место под нижнюю панель
+    color: BRAND_INK,
+    fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
   };
 
   const card: React.CSSProperties = {
-    padding: 12,
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.06)",
+    background: CARD_BG,
+    borderRadius: 18,
+    padding: 14,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.18)",
   };
 
-  const primaryBtn: React.CSSProperties = {
-    padding: "12px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.14)",
+  const titleStyle: React.CSSProperties = {
+    margin: 0,
+    color: CARD_BG,
+    fontWeight: 900,
+    letterSpacing: 0.2,
+    fontSize: 18,
+  };
+
+  const smallMuted: React.CSSProperties = {
+    fontSize: 12,
+    opacity: 0.75,
+  };
+
+  const pillBtn: React.CSSProperties = {
+    padding: "8px 12px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.35)",
+    background: "rgba(255,255,255,0.16)",
+    color: "#fff",
+    cursor: "pointer",
+    fontWeight: 800,
+  };
+
+  const btnPrimary: React.CSSProperties = {
+    padding: "12px 14px",
+    borderRadius: 14,
+    border: "1px solid rgba(0,0,0,0.06)",
+    background: BRAND_ACCENT,
     color: "#fff",
     fontWeight: 900,
     cursor: "pointer",
   };
 
-  const ghostBtn: React.CSSProperties = {
+  const btnGhost: React.CSSProperties = {
     padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.10)",
-    color: "#fff",
-    fontWeight: 800,
+    borderRadius: 14,
+    border: "1px solid rgba(0,0,0,0.10)",
+    background: "rgba(255,255,255,0.70)",
+    color: BRAND_INK,
+    fontWeight: 900,
     cursor: "pointer",
   };
 
   const inputStyle: React.CSSProperties = {
     padding: 12,
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: "rgba(255,255,255,0.06)",
-    color: "#fff",
+    borderRadius: 14,
+    border: "1px solid rgba(10,19,23,0.12)",
+    background: "#fff",
+    color: BRAND_INK,
     outline: "none",
+    fontSize: 14,
   };
 
-  const textareaStyle: React.CSSProperties = {
-    ...inputStyle,
-    minHeight: 90,
-    resize: "vertical",
-  };
-
-  const bottomNavStyle: React.CSSProperties = {
+  const bottomNavWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
     right: 0,
     bottom: 0,
-    padding: 10,
-    background: "rgba(10,10,14,0.92)",
-    borderTop: "1px solid rgba(255,255,255,0.10)",
-    backdropFilter: "blur(8px)",
+    paddingLeft: 14,
+    paddingRight: 14,
+    paddingTop: 10,
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 10px)",
+    background: "rgba(255,255,255,0.78)",
+    borderTop: "1px solid rgba(10,19,23,0.08)",
+    backdropFilter: "blur(10px)",
   };
 
-  const navRowStyle: React.CSSProperties = {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: 10,
+  const bottomNav: React.CSSProperties = {
     maxWidth: 720,
     margin: "0 auto",
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: 10,
   };
 
   const navBtn = (active: boolean): React.CSSProperties => ({
+    borderRadius: 16,
+    border: "1px solid rgba(10,19,23,0.08)",
+    background: active ? "rgba(212,51,20,0.12)" : "rgba(255,255,255,0.92)",
     padding: "10px 10px",
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.14)",
-    background: active ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.08)",
-    color: "#fff",
     cursor: "pointer",
-    fontWeight: 800,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    boxShadow: active ? "0 10px 24px rgba(212,51,20,0.18)" : "none",
+    transform: active ? "translateY(-2px)" : "none",
+    transition: "all 160ms ease",
   });
 
+  // ===== RENDER =====
   return (
     <>
       <main style={pageStyle}>
-        <h1 style={{ margin: 0 }}>🐟 Fish Delivery</h1>
+        {/* Заголовок (не шапка телеги, а просто наш текст) */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <h1 style={titleStyle}>Рыба на районе</h1>
+          <button
+            style={pillBtn}
+            onClick={() => {
+              const tg = (window as any)?.Telegram?.WebApp;
+              try {
+                tg?.close?.();
+              } catch {}
+            }}
+            title="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
 
         {/* CATALOG */}
         {view === "catalog" && (
-          <>
-            <div style={{ marginTop: 16, opacity: 0.85 }}>Категории</div>
-
-            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {categories.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setSelectedCategoryId(c.id)}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: 999,
-                    border: "1px solid rgba(255,255,255,0.15)",
-                    background:
-                      selectedCategoryId === c.id
-                        ? "rgba(255,255,255,0.14)"
-                        : "rgba(255,255,255,0.06)",
-                    color: "#fff",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                  }}
-                >
-                  {c.name}
-                </button>
-              ))}
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={card}>
+              <div style={{ fontWeight: 900, fontSize: 16, color: BRAND_INK }}>Категории</div>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {categories.map((c) => {
+                  const active = selectedCategoryId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedCategoryId(c.id)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"}`,
+                        background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
+                        color: BRAND_INK,
+                        cursor: "pointer",
+                        fontWeight: 900,
+                      }}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <div style={{ marginTop: 16, opacity: 0.85 }}>Товары</div>
-
-            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-              {products.map((p) => (
-                <div key={p.id} style={card}>
-                  <div style={{ fontWeight: 900 }}>{p.title}</div>
-                  {p.description && (
-                    <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>{p.description}</div>
-                  )}
-
-                  <div style={{ marginTop: 10, fontWeight: 900 }}>
-                    {formatPriceRub(p.price)}{" "}
-                    <span style={{ fontWeight: 600, opacity: 0.75, fontSize: 12 }}>
-                      {p.unit_type === "weight" ? "за кг" : "за шт"}
-                    </span>
+            <div style={card}>
+              <div style={{ fontWeight: 900, fontSize: 16, color: BRAND_INK }}>Товары</div>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                {products.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(10,19,23,0.10)",
+                      padding: 12,
+                      background: "rgba(10,19,23,0.02)",
+                    }}
+                  >
+                    <div style={{ fontWeight: 900 }}>{p.title}</div>
+                    {p.description && (
+                      <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>{p.description}</div>
+                    )}
+                    <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ fontWeight: 900 }}>
+                        {formatPriceRub(p.price)}{" "}
+                        <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>
+                          {p.unit_type === "weight" ? "за кг" : "за шт"}
+                        </span>
+                      </div>
+                      <button
+                        style={{
+                          ...btnGhost,
+                          background: "rgba(212,51,20,0.10)",
+                          border: "1px solid rgba(212,51,20,0.22)",
+                          color: BRAND_INK,
+                        }}
+                        onClick={() => addToCart(p)}
+                      >
+                        + В корзину
+                      </button>
+                    </div>
                   </div>
+                ))}
 
-                  <button onClick={() => addToCart(p)} style={{ ...ghostBtn, marginTop: 10 }}>
-                    Добавить
-                  </button>
-                </div>
-              ))}
+                {products.length === 0 && <div style={smallMuted}>Пока нет товаров в этой категории.</div>}
+              </div>
             </div>
-          </>
+          </div>
         )}
 
         {/* CART */}
         {view === "cart" && (
-          <div style={{ marginTop: 16 }}>
-            <h2 style={{ margin: "0 0 10px 0" }}>Корзина</h2>
-
-            {cart.length === 0 ? (
-              <div style={{ opacity: 0.8 }}>Корзина пуста</div>
-            ) : (
-              <>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {cart.map((item) => (
-                    <div key={item.product.id} style={card}>
-                      <div style={{ fontWeight: 900 }}>{item.product.title}</div>
-                      <div style={{ marginTop: 6, opacity: 0.85 }}>
-                        {formatPriceRub(item.product.price)}{" "}
-                        <span style={{ fontSize: 12, opacity: 0.75 }}>
-                          {item.product.unit_type === "weight" ? "за кг" : "за шт"}
-                        </span>
-                      </div>
-
-                      <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
-                        <button onClick={() => changeQuantity(item.product.id, -1)} style={ghostBtn}>
-                          −
-                        </button>
-                        <div style={{ minWidth: 24, textAlign: "center", fontWeight: 900 }}>
-                          {item.quantity}
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={card}>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>Корзина</div>
+              {cart.length === 0 ? (
+                <div style={{ marginTop: 10, opacity: 0.75 }}>Корзина пуста</div>
+              ) : (
+                <>
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                    {cart.map((item) => (
+                      <div
+                        key={item.product.id}
+                        style={{
+                          borderRadius: 14,
+                          border: "1px solid rgba(10,19,23,0.10)",
+                          padding: 12,
+                          background: "rgba(10,19,23,0.02)",
+                        }}
+                      >
+                        <div style={{ fontWeight: 900 }}>{item.product.title}</div>
+                        <div style={{ marginTop: 6, opacity: 0.85 }}>
+                          {formatPriceRub(item.product.price)}{" "}
+                          <span style={{ fontSize: 12, opacity: 0.7 }}>
+                            {item.product.unit_type === "weight" ? "за кг" : "за шт"}
+                          </span>
                         </div>
-                        <button onClick={() => changeQuantity(item.product.id, 1)} style={ghostBtn}>
-                          +
-                        </button>
+
+                        <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
+                          <button style={btnGhost} onClick={() => changeQuantity(item.product.id, -1)}>
+                            −
+                          </button>
+                          <div style={{ minWidth: 24, textAlign: "center", fontWeight: 900 }}>
+                            {item.quantity}
+                          </div>
+                          <button style={btnGhost} onClick={() => changeQuantity(item.product.id, 1)}>
+                            +
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
 
-                <div style={{ marginTop: 16, fontWeight: 900, fontSize: 16 }}>
-                  Итого: {formatPriceRub(total)}
-                </div>
+                  <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", gap: 10 }}>
+                    <div style={{ fontWeight: 900, fontSize: 16 }}>Итого</div>
+                    <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(total)}</div>
+                  </div>
 
-                <button
-                  style={{ ...primaryBtn, marginTop: 12, width: "100%" }}
-                  onClick={() => {
-                    if (cart.length === 0) return alert("Корзина пуста");
-                    setCheckoutOpen(true);
-                  }}
-                >
-                  Оформить заказ
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* CHECKOUT (overlay in cart) */}
-        {view === "cart" && checkoutOpen && (
-          <div style={{ marginTop: 16, ...card }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>Оформление</div>
-              <button onClick={() => setCheckoutOpen(false)} style={ghostBtn}>
-                Закрыть
-              </button>
+                  <button
+                    style={{ ...btnPrimary, width: "100%", marginTop: 12 }}
+                    onClick={() => setCheckoutOpen(true)}
+                  >
+                    Оформить заказ
+                  </button>
+                </>
+              )}
             </div>
 
-            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-              <input style={inputStyle} placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
-              <input
-                style={inputStyle}
-                placeholder="Телефон"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <input
-                style={inputStyle}
-                placeholder="Адрес"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-              <textarea
-                style={textareaStyle}
-                placeholder="Комментарий"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-              />
+            {/* Checkout overlay */}
+            {checkoutOpen && (
+              <div style={card}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                  <div style={{ fontWeight: 900, fontSize: 16 }}>Оформление</div>
+                  <button style={btnGhost} onClick={() => setCheckoutOpen(false)}>
+                    Закрыть
+                  </button>
+                </div>
 
-              <select
-                style={inputStyle}
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-              >
-                <option value="cash">Наличные</option>
-                <option value="transfer">Перевод</option>
-                <option value="qr">QR-код</option>
-              </select>
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input style={inputStyle} placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
+                  <input
+                    style={inputStyle}
+                    placeholder="Телефон"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                  <input
+                    style={inputStyle}
+                    placeholder="Адрес"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                    placeholder="Комментарий"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
 
-              <div style={{ marginTop: 6, fontWeight: 900 }}>
-                Итого: {formatPriceRub(total)}
+                  <select
+                    style={inputStyle}
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
+                    <option value="cash">Наличные</option>
+                    <option value="transfer">Перевод</option>
+                    <option value="qr">QR-код</option>
+                  </select>
+
+                  <div style={{ marginTop: 4, fontWeight: 900 }}>
+                    Итого: {formatPriceRub(total)}
+                  </div>
+
+                  <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
+                    Подтвердить заказ
+                  </button>
+                </div>
               </div>
-
-              <button style={{ ...primaryBtn, width: "100%" }} onClick={submitOrder}>
-                Подтвердить заказ
-              </button>
-            </div>
+            )}
           </div>
         )}
 
         {/* PROFILE */}
         {view === "profile" && (
-          <div style={{ marginTop: 16 }}>
-            <h2 style={{ margin: "0 0 10px 0" }}>Профиль</h2>
-
-            <div style={{ ...card, marginBottom: 12 }}>
-              <div style={{ fontWeight: 900 }}>Ваш Telegram ID</div>
-              <div style={{ opacity: 0.85, marginTop: 4 }}>{tgUserId ?? "—"}</div>
-              <div style={{ opacity: 0.65, marginTop: 8, fontSize: 12 }}>
-                Здесь будет история заказов.
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Профиль карточка */}
+            <div style={card}>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>Профиль</div>
+              <div style={{ marginTop: 8, opacity: 0.85 }}>
+                Telegram ID: <strong>{tgUserId ?? "—"}</strong>
               </div>
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button style={btnGhost} onClick={loadMyOrders}>
+                  Обновить заказы
+                </button>
 
-              <button style={{ ...ghostBtn, marginTop: 10 }} onClick={loadMyOrders}>
-                Обновить историю
-              </button>
+                {/* Админка показывается ТОЛЬКО админу */}
+                {isAdmin && (
+                  <button
+                    style={{ ...btnPrimary, background: BRAND_INK }}
+                    onClick={() => {
+                      setSelectedOrderId(null);
+                      setAdminError(null);
+                      setOrders([]);
+                      setView("admin");
+                      adminLoad();
+                    }}
+                  >
+                    Админка
+                  </button>
+                )}
+              </div>
+              {isAdmin && <div style={{ marginTop: 8, ...smallMuted }}>Админ-режим включён</div>}
             </div>
 
-            {profileLoading && <div style={{ opacity: 0.85 }}>Загрузка...</div>}
-            {profileError && (
-              <div style={{ color: "#ff6b6b", whiteSpace: "pre-wrap" }}>Ошибка: {profileError}</div>
-            )}
+            {/* История заказов */}
+            <div style={card}>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
 
-            {!profileLoading && !profileError && (
-              <>
-                {!selectedMyOrderId && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {myOrders.map((o) => (
-                      <button
-                        key={o.id}
-                        onClick={() => setSelectedMyOrderId(o.id)}
-                        style={{ ...card, cursor: "pointer", textAlign: "left" }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                          <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                          <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
-                        </div>
-                        <div style={{ marginTop: 6, opacity: 0.9, fontSize: 13 }}>
-                          Статус: <span style={{ fontWeight: 900 }}>{statusLabel(o.status)}</span>
-                        </div>
-                        <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
-                          Сумма: {formatPriceRub(o.total_amount)}
-                        </div>
+              {profileLoading && <div style={{ marginTop: 10, opacity: 0.75 }}>Загрузка...</div>}
+              {profileError && (
+                <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                  Ошибка: {profileError}
+                </div>
+              )}
+
+              {!profileLoading && !profileError && (
+                <>
+                  {!selectedMyOrderId && (
+                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {myOrders.map((o) => (
+                        <button
+                          key={o.id}
+                          onClick={() => setSelectedMyOrderId(o.id)}
+                          style={{
+                            textAlign: "left",
+                            borderRadius: 14,
+                            border: "1px solid rgba(10,19,23,0.10)",
+                            background: "rgba(10,19,23,0.02)",
+                            padding: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                            <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
+                          </div>
+                          <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
+                            Статус: <strong>{statusLabel(o.status)}</strong>
+                          </div>
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
+                            Сумма: {formatPriceRub(o.total_amount)}
+                          </div>
+                        </button>
+                      ))}
+
+                      {myOrders.length === 0 && (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedMyOrderId && (
+                    <div style={{ marginTop: 10 }}>
+                      <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
+                        ← Назад к списку
                       </button>
-                    ))}
 
-                    {myOrders.length === 0 && (
-                      <div style={{ opacity: 0.8 }}>Пока нет заказов.</div>
-                    )}
-                  </div>
-                )}
-
-                {selectedMyOrderId && (
-                  <div style={{ marginTop: 6 }}>
-                    <button
-                      onClick={() => setSelectedMyOrderId(null)}
-                      style={{ ...ghostBtn, marginBottom: 12 }}
-                    >
-                      ← Назад к списку
-                    </button>
-
-                    {selectedMyOrder ? (
-                      <div style={card}>
-                        <div style={{ fontWeight: 900, fontSize: 16 }}>
-                          Заказ #{selectedMyOrder.id.slice(0, 8)}
-                        </div>
-
-                        <div style={{ marginTop: 8, opacity: 0.95 }}>
-                          <div>
+                      {selectedMyOrder ? (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontWeight: 900, fontSize: 16 }}>
+                            Заказ #{selectedMyOrder.id.slice(0, 8)}
+                          </div>
+                          <div style={{ marginTop: 8, opacity: 0.9 }}>
                             Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
                           </div>
-                          <div style={{ marginTop: 6 }}>💰 {formatPriceRub(selectedMyOrder.total_amount)}</div>
-                          <div style={{ marginTop: 6, opacity: 0.85, fontSize: 12 }}>
-                            {formatDateTime(selectedMyOrder.created_at)}
+                          <div style={{ marginTop: 6, fontWeight: 900 }}>
+                            {formatPriceRub(selectedMyOrder.total_amount)}
+                          </div>
+                          <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
+
+                          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
+                            <strong>Состав:</strong>
+                            {"\n"}
+                            {selectedMyOrder.items_text || "Нет данных"}
                           </div>
                         </div>
-
-                        <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
-                          <strong>🧺 Состав:</strong>
-                          {"\n"}
-                          {selectedMyOrder.items_text || "Нет данных"}
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ opacity: 0.85 }}>Заказ не найден (обнови историю).</div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+                      ) : (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
 
-        {/* ADMIN */}
+        {/* ADMIN (только через кнопку в профиле) */}
         {view === "admin" && (
-          <div style={{ marginTop: 16 }}>
-            <h2 style={{ margin: "0 0 10px 0" }}>Админка</h2>
-
-            <button style={ghostBtn} onClick={adminLoad}>
-              Обновить
-            </button>
-
-            {adminLoading && <div style={{ marginTop: 10, opacity: 0.85 }}>Загрузка...</div>}
-            {adminError && (
-              <div style={{ marginTop: 10, color: "#ff6b6b", whiteSpace: "pre-wrap" }}>
-                Ошибка: {adminError}
+          <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={card}>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
+                <button
+                  style={btnGhost}
+                  onClick={() => {
+                    setSelectedOrderId(null);
+                    setView("profile");
+                  }}
+                >
+                  ← В профиль
+                </button>
               </div>
-            )}
 
-            {!adminLoading && !adminError && !isAdmin && (
-              <div style={{ marginTop: 10, opacity: 0.85 }}>У вас нет доступа к админке.</div>
-            )}
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button style={btnGhost} onClick={adminLoad}>
+                  Обновить
+                </button>
+              </div>
 
-            {isAdmin && !adminLoading && !adminError && (
-              <>
-                {!selectedOrderId && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    {orders.map((o) => (
-                      <button
-                        key={o.id}
-                        onClick={() => setSelectedOrderId(o.id)}
-                        style={{ textAlign: "left", ...card, cursor: "pointer" }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                          <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                          <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
-                        </div>
-                        <div style={{ marginTop: 6, fontWeight: 700 }}>{o.customer_name}</div>
-                        <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
-                          {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
-                        </div>
+              {adminLoading && <div style={{ marginTop: 10, opacity: 0.75 }}>Загрузка...</div>}
+              {adminError && (
+                <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                  Ошибка: {adminError}
+                </div>
+              )}
+
+              {!adminLoading && !adminError && (
+                <>
+                  {!selectedOrderId && (
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {orders.map((o) => (
+                        <button
+                          key={o.id}
+                          onClick={() => setSelectedOrderId(o.id)}
+                          style={{
+                            textAlign: "left",
+                            borderRadius: 14,
+                            border: "1px solid rgba(10,19,23,0.10)",
+                            background: "rgba(10,19,23,0.02)",
+                            padding: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                            <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
+                          </div>
+                          <div style={{ marginTop: 6, fontWeight: 900 }}>{o.customer_name}</div>
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.9 }}>
+                            {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
+                          </div>
+                        </button>
+                      ))}
+                      {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>}
+                    </div>
+                  )}
+
+                  {selectedOrderId && (
+                    <div style={{ marginTop: 12 }}>
+                      <button style={btnGhost} onClick={() => setSelectedOrderId(null)}>
+                        ← Назад к списку
                       </button>
-                    ))}
 
-                    {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.8 }}>Заказов нет</div>}
-                  </div>
-                )}
+                      {selectedOrder ? (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontWeight: 900, fontSize: 16 }}>
+                            Заказ #{selectedOrder.id.slice(0, 8)}
+                          </div>
 
-                {selectedOrderId && (
-                  <div style={{ marginTop: 14 }}>
-                    <button onClick={() => setSelectedOrderId(null)} style={{ ...ghostBtn, marginBottom: 12 }}>
-                      ← Назад к списку
-                    </button>
+                          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4, opacity: 0.95 }}>
+                            <div>👤 {selectedOrder.customer_name}</div>
+                            <div>📞 {selectedOrder.phone}</div>
+                            <div>📍 {selectedOrder.address}</div>
+                            <div>💳 {selectedOrder.payment_method}</div>
+                            <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
+                            {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
+                            <div style={smallMuted}>{formatDateTime(selectedOrder.created_at)}</div>
+                          </div>
 
-                    {selectedOrder ? (
-                      <div style={card}>
-                        <div style={{ fontWeight: 900, fontSize: 16 }}>
-                          Заказ #{selectedOrder.id.slice(0, 8)}
-                        </div>
+                          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
+                            <strong>Состав:</strong>
+                            {"\n"}
+                            {selectedOrder.items_text || "Нет данных"}
+                          </div>
 
-                        <div style={{ marginTop: 8, opacity: 0.95 }}>
-                          <div>👤 {selectedOrder.customer_name}</div>
-                          <div>📞 {selectedOrder.phone}</div>
-                          <div>📍 {selectedOrder.address}</div>
-                          <div>💳 {selectedOrder.payment_method}</div>
-                          <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                          {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
-                          <div style={{ marginTop: 6, opacity: 0.8, fontSize: 12 }}>
-                            {formatDateTime(selectedOrder.created_at)}
+                          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>
+                              Собирается
+                            </button>
+                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>
+                              В пути
+                            </button>
+                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
+                              Доставлен
+                            </button>
+                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
+                              Отменён
+                            </button>
                           </div>
                         </div>
-
-                        <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
-                          <strong>🧺 Состав:</strong>
-                          {"\n"}
-                          {selectedOrder.items_text || "Нет данных"}
-                        </div>
-
-                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>
-                            Собирается
-                          </button>
-                          <button onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>
-                            В пути
-                          </button>
-                          <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
-                            Доставлен
-                          </button>
-                          <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
-                            Отменён
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ marginTop: 10, opacity: 0.85 }}>Заказ не найден (обнови список).</div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+                      ) : (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
       </main>
 
-      {/* Bottom nav */}
-      <div style={bottomNavStyle}>
-        <div style={navRowStyle}>
-          <button style={navBtn(view === "catalog")} onClick={() => setView("catalog")}>
-            🐟
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>Каталог</div>
+      {/* Нижняя навигация (3 кнопки, только иконки, без текста) */}
+      <div style={bottomNavWrap}>
+        <div style={bottomNav}>
+          <button style={navBtn(view === "catalog")} onClick={() => setView("catalog")} aria-label="Каталог">
+            <IconCatalog active={view === "catalog"} />
           </button>
 
-          <button style={navBtn(view === "cart")} onClick={() => setView("cart")}>
-            🧺
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
-              Корзина ({cart.length})
+          <button style={navBtn(view === "cart")} onClick={() => setView("cart")} aria-label="Корзина">
+            <div style={{ position: "relative" }}>
+              <IconCart active={view === "cart"} />
+              {cart.length > 0 && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: -6,
+                    right: -10,
+                    minWidth: 18,
+                    height: 18,
+                    padding: "0 6px",
+                    borderRadius: 999,
+                    background: BRAND_ACCENT,
+                    color: "#fff",
+                    fontSize: 11,
+                    fontWeight: 900,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 10px 18px rgba(212,51,20,0.25)",
+                  }}
+                >
+                  {cart.length}
+                </div>
+              )}
             </div>
           </button>
 
-          <button style={navBtn(view === "profile")} onClick={() => setView("profile")}>
-            👤
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>Профиль</div>
-          </button>
-
-          <button style={navBtn(view === "admin")} onClick={() => setView("admin")}>
-            🛠
-            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>Админ</div>
+          <button style={navBtn(view === "profile")} onClick={() => setView("profile")} aria-label="Профиль">
+            <IconProfile active={view === "profile"} />
           </button>
         </div>
       </div>
