@@ -26,9 +26,9 @@ type CartItem = {
 
 type OrderStatus = "assembling" | "on_the_way" | "delivered" | "canceled";
 
-type AdminOrder = {
+type OrderForUi = {
   id: string;
-  user_telegram_id: number;
+  user_telegram_id?: number;
   customer_name: string;
   phone: string;
   address: string;
@@ -39,6 +39,8 @@ type AdminOrder = {
   created_at: string;
   items_text?: string;
 };
+
+type View = "catalog" | "cart" | "profile" | "admin";
 
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
@@ -64,7 +66,7 @@ function statusLabel(s: OrderStatus) {
 }
 
 export default function Page() {
-  const [view, setView] = useState<"catalog" | "cart" | "checkout" | "admin">("catalog");
+  const [view, setView] = useState<View>("catalog");
 
   // Telegram
   const [tgUserId, setTgUserId] = useState<number | null>(null);
@@ -82,6 +84,9 @@ export default function Page() {
     [cart]
   );
 
+  // Checkout modal-like state (same page)
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+
   // Checkout fields
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -89,13 +94,22 @@ export default function Page() {
   const [comment, setComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
 
+  // Profile (my orders)
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState<string | null>(null);
+  const [myOrders, setMyOrders] = useState<OrderForUi[]>([]);
+  const [selectedMyOrderId, setSelectedMyOrderId] = useState<string | null>(null);
+  const selectedMyOrder = useMemo(
+    () => myOrders.find((o) => o.id === selectedMyOrderId) || null,
+    [myOrders, selectedMyOrderId]
+  );
+
   // Admin
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
+  const [orders, setOrders] = useState<OrderForUi[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-
   const selectedOrder = useMemo(
     () => orders.find((o) => o.id === selectedOrderId) || null,
     [orders, selectedOrderId]
@@ -128,6 +142,7 @@ export default function Page() {
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
     }
+
     loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -145,6 +160,7 @@ export default function Page() {
 
       setProducts((data || []) as Product[]);
     }
+
     loadProducts();
   }, [selectedCategoryId]);
 
@@ -188,7 +204,7 @@ export default function Page() {
           comment,
           payment_method: paymentMethod,
           total_amount: total,
-          status: "assembling", // ✅ новый дефолтный статус
+          status: "assembling",
         },
       ])
       .select()
@@ -222,7 +238,49 @@ export default function Page() {
 
     alert("Заказ оформлен!");
     setCart([]);
-    setView("catalog");
+    setCheckoutOpen(false);
+    setView("profile"); // логично после заказа показать профиль/историю
+    await loadMyOrders();
+  }
+
+  // Profile: load my orders
+  async function loadMyOrders() {
+    if (!initData) {
+      setProfileError("Открой мини-апп через Telegram.");
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileError(null);
+
+    try {
+      const res = await fetch("/api/my-orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, limit: 30 }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setProfileError(data?.error || `Ошибка загрузки (HTTP ${res.status})`);
+        setMyOrders([]);
+        setSelectedMyOrderId(null);
+        return;
+      }
+
+      const list = (data.orders || []) as OrderForUi[];
+      setMyOrders(list);
+
+      if (selectedMyOrderId && !list.some((o) => o.id === selectedMyOrderId)) {
+        setSelectedMyOrderId(null);
+      }
+    } catch (e: any) {
+      setProfileError(e?.message || "Ошибка сети");
+      setMyOrders([]);
+      setSelectedMyOrderId(null);
+    } finally {
+      setProfileLoading(false);
+    }
   }
 
   // Admin loaders
@@ -263,11 +321,10 @@ export default function Page() {
         return;
       }
 
-      const list = (data.orders || []) as AdminOrder[];
+      const list = (data.orders || []) as OrderForUi[];
       setIsAdmin(true);
       setOrders(list);
 
-      // если сейчас открыт экран деталей и заказ исчез — закрываем
       if (selectedOrderId && !list.some((o) => o.id === selectedOrderId)) {
         setSelectedOrderId(null);
       }
@@ -311,29 +368,22 @@ export default function Page() {
     }
   }
 
-  // Load admin when opening tab
+  // When switching views: load needed data
   useEffect(() => {
     if (view === "admin") adminLoad();
+    if (view === "profile") loadMyOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
-  // UI styles (оставляю как в “большом” варианте)
+  // UI styles
   const pageStyle: React.CSSProperties = {
     minHeight: "100vh",
     padding: 16,
+    paddingBottom: 88, // место под нижнюю навигацию
     background: "#0b0b0f",
     color: "#fff",
     fontFamily: "system-ui",
   };
-
-  const pillBtn = (active: boolean): React.CSSProperties => ({
-    padding: "8px 12px",
-    borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.15)",
-    background: active ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.06)",
-    color: "#fff",
-    cursor: "pointer",
-  });
 
   const card: React.CSSProperties = {
     padding: 12,
@@ -342,288 +392,453 @@ export default function Page() {
     background: "rgba(255,255,255,0.06)",
   };
 
+  const primaryBtn: React.CSSProperties = {
+    padding: "12px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(255,255,255,0.14)",
+    color: "#fff",
+    fontWeight: 900,
+    cursor: "pointer",
+  };
+
+  const ghostBtn: React.CSSProperties = {
+    padding: "10px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(255,255,255,0.10)",
+    color: "#fff",
+    fontWeight: 800,
+    cursor: "pointer",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(255,255,255,0.06)",
+    color: "#fff",
+    outline: "none",
+  };
+
+  const textareaStyle: React.CSSProperties = {
+    ...inputStyle,
+    minHeight: 90,
+    resize: "vertical",
+  };
+
+  const bottomNavStyle: React.CSSProperties = {
+    position: "fixed",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    padding: 10,
+    background: "rgba(10,10,14,0.92)",
+    borderTop: "1px solid rgba(255,255,255,0.10)",
+    backdropFilter: "blur(8px)",
+  };
+
+  const navRowStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: 10,
+    maxWidth: 720,
+    margin: "0 auto",
+  };
+
+  const navBtn = (active: boolean): React.CSSProperties => ({
+    padding: "10px 10px",
+    borderRadius: 14,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: active ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.08)",
+    color: "#fff",
+    cursor: "pointer",
+    fontWeight: 800,
+  });
+
   return (
-    <main style={pageStyle}>
-      <h1 style={{ margin: 0 }}>🐟 Fish Delivery</h1>
+    <>
+      <main style={pageStyle}>
+        <h1 style={{ margin: 0 }}>🐟 Fish Delivery</h1>
 
-      {/* Tabs */}
-      <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button style={pillBtn(view === "catalog")} onClick={() => setView("catalog")}>
-          Каталог
-        </button>
-        <button style={pillBtn(view === "cart")} onClick={() => setView("cart")}>
-          Корзина ({cart.length})
-        </button>
-        <button
-          style={pillBtn(view === "checkout")}
-          onClick={() => {
-            if (cart.length === 0) return alert("Сначала добавь товары в корзину");
-            setView("checkout");
-          }}
-        >
-          Оформление
-        </button>
-        <button style={pillBtn(view === "admin")} onClick={() => setView("admin")}>
-          Админ
-        </button>
-      </div>
+        {/* CATALOG */}
+        {view === "catalog" && (
+          <>
+            <div style={{ marginTop: 16, opacity: 0.85 }}>Категории</div>
 
-      {/* Catalog */}
-      {view === "catalog" && (
-        <>
-          <div style={{ marginTop: 18, opacity: 0.85 }}>Категории</div>
-          <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                style={pillBtn(selectedCategoryId === c.id)}
-                onClick={() => setSelectedCategoryId(c.id)}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 18, opacity: 0.85 }}>Товары</div>
-          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
-            {products.map((p) => (
-              <div key={p.id} style={card}>
-                <div style={{ fontWeight: 800 }}>{p.title}</div>
-                {p.description && (
-                  <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>
-                    {p.description}
-                  </div>
-                )}
-                <div style={{ marginTop: 10, fontWeight: 800 }}>
-                  {formatPriceRub(p.price)}{" "}
-                  <span style={{ fontWeight: 500, opacity: 0.75, fontSize: 12 }}>
-                    {p.unit_type === "weight" ? "за кг" : "за шт"}
-                  </span>
-                </div>
+            <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {categories.map((c) => (
                 <button
-                  onClick={() => addToCart(p)}
+                  key={c.id}
+                  onClick={() => setSelectedCategoryId(c.id)}
                   style={{
-                    marginTop: 10,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.18)",
-                    background: "rgba(255,255,255,0.10)",
+                    padding: "8px 12px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    background:
+                      selectedCategoryId === c.id
+                        ? "rgba(255,255,255,0.14)"
+                        : "rgba(255,255,255,0.06)",
                     color: "#fff",
                     cursor: "pointer",
-                    fontWeight: 700,
+                    fontWeight: 800,
                   }}
                 >
-                  Добавить
+                  {c.name}
                 </button>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+              ))}
+            </div>
 
-      {/* Cart */}
-      {view === "cart" && (
-        <div style={{ marginTop: 18 }}>
-          {cart.length === 0 ? (
-            <div style={{ opacity: 0.8 }}>Корзина пуста</div>
-          ) : (
-            <>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {cart.map((item) => (
-                  <div key={item.product.id} style={card}>
-                    <div style={{ fontWeight: 800 }}>{item.product.title}</div>
-                    <div style={{ marginTop: 6, opacity: 0.85 }}>
-                      {formatPriceRub(item.product.price)}{" "}
-                      <span style={{ fontSize: 12, opacity: 0.75 }}>
-                        {item.product.unit_type === "weight" ? "за кг" : "за шт"}
-                      </span>
-                    </div>
+            <div style={{ marginTop: 16, opacity: 0.85 }}>Товары</div>
 
-                    <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
-                      <button onClick={() => changeQuantity(item.product.id, -1)}>-</button>
-                      <div style={{ minWidth: 24, textAlign: "center", fontWeight: 800 }}>
-                        {item.quantity}
-                      </div>
-                      <button onClick={() => changeQuantity(item.product.id, 1)}>+</button>
-                    </div>
+            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 12 }}>
+              {products.map((p) => (
+                <div key={p.id} style={card}>
+                  <div style={{ fontWeight: 900 }}>{p.title}</div>
+                  {p.description && (
+                    <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>{p.description}</div>
+                  )}
+
+                  <div style={{ marginTop: 10, fontWeight: 900 }}>
+                    {formatPriceRub(p.price)}{" "}
+                    <span style={{ fontWeight: 600, opacity: 0.75, fontSize: 12 }}>
+                      {p.unit_type === "weight" ? "за кг" : "за шт"}
+                    </span>
                   </div>
-                ))}
-              </div>
 
-              <div style={{ marginTop: 16, fontWeight: 900, fontSize: 16 }}>
+                  <button onClick={() => addToCart(p)} style={{ ...ghostBtn, marginTop: 10 }}>
+                    Добавить
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* CART */}
+        {view === "cart" && (
+          <div style={{ marginTop: 16 }}>
+            <h2 style={{ margin: "0 0 10px 0" }}>Корзина</h2>
+
+            {cart.length === 0 ? (
+              <div style={{ opacity: 0.8 }}>Корзина пуста</div>
+            ) : (
+              <>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {cart.map((item) => (
+                    <div key={item.product.id} style={card}>
+                      <div style={{ fontWeight: 900 }}>{item.product.title}</div>
+                      <div style={{ marginTop: 6, opacity: 0.85 }}>
+                        {formatPriceRub(item.product.price)}{" "}
+                        <span style={{ fontSize: 12, opacity: 0.75 }}>
+                          {item.product.unit_type === "weight" ? "за кг" : "за шт"}
+                        </span>
+                      </div>
+
+                      <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
+                        <button onClick={() => changeQuantity(item.product.id, -1)} style={ghostBtn}>
+                          −
+                        </button>
+                        <div style={{ minWidth: 24, textAlign: "center", fontWeight: 900 }}>
+                          {item.quantity}
+                        </div>
+                        <button onClick={() => changeQuantity(item.product.id, 1)} style={ghostBtn}>
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 16, fontWeight: 900, fontSize: 16 }}>
+                  Итого: {formatPriceRub(total)}
+                </div>
+
+                <button
+                  style={{ ...primaryBtn, marginTop: 12, width: "100%" }}
+                  onClick={() => {
+                    if (cart.length === 0) return alert("Корзина пуста");
+                    setCheckoutOpen(true);
+                  }}
+                >
+                  Оформить заказ
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* CHECKOUT (overlay in cart) */}
+        {view === "cart" && checkoutOpen && (
+          <div style={{ marginTop: 16, ...card }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>Оформление</div>
+              <button onClick={() => setCheckoutOpen(false)} style={ghostBtn}>
+                Закрыть
+              </button>
+            </div>
+
+            <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+              <input style={inputStyle} placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
+              <input
+                style={inputStyle}
+                placeholder="Телефон"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <input
+                style={inputStyle}
+                placeholder="Адрес"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+              <textarea
+                style={textareaStyle}
+                placeholder="Комментарий"
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+              />
+
+              <select
+                style={inputStyle}
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value)}
+              >
+                <option value="cash">Наличные</option>
+                <option value="transfer">Перевод</option>
+                <option value="qr">QR-код</option>
+              </select>
+
+              <div style={{ marginTop: 6, fontWeight: 900 }}>
                 Итого: {formatPriceRub(total)}
               </div>
-            </>
-          )}
-        </div>
-      )}
 
-      {/* Checkout */}
-      {view === "checkout" && (
-        <div style={{ marginTop: 18 }}>
-          <h3 style={{ marginTop: 0 }}>Оформление заказа</h3>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <input placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
-            <input placeholder="Телефон" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <input placeholder="Адрес" value={address} onChange={(e) => setAddress(e.target.value)} />
-            <textarea placeholder="Комментарий" value={comment} onChange={(e) => setComment(e.target.value)} />
-
-            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-              <option value="cash">Наличные</option>
-              <option value="transfer">Перевод</option>
-              <option value="qr">QR-код</option>
-            </select>
-
-            <div style={{ marginTop: 6, fontWeight: 900 }}>
-              Итого: {formatPriceRub(total)}
+              <button style={{ ...primaryBtn, width: "100%" }} onClick={submitOrder}>
+                Подтвердить заказ
+              </button>
             </div>
-
-            <button
-              onClick={submitOrder}
-              style={{ padding: "12px 12px", borderRadius: 12, fontWeight: 900 }}
-            >
-              Подтвердить заказ
-            </button>
-
-            <button onClick={() => setView("cart")} style={{ padding: "12px 12px", borderRadius: 12 }}>
-              Назад в корзину
-            </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Admin */}
-      {view === "admin" && (
-        <div style={{ marginTop: 18 }}>
-          <h3 style={{ marginTop: 0 }}>Админка</h3>
+        {/* PROFILE */}
+        {view === "profile" && (
+          <div style={{ marginTop: 16 }}>
+            <h2 style={{ margin: "0 0 10px 0" }}>Профиль</h2>
 
-          <button
-            onClick={adminLoad}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 12,
-              border: "1px solid rgba(255,255,255,0.18)",
-              background: "rgba(255,255,255,0.10)",
-              color: "#fff",
-              fontWeight: 800,
-              cursor: "pointer",
-            }}
-          >
-            Обновить
-          </button>
+            <div style={{ ...card, marginBottom: 12 }}>
+              <div style={{ fontWeight: 900 }}>Ваш Telegram ID</div>
+              <div style={{ opacity: 0.85, marginTop: 4 }}>{tgUserId ?? "—"}</div>
+              <div style={{ opacity: 0.65, marginTop: 8, fontSize: 12 }}>
+                Здесь будет история заказов.
+              </div>
 
-          {adminLoading && <div style={{ marginTop: 10, opacity: 0.85 }}>Загрузка...</div>}
-
-          {adminError && (
-            <div style={{ marginTop: 10, color: "#ff6b6b", whiteSpace: "pre-wrap" }}>
-              Ошибка: {adminError}
+              <button style={{ ...ghostBtn, marginTop: 10 }} onClick={loadMyOrders}>
+                Обновить историю
+              </button>
             </div>
-          )}
 
-          {!adminLoading && !adminError && !isAdmin && (
-            <div style={{ marginTop: 10, opacity: 0.85 }}>У вас нет доступа к админке.</div>
-          )}
+            {profileLoading && <div style={{ opacity: 0.85 }}>Загрузка...</div>}
+            {profileError && (
+              <div style={{ color: "#ff6b6b", whiteSpace: "pre-wrap" }}>Ошибка: {profileError}</div>
+            )}
 
-          {/* ✅ МОБИЛЬНАЯ ЛОГИКА: либо список, либо детали */}
-          {isAdmin && !adminLoading && !adminError && (
-            <>
-              {!selectedOrderId && (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {orders.map((o) => (
+            {!profileLoading && !profileError && (
+              <>
+                {!selectedMyOrderId && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {myOrders.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setSelectedMyOrderId(o.id)}
+                        style={{ ...card, cursor: "pointer", textAlign: "left" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                          <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                          <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
+                        </div>
+                        <div style={{ marginTop: 6, opacity: 0.9, fontSize: 13 }}>
+                          Статус: <span style={{ fontWeight: 900 }}>{statusLabel(o.status)}</span>
+                        </div>
+                        <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
+                          Сумма: {formatPriceRub(o.total_amount)}
+                        </div>
+                      </button>
+                    ))}
+
+                    {myOrders.length === 0 && (
+                      <div style={{ opacity: 0.8 }}>Пока нет заказов.</div>
+                    )}
+                  </div>
+                )}
+
+                {selectedMyOrderId && (
+                  <div style={{ marginTop: 6 }}>
                     <button
-                      key={o.id}
-                      onClick={() => setSelectedOrderId(o.id)}
-                      style={{
-                        textAlign: "left",
-                        ...card,
-                        cursor: "pointer",
-                      }}
+                      onClick={() => setSelectedMyOrderId(null)}
+                      style={{ ...ghostBtn, marginBottom: 12 }}
                     >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                        <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                        <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
-                      </div>
-                      <div style={{ marginTop: 6, fontWeight: 700 }}>{o.customer_name}</div>
-                      <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
-                        {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
-                      </div>
+                      ← Назад к списку
                     </button>
-                  ))}
 
-                  {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.8 }}>Заказов нет</div>}
-                </div>
-              )}
+                    {selectedMyOrder ? (
+                      <div style={card}>
+                        <div style={{ fontWeight: 900, fontSize: 16 }}>
+                          Заказ #{selectedMyOrder.id.slice(0, 8)}
+                        </div>
 
-              {selectedOrderId && (
-                <div style={{ marginTop: 14 }}>
-                  <button
-                    onClick={() => setSelectedOrderId(null)}
-                    style={{
-                      marginBottom: 12,
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      border: "1px solid rgba(255,255,255,0.18)",
-                      background: "rgba(255,255,255,0.10)",
-                      color: "#fff",
-                      fontWeight: 800,
-                      cursor: "pointer",
-                    }}
-                  >
-                    ← Назад к списку
-                  </button>
+                        <div style={{ marginTop: 8, opacity: 0.95 }}>
+                          <div>
+                            Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
+                          </div>
+                          <div style={{ marginTop: 6 }}>💰 {formatPriceRub(selectedMyOrder.total_amount)}</div>
+                          <div style={{ marginTop: 6, opacity: 0.85, fontSize: 12 }}>
+                            {formatDateTime(selectedMyOrder.created_at)}
+                          </div>
+                        </div>
 
-                  {selectedOrder ? (
-                    <div style={card}>
-                      <div style={{ fontWeight: 900, fontSize: 16 }}>
-                        Заказ #{selectedOrder.id.slice(0, 8)}
-                      </div>
-
-                      <div style={{ marginTop: 8, opacity: 0.95 }}>
-                        <div>👤 {selectedOrder.customer_name}</div>
-                        <div>📞 {selectedOrder.phone}</div>
-                        <div>📍 {selectedOrder.address}</div>
-                        <div>💳 {selectedOrder.payment_method}</div>
-                        <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                        {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
-                        <div style={{ marginTop: 6, opacity: 0.8, fontSize: 12 }}>
-                          {formatDateTime(selectedOrder.created_at)}
+                        <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
+                          <strong>🧺 Состав:</strong>
+                          {"\n"}
+                          {selectedMyOrder.items_text || "Нет данных"}
                         </div>
                       </div>
+                    ) : (
+                      <div style={{ opacity: 0.85 }}>Заказ не найден (обнови историю).</div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
-                      <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
-                        <strong>🧺 Состав:</strong>
-                        {"\n"}
-                        {selectedOrder.items_text || "Нет данных"}
-                      </div>
+        {/* ADMIN */}
+        {view === "admin" && (
+          <div style={{ marginTop: 16 }}>
+            <h2 style={{ margin: "0 0 10px 0" }}>Админка</h2>
 
-                      {/* ✅ КНОПКИ НОВЫХ СТАТУСОВ */}
-                      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>
-                          Собирается
-                        </button>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>
-                          В пути
-                        </button>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
-                          Доставлен
-                        </button>
-                        <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
-                          Отменён
-                        </button>
+            <button style={ghostBtn} onClick={adminLoad}>
+              Обновить
+            </button>
+
+            {adminLoading && <div style={{ marginTop: 10, opacity: 0.85 }}>Загрузка...</div>}
+            {adminError && (
+              <div style={{ marginTop: 10, color: "#ff6b6b", whiteSpace: "pre-wrap" }}>
+                Ошибка: {adminError}
+              </div>
+            )}
+
+            {!adminLoading && !adminError && !isAdmin && (
+              <div style={{ marginTop: 10, opacity: 0.85 }}>У вас нет доступа к админке.</div>
+            )}
+
+            {isAdmin && !adminLoading && !adminError && (
+              <>
+                {!selectedOrderId && (
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    {orders.map((o) => (
+                      <button
+                        key={o.id}
+                        onClick={() => setSelectedOrderId(o.id)}
+                        style={{ textAlign: "left", ...card, cursor: "pointer" }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                          <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                          <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
+                        </div>
+                        <div style={{ marginTop: 6, fontWeight: 700 }}>{o.customer_name}</div>
+                        <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
+                          {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
+                        </div>
+                      </button>
+                    ))}
+
+                    {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.8 }}>Заказов нет</div>}
+                  </div>
+                )}
+
+                {selectedOrderId && (
+                  <div style={{ marginTop: 14 }}>
+                    <button onClick={() => setSelectedOrderId(null)} style={{ ...ghostBtn, marginBottom: 12 }}>
+                      ← Назад к списку
+                    </button>
+
+                    {selectedOrder ? (
+                      <div style={card}>
+                        <div style={{ fontWeight: 900, fontSize: 16 }}>
+                          Заказ #{selectedOrder.id.slice(0, 8)}
+                        </div>
+
+                        <div style={{ marginTop: 8, opacity: 0.95 }}>
+                          <div>👤 {selectedOrder.customer_name}</div>
+                          <div>📞 {selectedOrder.phone}</div>
+                          <div>📍 {selectedOrder.address}</div>
+                          <div>💳 {selectedOrder.payment_method}</div>
+                          <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
+                          {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
+                          <div style={{ marginTop: 6, opacity: 0.8, fontSize: 12 }}>
+                            {formatDateTime(selectedOrder.created_at)}
+                          </div>
+                        </div>
+
+                        <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
+                          <strong>🧺 Состав:</strong>
+                          {"\n"}
+                          {selectedOrder.items_text || "Нет данных"}
+                        </div>
+
+                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <button onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>
+                            Собирается
+                          </button>
+                          <button onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>
+                            В пути
+                          </button>
+                          <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
+                            Доставлен
+                          </button>
+                          <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
+                            Отменён
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div style={{ marginTop: 10, opacity: 0.85 }}>
-                      Заказ не найден (возможно обнови список)
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          )}
+                    ) : (
+                      <div style={{ marginTop: 10, opacity: 0.85 }}>Заказ не найден (обнови список).</div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Bottom nav */}
+      <div style={bottomNavStyle}>
+        <div style={navRowStyle}>
+          <button style={navBtn(view === "catalog")} onClick={() => setView("catalog")}>
+            🐟
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>Каталог</div>
+          </button>
+
+          <button style={navBtn(view === "cart")} onClick={() => setView("cart")}>
+            🧺
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>
+              Корзина ({cart.length})
+            </div>
+          </button>
+
+          <button style={navBtn(view === "profile")} onClick={() => setView("profile")}>
+            👤
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>Профиль</div>
+          </button>
+
+          <button style={navBtn(view === "admin")} onClick={() => setView("admin")}>
+            🛠
+            <div style={{ fontSize: 12, opacity: 0.9, marginTop: 2 }}>Админ</div>
+          </button>
         </div>
-      )}
-    </main>
+      </div>
+    </>
   );
 }
