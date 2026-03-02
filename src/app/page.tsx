@@ -526,65 +526,91 @@ export default function Page() {
           )}
 
           {isAdmin && (
-            <>
-              <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                {orders.map((o) => {
-                  const active = o.id === selectedOrderId;
-                  return (
-                    <button
-                      key={o.id}
-                      onClick={() => setSelectedOrderId(o.id)}
-                      style={{
-                        textAlign: "left",
-                        ...card,
-                        cursor: "pointer",
-                        outline: active ? "2px solid rgba(255,255,255,0.25)" : "none",
-                      }}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                        <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                        <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
-                      </div>
-                      <div style={{ marginTop: 6, fontWeight: 700 }}>{o.customer_name}</div>
-                      <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
-                        {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
-                      </div>
-                    </button>
-                  );
-                })}
+  <>
+    {!selectedOrder && (
+      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+        {orders.map((o) => (
+          <button
+            key={o.id}
+            onClick={() => setSelectedOrderId(o.id)}
+            style={{
+              textAlign: "left",
+              ...card,
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+              <div style={{ opacity: 0.7, fontSize: 12 }}>
+                {formatDateTime(o.created_at)}
               </div>
+            </div>
+            <div style={{ marginTop: 6, fontWeight: 700 }}>
+              {o.customer_name}
+            </div>
+            <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>
+              {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
+            </div>
+          </button>
+        ))}
+      </div>
+    )}
 
-              {selectedOrder && (
-                <div style={{ marginTop: 14, ...card }}>
-                  <div style={{ fontWeight: 900, fontSize: 16 }}>
-                    Заказ #{selectedOrder.id.slice(0, 8)}
-                  </div>
+    {selectedOrder && (
+      <div style={{ marginTop: 14 }}>
+        <button
+          onClick={() => setSelectedOrderId(null)}
+          style={{
+            marginBottom: 12,
+            padding: "8px 12px",
+            borderRadius: 10,
+            border: "1px solid rgba(255,255,255,0.18)",
+            background: "rgba(255,255,255,0.08)",
+            color: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          ← Назад к списку
+        </button>
 
-                  <div style={{ marginTop: 8, opacity: 0.9 }}>
-                    <div>👤 {selectedOrder.customer_name}</div>
-                    <div>📞 {selectedOrder.phone}</div>
-                    <div>📍 {selectedOrder.address}</div>
-                    <div>💳 {selectedOrder.payment_method}</div>
-                    <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                    {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
-                  </div>
+        <div style={card}>
+          <div style={{ fontWeight: 900, fontSize: 16 }}>
+            Заказ #{selectedOrder.id.slice(0, 8)}
+          </div>
 
-                  <div style={{ marginTop: 10, opacity: 0.95, whiteSpace: "pre-wrap", fontSize: 13 }}>
-                    {selectedOrder.items_text ? `🧺 Состав:\n${selectedOrder.items_text}` : "Состав: (нет данных)"}
-                  </div>
+          <div style={{ marginTop: 8 }}>
+            <div>👤 {selectedOrder.customer_name}</div>
+            <div>📞 {selectedOrder.phone}</div>
+            <div>📍 {selectedOrder.address}</div>
+            <div>💳 {selectedOrder.payment_method}</div>
+            <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
+            {selectedOrder.comment && (
+              <div>💬 {selectedOrder.comment}</div>
+            )}
+          </div>
 
-                  <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button onClick={() => setOrderStatus(selectedOrder.id, "new")}>Новый</button>
-                    <button onClick={() => setOrderStatus(selectedOrder.id, "in_progress")}>В работе</button>
-                    <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>Доставлен</button>
-                    <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>Отменён</button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
+          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
+            <strong>🧺 Состав:</strong>
+            {"\n"}
+            {selectedOrder.items_text || "Нет данных"}
+          </div>
+
+          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={() => setOrderStatus(selectedOrder.id, "new")}>
+              Новый
+            </button>
+            <button onClick={() => setOrderStatus(selectedOrder.id, "in_progress")}>
+              В работе
+            </button>
+            <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
+              Доставлен
+            </button>
+            <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
+              Отменён
+            </button>
+          </div>
         </div>
-      )}
-    </main>
-  );
-}
+      </div>
+    )}
+  </>
+)}
