@@ -67,7 +67,7 @@ function statusLabel(s: OrderStatus) {
 
 /** Иконки внизу (SVG). Потом легко заменить на свои SVG */
 function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
-  const stroke = active ? accent : `${ink}99`;
+  const stroke = active ? accent : `${ink}A6`;
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
@@ -82,8 +82,8 @@ function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; ac
 }
 
 function IconCart({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
-  const stroke = active ? accent : `${ink}99`;
-  const fill = active ? accent : `${ink}99`;
+  const stroke = active ? accent : `${ink}A6`;
+  const fill = active ? accent : `${ink}A6`;
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
@@ -102,7 +102,7 @@ function IconCart({ active, ink, accent }: { active: boolean; ink: string; accen
 }
 
 function IconProfile({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
-  const stroke = active ? accent : `${ink}99`;
+  const stroke = active ? accent : `${ink}A6`;
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z" stroke={stroke} strokeWidth="2" />
@@ -129,15 +129,18 @@ export default function Page() {
   const BRAND_INK = "#0A1317";
   const CARD_BG = "#FFFFFF";
 
-  // Header sizing: безопасный верх (safe area + запас под телеграм кнопки)
+  // Header: safe top + запас под телеграм-кнопки
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 1; // запас, чтобы не лезло под телеграмные кнопки
+  const HEADER_TOP_PAD = 14;
 
-  // Floating nav sizing
-  const NAV_BTN_W = 56;
-  const NAV_BTN_H = 46;
+  // Bottom nav (пилюля)
+  const NAV_BTN_W = 58;
+  const NAV_BTN_H = 48;
   const NAV_GAP = 10;
-  const NAV_PAD = 10; // внутренний паддинг пилюли
+  const NAV_PAD = 10;
+
+  // Поднять пилюлю выше от home-indicator
+  const NAV_LIFT = 26; // было 14 — поднимаем выше
 
   // Shop
   const [categories, setCategories] = useState<Category[]>([]);
@@ -207,7 +210,7 @@ export default function Page() {
     if (u?.id) setTgUserId(u.id);
     if (u?.first_name) setName(u.first_name);
 
-    // Важно: чтобы body не "переезжал", скроллим внутри контента
+    // Важно: скроллим только внутри контента, а не body
     try {
       document.documentElement.style.height = "100%";
       document.body.style.height = "100%";
@@ -500,24 +503,30 @@ export default function Page() {
     backdropFilter: "blur(10px)",
   };
 
-  // Лого адаптивно: не “угадываем”, а задаём диапазон
   const logoStyle: React.CSSProperties = {
-    height: "clamp(28px, 5vw, 42px)",
+    height: "clamp(30px, 5.5vw, 46px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
   };
 
-  // Скролл только внутри контента. Контент всегда ниже header.
+  /**
+   * ВАЖНО: чтобы контент НЕ уходил "под" нижнее меню,
+   * делаем нижний паддинг большой: safe-area + высота пилюли + подъем + запас.
+   */
+  const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H; // примерно высота пилюли
+  const contentBottomPadding = `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px + ${navTotalHeight}px + 22px)`;
+
   const content: React.CSSProperties = {
     position: "absolute",
     left: 0,
     right: 0,
     top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px + ${HEADER_H}px)`,
-    bottom: `calc(env(safe-area-inset-bottom, 0px) + 98px)`,
+    bottom: 0,
     overflowY: "auto",
     WebkitOverflowScrolling: "touch",
     padding: 16,
+    paddingBottom: contentBottomPadding,
     boxSizing: "border-box",
   };
 
@@ -567,7 +576,7 @@ export default function Page() {
     right: 0,
     bottom: 0,
     zIndex: 60,
-    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
+    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px)`,
     display: "flex",
     justifyContent: "center",
     pointerEvents: "none",
@@ -581,13 +590,16 @@ export default function Page() {
     alignItems: "center",
     padding: NAV_PAD,
     borderRadius: 18,
-    background: "rgba(255,255,255,0.55)",
+    background: "rgba(255,255,255,0.52)",
     border: "1px solid rgba(10,19,23,0.10)",
-    backdropFilter: "blur(12px)",
+    backdropFilter: "blur(14px)",
     boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
   };
 
+  // В админке подсветку держим на "Профиле"
   const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
+
+  // Индикатор теперь ВИДИМЫЙ (а не под белыми кнопками)
   const indicatorLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
 
   const indicator: React.CSSProperties = {
@@ -597,24 +609,40 @@ export default function Page() {
     width: NAV_BTN_W,
     height: NAV_BTN_H,
     borderRadius: 14,
-    background: "rgba(212,51,20,0.14)",
-    border: "1px solid rgba(212,51,20,0.18)",
-    boxShadow: "0 10px 24px rgba(212,51,20,0.18)",
-    transition: "left 200ms ease, width 200ms ease",
+
+    // Более заметная подсветка как в примерах
+    background: "rgba(212,51,20,0.22)",
+    border: "1px solid rgba(212,51,20,0.35)",
+    boxShadow: "0 12px 28px rgba(212,51,20,0.25)",
+    transition: "left 240ms cubic-bezier(0.22, 1, 0.36, 1)",
   };
 
-  const navBtn: React.CSSProperties = {
+  // Кнопки БЕЗ белых плиток — чтобы подсветка была видна
+  const navBtnBase: React.CSSProperties = {
     width: NAV_BTN_W,
     height: NAV_BTN_H,
     borderRadius: 14,
-    border: "1px solid rgba(10,19,23,0.10)",
-    background: "rgba(255,255,255,0.75)",
+    border: "1px solid rgba(10,19,23,0.06)",
+    background: "transparent",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     cursor: "pointer",
-    transition: "transform 140ms ease",
+    userSelect: "none",
+    WebkitTapHighlightColor: "transparent",
+    transition: "transform 140ms ease, opacity 140ms ease",
   };
+
+  function onPressDown(e: any) {
+    try {
+      (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.94)";
+    } catch {}
+  }
+  function onPressUp(e: any) {
+    try {
+      (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
+    } catch {}
+  }
 
   // ===== Render =====
   return (
@@ -646,9 +674,7 @@ export default function Page() {
                       style={{
                         padding: "8px 12px",
                         borderRadius: 999,
-                        border: `1px solid ${
-                          active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
-                        }`,
+                        border: `1px solid ${active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"}`,
                         background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
                         color: BRAND_INK,
                         cursor: "pointer",
@@ -927,7 +953,13 @@ export default function Page() {
             <div style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
-                <button style={btnGhost} onClick={() => { setSelectedOrderId(null); setView("profile"); }}>
+                <button
+                  style={btnGhost}
+                  onClick={() => {
+                    setSelectedOrderId(null);
+                    setView("profile");
+                  }}
+                >
                   ← В профиль
                 </button>
               </div>
@@ -1031,37 +1063,41 @@ export default function Page() {
         )}
       </div>
 
+      {/* Bottom pill */}
       <div style={navWrap}>
         <div style={navPill}>
+          {/* Индикатор под активной вкладкой */}
           <div style={indicator} />
 
           <button
-            style={navBtn}
+            style={{ ...navBtnBase, opacity: viewIndex === 0 ? 1 : 0.92 }}
             onClick={() => setView("catalog")}
             aria-label="Каталог"
-            onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(0.96)")}
-            onMouseUp={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+            onPointerDown={onPressDown}
+            onPointerUp={onPressUp}
+            onPointerCancel={onPressUp}
+            onPointerLeave={onPressUp}
           >
-            <IconCatalog active={view === "catalog"} ink={BRAND_INK} accent={BRAND_ACCENT} />
+            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
 
           <button
-            style={navBtn}
+            style={{ ...navBtnBase, opacity: viewIndex === 1 ? 1 : 0.92 }}
             onClick={() => setView("cart")}
             aria-label="Корзина"
-            onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(0.96)")}
-            onMouseUp={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+            onPointerDown={onPressDown}
+            onPointerUp={onPressUp}
+            onPointerCancel={onPressUp}
+            onPointerLeave={onPressUp}
           >
             <div style={{ position: "relative" }}>
-              <IconCart active={view === "cart"} ink={BRAND_INK} accent={BRAND_ACCENT} />
+              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_ACCENT} />
               {cart.length > 0 && (
                 <div
                   style={{
                     position: "absolute",
-                    top: -6,
-                    right: -10,
+                    top: -7,
+                    right: -12,
                     minWidth: 18,
                     height: 18,
                     padding: "0 6px",
@@ -1083,14 +1119,15 @@ export default function Page() {
           </button>
 
           <button
-            style={navBtn}
+            style={{ ...navBtnBase, opacity: viewIndex === 2 ? 1 : 0.92 }}
             onClick={() => setView("profile")}
             aria-label="Профиль"
-            onMouseDown={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(0.96)")}
-            onMouseUp={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.transform = "scale(1)")}
+            onPointerDown={onPressDown}
+            onPointerUp={onPressUp}
+            onPointerCancel={onPressUp}
+            onPointerLeave={onPressUp}
           >
-            <IconProfile active={view === "profile"} ink={BRAND_INK} accent={BRAND_ACCENT} />
+            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
         </div>
       </div>
