@@ -126,6 +126,7 @@ export default function Page() {
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
     }
+
     loadCategories();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -143,6 +144,7 @@ export default function Page() {
 
       setProducts((data || []) as Product[]);
     }
+
     loadProducts();
   }, [selectedCategoryId]);
 
@@ -206,7 +208,7 @@ export default function Page() {
     const { error: itemsErr } = await supabase.from("order_items").insert(items);
     if (itemsErr) return alert(itemsErr.message);
 
-    // notify admin with composition (server reads from DB)
+    // notify admin (server reads from DB)
     try {
       await fetch("/api/notify-order", {
         method: "POST",
@@ -222,7 +224,7 @@ export default function Page() {
     setView("catalog");
   }
 
-  // Admin loaders
+  // Admin
   async function adminLoad() {
     if (!initData) {
       setIsAdmin(false);
@@ -264,12 +266,9 @@ export default function Page() {
       setIsAdmin(true);
       setOrders(list);
 
-      // ВАЖНО: всегда выбираем первый заказ, если ничего не выбрано или выбранный исчез
-      if (list.length === 0) {
+      // если сейчас открыт экран деталей и заказ исчез — закрываем
+      if (selectedOrderId && !list.some((o) => o.id === selectedOrderId)) {
         setSelectedOrderId(null);
-      } else {
-        const stillExists = selectedOrderId && list.some((o) => o.id === selectedOrderId);
-        setSelectedOrderId(stillExists ? selectedOrderId : list[0].id);
       }
     } catch (e: any) {
       setIsAdmin(false);
@@ -390,9 +389,7 @@ export default function Page() {
               <div key={p.id} style={card}>
                 <div style={{ fontWeight: 800 }}>{p.title}</div>
                 {p.description && (
-                  <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>
-                    {p.description}
-                  </div>
+                  <div style={{ marginTop: 4, opacity: 0.75, fontSize: 13 }}>{p.description}</div>
                 )}
                 <div style={{ marginTop: 10, fontWeight: 800 }}>
                   {formatPriceRub(p.price)}{" "}
@@ -475,14 +472,9 @@ export default function Page() {
               <option value="qr">QR-код</option>
             </select>
 
-            <div style={{ marginTop: 6, fontWeight: 900 }}>
-              Итого: {formatPriceRub(total)}
-            </div>
+            <div style={{ marginTop: 6, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
 
-            <button
-              onClick={submitOrder}
-              style={{ padding: "12px 12px", borderRadius: 12, fontWeight: 900 }}
-            >
+            <button onClick={submitOrder} style={{ padding: "12px 12px", borderRadius: 12, fontWeight: 900 }}>
               Подтвердить заказ
             </button>
 
@@ -525,92 +517,96 @@ export default function Page() {
             <div style={{ marginTop: 10, opacity: 0.85 }}>У вас нет доступа к админке.</div>
           )}
 
-          {isAdmin && (
-  <>
-    {!selectedOrder && (
-      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-        {orders.map((o) => (
-          <button
-            key={o.id}
-            onClick={() => setSelectedOrderId(o.id)}
-            style={{
-              textAlign: "left",
-              ...card,
-              cursor: "pointer",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-              <div style={{ opacity: 0.7, fontSize: 12 }}>
-                {formatDateTime(o.created_at)}
-              </div>
-            </div>
-            <div style={{ marginTop: 6, fontWeight: 700 }}>
-              {o.customer_name}
-            </div>
-            <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>
-              {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
-            </div>
-          </button>
-        ))}
-      </div>
-    )}
+          {/* ✅ МОБИЛЬНАЯ ЛОГИКА: либо список, либо детали */}
+          {isAdmin && !adminLoading && !adminError && (
+            <>
+              {!selectedOrderId && (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {orders.map((o) => (
+                    <button
+                      key={o.id}
+                      onClick={() => setSelectedOrderId(o.id)}
+                      style={{
+                        textAlign: "left",
+                        ...card,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                        <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                        <div style={{ opacity: 0.75, fontSize: 12 }}>{formatDateTime(o.created_at)}</div>
+                      </div>
+                      <div style={{ marginTop: 6, fontWeight: 700 }}>{o.customer_name}</div>
+                      <div style={{ marginTop: 4, opacity: 0.8, fontSize: 13 }}>
+                        {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
+                      </div>
+                    </button>
+                  ))}
 
-    {selectedOrder && (
-      <div style={{ marginTop: 14 }}>
-        <button
-          onClick={() => setSelectedOrderId(null)}
-          style={{
-            marginBottom: 12,
-            padding: "8px 12px",
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,0.18)",
-            background: "rgba(255,255,255,0.08)",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-        >
-          ← Назад к списку
-        </button>
+                  {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.8 }}>Заказов нет</div>}
+                </div>
+              )}
 
-        <div style={card}>
-          <div style={{ fontWeight: 900, fontSize: 16 }}>
-            Заказ #{selectedOrder.id.slice(0, 8)}
-          </div>
+              {selectedOrderId && (
+                <div style={{ marginTop: 14 }}>
+                  <button
+                    onClick={() => setSelectedOrderId(null)}
+                    style={{
+                      marginBottom: 12,
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.18)",
+                      background: "rgba(255,255,255,0.10)",
+                      color: "#fff",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ← Назад к списку
+                  </button>
 
-          <div style={{ marginTop: 8 }}>
-            <div>👤 {selectedOrder.customer_name}</div>
-            <div>📞 {selectedOrder.phone}</div>
-            <div>📍 {selectedOrder.address}</div>
-            <div>💳 {selectedOrder.payment_method}</div>
-            <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-            {selectedOrder.comment && (
-              <div>💬 {selectedOrder.comment}</div>
-            )}
-          </div>
+                  {selectedOrder ? (
+                    <div style={card}>
+                      <div style={{ fontWeight: 900, fontSize: 16 }}>
+                        Заказ #{selectedOrder.id.slice(0, 8)}
+                      </div>
 
-          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
-            <strong>🧺 Состав:</strong>
-            {"\n"}
-            {selectedOrder.items_text || "Нет данных"}
-          </div>
+                      <div style={{ marginTop: 8, opacity: 0.95 }}>
+                        <div>👤 {selectedOrder.customer_name}</div>
+                        <div>📞 {selectedOrder.phone}</div>
+                        <div>📍 {selectedOrder.address}</div>
+                        <div>💳 {selectedOrder.payment_method}</div>
+                        <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
+                        {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
+                        <div style={{ marginTop: 6, opacity: 0.8, fontSize: 12 }}>
+                          {formatDateTime(selectedOrder.created_at)}
+                        </div>
+                      </div>
 
-          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={() => setOrderStatus(selectedOrder.id, "new")}>
-              Новый
-            </button>
-            <button onClick={() => setOrderStatus(selectedOrder.id, "in_progress")}>
-              В работе
-            </button>
-            <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
-              Доставлен
-            </button>
-            <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
-              Отменён
-            </button>
-          </div>
+                      <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13 }}>
+                        <strong>🧺 Состав:</strong>
+                        {"\n"}
+                        {selectedOrder.items_text || "Нет данных"}
+                      </div>
+
+                      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "new")}>Новый</button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "in_progress")}>В работе</button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>Доставлен</button>
+                        <button onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>Отменён</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 10, opacity: 0.85 }}>
+                      Заказ не найден (возможно обнови список)
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
-      </div>
-    )}
-  </>
-)}
+      )}
+    </main>
+  );
+}
