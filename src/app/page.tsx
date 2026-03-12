@@ -190,7 +190,7 @@ export default function Page() {
 
   // Header
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 16;
+  const HEADER_TOP_PAD = 8;
 
   // Bottom nav
   const NAV_BTN_W = 58;
@@ -337,7 +337,13 @@ export default function Page() {
     } catch {}
 
     try {
-      // Не форсим fullscreen: на десктопе размер окна решает сам Telegram-клиент.
+      // Разворачиваем только на телефонах (чтобы убрать верхний зазор),
+      // но НЕ на десктопе — там пусть окно остается обычного размера.
+      const platform = tg.platform || "";
+      const isDesktop = platform === "tdesktop" || platform === "macos" || platform === "web";
+      if (!isDesktop) {
+        try { tg.expand(); } catch {}
+      }
     } catch {}
 
     setInitData(tg.initData || "");
@@ -360,41 +366,45 @@ export default function Page() {
     const vv = window.visualViewport;
     if (!vv) return;
 
+    const isTextField = (el: HTMLElement | null) => {
+      return Boolean(
+        el &&
+          (el.tagName === "INPUT" ||
+            el.tagName === "TEXTAREA" ||
+            el.tagName === "SELECT" ||
+            el.isContentEditable)
+      );
+    };
+
     const updateKeyboard = () => {
       const active = document.activeElement as HTMLElement | null;
-      const isFocused =
-        active?.tagName === "INPUT" ||
-        active?.tagName === "TEXTAREA" ||
-        active?.tagName === "SELECT";
       const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(Boolean(isFocused && diff > 40));
+      setKeyboardOpen(Boolean(isTextField(active) && diff > 10));
+    };
+
+    const forceOpen = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (isTextField(target)) setKeyboardOpen(true);
+    };
+
+    const forceClose = () => {
+      setTimeout(() => {
+        const active = document.activeElement as HTMLElement | null;
+        if (!isTextField(active)) setKeyboardOpen(false);
+      }, 0);
     };
 
     vv.addEventListener("resize", updateKeyboard);
     vv.addEventListener("scroll", updateKeyboard);
-    window.addEventListener("focusin", updateKeyboard);
-    window.addEventListener("focusout", updateKeyboard);
-
-    const forceOpen = (event: Event) => {
-      const target = event.target as HTMLElement | null;
-      const isInputTarget =
-        target?.tagName === "INPUT" ||
-        target?.tagName === "TEXTAREA" ||
-        target?.tagName === "SELECT";
-      if (isInputTarget) setKeyboardOpen(true);
-    };
-    const forceClose = () => setKeyboardOpen(false);
-    window.addEventListener("focusin", forceOpen, true);
-    window.addEventListener("focusout", forceClose, true);
+    document.addEventListener("focusin", forceOpen, true);
+    document.addEventListener("focusout", forceClose, true);
     updateKeyboard();
 
     return () => {
       vv.removeEventListener("resize", updateKeyboard);
       vv.removeEventListener("scroll", updateKeyboard);
-      window.removeEventListener("focusin", updateKeyboard);
-      window.removeEventListener("focusout", updateKeyboard);
-      window.removeEventListener("focusin", forceOpen, true);
-      window.removeEventListener("focusout", forceClose, true);
+      document.removeEventListener("focusin", forceOpen, true);
+      document.removeEventListener("focusout", forceClose, true);
     };
   }, []);
 
@@ -810,13 +820,12 @@ export default function Page() {
 
   // Лого: чуть увеличили
   const logoStyle: React.CSSProperties = {
-    height: "clamp(52px, 11vw, 78px)",
+    height: "clamp(44px, 8vw, 72px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
     pointerEvents: "none",
     userSelect: "none",
-    transform: "translateY(8px)",
   };
 
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
@@ -826,7 +835,7 @@ export default function Page() {
     position: "absolute",
     left: 0,
     right: 0,
-    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H}px + 4px)`,
+    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 6}px)`,
     bottom: 0,
     overflowY: "auto",
     WebkitOverflowScrolling: "touch",
