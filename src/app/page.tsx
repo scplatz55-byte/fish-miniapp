@@ -838,7 +838,7 @@ const logoStyle: React.CSSProperties = {
   filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
   pointerEvents: "none",
   userSelect: "none",
-  transform: "translateY(18px)",
+  transform: "translateY(28px)",
 };
 
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
