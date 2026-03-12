@@ -330,7 +330,10 @@ export default function Page() {
     if (!tg) return;
 
     tg.ready();
-    tg.expand();
+
+    if (window.innerWidth < 768) {
+      tg.expand();
+    }
 
     try {
       tg.setHeaderColor?.(BRAND_BG);
@@ -370,13 +373,18 @@ export default function Page() {
         active?.tagName === "TEXTAREA" ||
         active?.tagName === "SELECT";
       const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(Boolean(isFocused && diff > 140));
+      setKeyboardOpen(Boolean(isFocused && diff > 80));
     };
 
     vv.addEventListener("resize", updateKeyboard);
     vv.addEventListener("scroll", updateKeyboard);
     window.addEventListener("focusin", updateKeyboard);
     window.addEventListener("focusout", updateKeyboard);
+
+    const forceOpen = () => setKeyboardOpen(true);
+    const forceClose = () => setKeyboardOpen(false);
+    window.addEventListener("focusin", forceOpen);
+    window.addEventListener("focusout", forceClose);
     updateKeyboard();
 
     return () => {
@@ -384,6 +392,8 @@ export default function Page() {
       vv.removeEventListener("scroll", updateKeyboard);
       window.removeEventListener("focusin", updateKeyboard);
       window.removeEventListener("focusout", updateKeyboard);
+      window.removeEventListener("focusin", forceOpen);
+      window.removeEventListener("focusout", forceClose);
     };
   }, []);
 
@@ -788,9 +798,8 @@ export default function Page() {
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
-    display: "flex",alignItems: "flex-end",
-    paddingBottom: 8,
-	marginTop: 40, // 👈 опустит только лого
+    display: "flex",
+    alignItems: "flex-end",
     justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
