@@ -1508,98 +1508,101 @@ const logoStyle: React.CSSProperties = {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <button
                 style={{
-                  marginTop: 14,
+                  ...card,
+                  width: "100%",
                   display: "flex",
-                  flexDirection: "column",
-                  gap: 10,
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: "1px solid rgba(10,19,23,0.08)",
+                }}
+                onClick={() => {
+                  setSelectedMyOrderId(null);
+                  openProfileScreen("history");
                 }}
               >
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 17 }}>История заказов</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>Все ваши оформленные заказы</div>
+                </div>
+                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
+              </button>
+
+              <button
+                style={{
+                  ...card,
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: "1px solid rgba(10,19,23,0.08)",
+                }}
+                onClick={() => openProfileScreen("data")}
+              >
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 17 }}>Мои данные</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>ФИО, телефон и адрес доставки</div>
+                </div>
+                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
+              </button>
+
+              <button
+                style={{
+                  ...card,
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: "1px solid rgba(10,19,23,0.08)",
+                }}
+                onClick={openSupport}
+              >
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 17 }}>Тех. поддержка</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>Связаться с нами в Telegram</div>
+                </div>
+                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
+              </button>
+
+              {isAdmin && (
                 <button
                   style={{
-                    ...btnGhost,
+                    ...card,
                     width: "100%",
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "14px 16px",
-                    fontSize: 15,
-                    borderRadius: 16,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border: "1px solid rgba(212,51,20,0.18)",
+                    boxShadow: "0 10px 30px rgba(212,51,20,0.10)",
                   }}
                   onClick={() => {
-                    setSelectedMyOrderId(null);
-                    openProfileScreen("history");
+                    setSelectedOrderId(null);
+                    setAdminError(null);
+                    setOrders([]);
+                    setView("admin");
+                    setProfileScreen("menu");
+                    adminLoad();
                   }}
                 >
-                  <span style={{ fontWeight: 900 }}>История заказов</span>
-                  <span style={{ opacity: 0.6 }}>›</span>
+                  <div>
+                    <div style={{ fontWeight: 900, fontSize: 17 }}>Админка</div>
+                    <div style={{ ...smallMuted, marginTop: 4 }}>Просмотр и управление заказами</div>
+                  </div>
+                  <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
                 </button>
-
-                <button
-                  style={{
-                    ...btnGhost,
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "14px 16px",
-                    fontSize: 15,
-                    borderRadius: 16,
-                  }}
-                  onClick={() => openProfileScreen("data")}
-                >
-                  <span style={{ fontWeight: 900 }}>Мои данные</span>
-                  <span style={{ opacity: 0.6 }}>›</span>
-                </button>
-
-                <button
-                  style={{
-                    ...btnGhost,
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "14px 16px",
-                    fontSize: 15,
-                    borderRadius: 16,
-                  }}
-                  onClick={openSupport}
-                >
-                  <span style={{ fontWeight: 900 }}>Тех. поддержка</span>
-                  <span style={{ opacity: 0.6 }}>›</span>
-                </button>
-
-                {isAdmin && (
-                  <button
-                    style={{
-                      ...btnPrimary,
-                      width: "100%",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "14px 16px",
-                      borderRadius: 16,
-                    }}
-                    onClick={() => {
-                      setSelectedOrderId(null);
-                      setAdminError(null);
-                      setOrders([]);
-                      setView("admin");
-                      setProfileScreen("menu");
-                      adminLoad();
-                    }}
-                  >
-                    <span style={{ fontWeight: 900 }}>Админка</span>
-                    <span style={{ opacity: 0.8 }}>›</span>
-                  </button>
-                )}
-
-                {isAdmin && (
-                  <div style={{ marginTop: 4, ...smallMuted }}>Админ-режим включён</div>
-                )}
-              </div>
+              )}
             </div>
 
             {activeProfileOverlayScreen && (
@@ -1609,7 +1612,7 @@ const logoStyle: React.CSSProperties = {
                   left: 16,
                   right: 16,
                   top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
-                  bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT + navTotalHeight + 22}px)`,
+                  bottom: 0,
                   zIndex: 70,
                   pointerEvents: activeProfileOverlayScreen ? "auto" : "none",
                   opacity: isProfileOverlayVisible ? 1 : 0,
@@ -1625,6 +1628,7 @@ const logoStyle: React.CSSProperties = {
                     flex: 1,
                     overflowY: "auto",
                     WebkitOverflowScrolling: "touch",
+                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT + navTotalHeight + 24}px)`,
                   }}
                 >
                   <div
