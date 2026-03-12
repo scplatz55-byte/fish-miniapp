@@ -190,7 +190,7 @@ export default function Page() {
 
   // Header
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 24;
+  const HEADER_TOP_PAD = 16;
 
   // Bottom nav
   const NAV_BTN_W = 58;
@@ -331,10 +331,6 @@ export default function Page() {
 
     tg.ready();
 
-    if (window.innerWidth < 768) {
-      tg.expand();
-    }
-
     try {
       tg.setHeaderColor?.(BRAND_BG);
       tg.setBackgroundColor?.(BRAND_BG);
@@ -373,7 +369,7 @@ export default function Page() {
         active?.tagName === "TEXTAREA" ||
         active?.tagName === "SELECT";
       const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(Boolean(isFocused && diff > 80));
+      setKeyboardOpen(Boolean(isFocused && diff > 40));
     };
 
     vv.addEventListener("resize", updateKeyboard);
@@ -381,10 +377,17 @@ export default function Page() {
     window.addEventListener("focusin", updateKeyboard);
     window.addEventListener("focusout", updateKeyboard);
 
-    const forceOpen = () => setKeyboardOpen(true);
+    const forceOpen = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      const isInputTarget =
+        target?.tagName === "INPUT" ||
+        target?.tagName === "TEXTAREA" ||
+        target?.tagName === "SELECT";
+      if (isInputTarget) setKeyboardOpen(true);
+    };
     const forceClose = () => setKeyboardOpen(false);
-    window.addEventListener("focusin", forceOpen);
-    window.addEventListener("focusout", forceClose);
+    window.addEventListener("focusin", forceOpen, true);
+    window.addEventListener("focusout", forceClose, true);
     updateKeyboard();
 
     return () => {
@@ -392,8 +395,8 @@ export default function Page() {
       vv.removeEventListener("scroll", updateKeyboard);
       window.removeEventListener("focusin", updateKeyboard);
       window.removeEventListener("focusout", updateKeyboard);
-      window.removeEventListener("focusin", forceOpen);
-      window.removeEventListener("focusout", forceClose);
+      window.removeEventListener("focusin", forceOpen, true);
+      window.removeEventListener("focusout", forceClose, true);
     };
   }, []);
 
@@ -797,10 +800,11 @@ export default function Page() {
     zIndex: 50,
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
+    paddingBottom: 8,
     boxSizing: "border-box",
     display: "flex",
     alignItems: "flex-end",
-    justifyContent: "center", // 👈 центрируем лого
+    justifyContent: "center",
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
@@ -809,12 +813,13 @@ export default function Page() {
 
   // Лого: чуть увеличили
   const logoStyle: React.CSSProperties = {
-    height: "clamp(56px, 12vw, 84px)",
+    height: "clamp(52px, 11vw, 78px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
     pointerEvents: "none",
     userSelect: "none",
+    marginTop: 24,
   };
 
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
@@ -892,9 +897,12 @@ export default function Page() {
     bottom: 0,
     zIndex: 60,
     paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px)`,
-    display: keyboardOpen ? "none" : "flex",
+    display: "flex",
     justifyContent: "center",
-    pointerEvents: "none",
+    pointerEvents: keyboardOpen ? "none" : "none",
+    opacity: keyboardOpen ? 0 : 1,
+    transform: keyboardOpen ? "translateY(160px)" : "translateY(0)",
+    transition: "opacity 160ms ease, transform 160ms ease",
   };
 
   const navPill: React.CSSProperties = {
