@@ -41,7 +41,7 @@ type OrderForUi = {
 };
 
 type View = "catalog" | "cart" | "profile" | "admin";
-type ProfileTab = "history" | "data";
+type ProfileScreen = "menu" | "history" | "data";
 
 type TgUser = {
   id?: number;
@@ -174,7 +174,8 @@ function SkeletonBlock({
 
 export default function Page() {
   const [view, setView] = useState<View>("catalog");
-  const [profileTab, setProfileTab] = useState<ProfileTab>("history");
+  const [profileScreen, setProfileScreen] = useState<ProfileScreen>("menu");
+  const [closingProfileScreen, setClosingProfileScreen] = useState<Exclude<ProfileScreen, "menu"> | null>(null);
 
   // Telegram
   const [tgUserId, setTgUserId] = useState<number | null>(null);
@@ -660,7 +661,7 @@ export default function Page() {
     setOrderComment("");
     setPromoCode("");
     setView("profile");
-    setProfileTab("history");
+    setProfileScreen("history");
     await loadMyOrders();
   }
 
@@ -799,9 +800,23 @@ export default function Page() {
     window.open(SUPPORT_LINK, "_blank");
   }
 
+  function openProfileScreen(screen: Exclude<ProfileScreen, "menu">) {
+    setClosingProfileScreen(null);
+    setProfileScreen(screen);
+  }
+
+  function closeProfileScreen() {
+    if (profileScreen === "menu") return;
+    setClosingProfileScreen(profileScreen);
+    setProfileScreen("menu");
+    window.setTimeout(() => {
+      setClosingProfileScreen(null);
+    }, 220);
+  }
+
   useEffect(() => {
-    if (view === "profile" && profileTab === "history") loadMyOrders();
-  }, [view, profileTab]);
+    if (view === "profile" && profileScreen === "history") loadMyOrders();
+  }, [view, profileScreen]);
 
   // ===== Layout styles =====
   const root: React.CSSProperties = {
@@ -984,6 +999,10 @@ const logoStyle: React.CSSProperties = {
     tgUser?.photo_url ||
     profileData?.telegram_photo_url ||
     "";
+
+  const activeProfileOverlayScreen =
+    profileScreen !== "menu" ? profileScreen : closingProfileScreen;
+  const isProfileOverlayVisible = profileScreen !== "menu";
 
   if (bootLoading) {
     return (
@@ -1425,7 +1444,7 @@ const logoStyle: React.CSSProperties = {
 
         {/* PROFILE */}
         {view === "profile" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
             {/* Верх профиля */}
             <div style={card}>
               <div
@@ -1510,8 +1529,8 @@ const logoStyle: React.CSSProperties = {
                     borderRadius: 16,
                   }}
                   onClick={() => {
-                    setProfileTab("history");
                     setSelectedMyOrderId(null);
+                    openProfileScreen("history");
                   }}
                 >
                   <span style={{ fontWeight: 900 }}>История заказов</span>
@@ -1529,7 +1548,7 @@ const logoStyle: React.CSSProperties = {
                     fontSize: 15,
                     borderRadius: 16,
                   }}
-                  onClick={() => setProfileTab("data")}
+                  onClick={() => openProfileScreen("data")}
                 >
                   <span style={{ fontWeight: 900 }}>Мои данные</span>
                   <span style={{ opacity: 0.6 }}>›</span>
@@ -1568,6 +1587,7 @@ const logoStyle: React.CSSProperties = {
                       setAdminError(null);
                       setOrders([]);
                       setView("admin");
+                      setProfileScreen("menu");
                       adminLoad();
                     }}
                   >
@@ -1582,144 +1602,182 @@ const logoStyle: React.CSSProperties = {
               </div>
             </div>
 
-            {/* HISTORY */}
-            {profileTab === "history" && (
-              <div style={card}>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
-
-                {profileLoading ? (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={84} radius={14} />
-                    <SkeletonBlock height={84} radius={14} />
-                  </div>
-                ) : profileError ? (
-                  <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
-                    Ошибка: {profileError}
-                  </div>
-                ) : (
-                  <>
-                    {!selectedMyOrderId && (
-                      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                        {myOrders.map((o) => (
-                          <button
-                            key={o.id}
-                            onClick={() => setSelectedMyOrderId(o.id)}
-                            style={{
-                              textAlign: "left",
-                              borderRadius: 14,
-                              border: "1px solid rgba(10,19,23,0.10)",
-                              background: "rgba(10,19,23,0.02)",
-                              padding: 12,
-                              cursor: "pointer",
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                              <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                                {formatDateTime(o.created_at)}
-                              </div>
-                            </div>
-                            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
-                              Статус: <strong>{statusLabel(o.status)}</strong>
-                            </div>
-                            <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
-                              Сумма: {formatPriceRub(o.total_amount)}
-                            </div>
-                          </button>
-                        ))}
-
-                        {myOrders.length === 0 && (
-                          <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedMyOrderId && (
-                      <div style={{ marginTop: 10 }}>
-                        <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
-                          ← Назад к списку
-                        </button>
-
-                        {selectedMyOrder ? (
-                          <div style={{ marginTop: 12 }}>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>
-                              Заказ #{selectedMyOrder.id.slice(0, 8)}
-                            </div>
-                            <div style={{ marginTop: 8, opacity: 0.9 }}>
-                              Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
-                            </div>
-                            <div style={{ marginTop: 6, fontWeight: 900 }}>
-                              {formatPriceRub(selectedMyOrder.total_amount)}
-                            </div>
-                            <div style={{ marginTop: 6, ...smallMuted }}>
-                              {formatDateTime(selectedMyOrder.created_at)}
-                            </div>
-
-                            <div
-                              style={{
-                                marginTop: 12,
-                                whiteSpace: "pre-wrap",
-                                fontSize: 13,
-                                opacity: 0.95,
-                              }}
-                            >
-                              <strong>Состав:</strong>
-                              {"\n"}
-                              {selectedMyOrder.items_text || "Нет данных"}
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
-                        )}
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* MY DATA */}
-            {profileTab === "data" && (
-              <div style={card}>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Мои данные</div>
-
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <input
-                    style={inputStyle}
-                    placeholder="ФИО"
-                    value={profileFormFullName}
-                    onChange={(e) => setProfileFormFullName(e.target.value)}
-                  />
-
-                  <input
-                    style={inputStyle}
-                    placeholder="Телефон"
-                    value={profileFormPhone}
-                    onChange={(e) => setProfileFormPhone(e.target.value)}
-                  />
-
-                  <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                    placeholder="Адрес"
-                    value={profileFormAddress}
-                    onChange={(e) => setProfileFormAddress(e.target.value)}
-                  />
-
-                  <div style={smallMuted}>
-                    Эти данные будут автоматически подставляться в оформление заказа.
-                  </div>
-
-                  <button
+            {activeProfileOverlayScreen && (
+              <div
+                style={{
+                  position: "fixed",
+                  left: 16,
+                  right: 16,
+                  top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
+                  bottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT + navTotalHeight + 22}px)`,
+                  zIndex: 70,
+                  pointerEvents: activeProfileOverlayScreen ? "auto" : "none",
+                  opacity: isProfileOverlayVisible ? 1 : 0,
+                  transform: isProfileOverlayVisible ? "translateY(0)" : "translateY(100%)",
+                  transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <div
+                  style={{
+                    ...card,
+                    flex: 1,
+                    overflowY: "auto",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                >
+                  <div
                     style={{
-                      ...btnPrimary,
-                      width: "100%",
-                      opacity: profileSaveLoading ? 0.7 : 1,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      alignItems: "center",
                     }}
-                    onClick={saveProfileData}
-                    disabled={profileSaveLoading}
                   >
-                    {profileSaveLoading ? "Сохраняем..." : "Сохранить данные"}
-                  </button>
+                    <button style={btnGhost} onClick={closeProfileScreen}>
+                      ← Назад
+                    </button>
+                    <div style={{ fontWeight: 900, fontSize: 16 }}>
+                      {activeProfileOverlayScreen === "history" ? "История заказов" : "Мои данные"}
+                    </div>
+                    <div style={{ width: 76 }} />
+                  </div>
+
+                  {activeProfileOverlayScreen === "history" && (
+                    <>
+                      {profileLoading ? (
+                        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <SkeletonBlock height={84} radius={14} />
+                          <SkeletonBlock height={84} radius={14} />
+                        </div>
+                      ) : profileError ? (
+                        <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                          Ошибка: {profileError}
+                        </div>
+                      ) : (
+                        <>
+                          {!selectedMyOrderId && (
+                            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                              {myOrders.map((o) => (
+                                <button
+                                  key={o.id}
+                                  onClick={() => setSelectedMyOrderId(o.id)}
+                                  style={{
+                                    textAlign: "left",
+                                    borderRadius: 14,
+                                    border: "1px solid rgba(10,19,23,0.10)",
+                                    background: "rgba(10,19,23,0.02)",
+                                    padding: 12,
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                                    <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                                    <div style={{ fontSize: 12, opacity: 0.7 }}>
+                                      {formatDateTime(o.created_at)}
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
+                                    Статус: <strong>{statusLabel(o.status)}</strong>
+                                  </div>
+                                  <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
+                                    Сумма: {formatPriceRub(o.total_amount)}
+                                  </div>
+                                </button>
+                              ))}
+
+                              {myOrders.length === 0 && (
+                                <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
+                              )}
+                            </div>
+                          )}
+
+                          {selectedMyOrderId && (
+                            <div style={{ marginTop: 10 }}>
+                              <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
+                                ← Назад к списку
+                              </button>
+
+                              {selectedMyOrder ? (
+                                <div style={{ marginTop: 12 }}>
+                                  <div style={{ fontWeight: 900, fontSize: 16 }}>
+                                    Заказ #{selectedMyOrder.id.slice(0, 8)}
+                                  </div>
+                                  <div style={{ marginTop: 8, opacity: 0.9 }}>
+                                    Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
+                                  </div>
+                                  <div style={{ marginTop: 6, fontWeight: 900 }}>
+                                    {formatPriceRub(selectedMyOrder.total_amount)}
+                                  </div>
+                                  <div style={{ marginTop: 6, ...smallMuted }}>
+                                    {formatDateTime(selectedMyOrder.created_at)}
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      marginTop: 12,
+                                      whiteSpace: "pre-wrap",
+                                      fontSize: 13,
+                                      opacity: 0.95,
+                                    }}
+                                  >
+                                    <strong>Состав:</strong>
+                                    {"
+"}
+                                    {selectedMyOrder.items_text || "Нет данных"}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {activeProfileOverlayScreen === "data" && (
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <input
+                        style={inputStyle}
+                        placeholder="ФИО"
+                        value={profileFormFullName}
+                        onChange={(e) => setProfileFormFullName(e.target.value)}
+                      />
+
+                      <input
+                        style={inputStyle}
+                        placeholder="Телефон"
+                        value={profileFormPhone}
+                        onChange={(e) => setProfileFormPhone(e.target.value)}
+                      />
+
+                      <textarea
+                        style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                        placeholder="Адрес"
+                        value={profileFormAddress}
+                        onChange={(e) => setProfileFormAddress(e.target.value)}
+                      />
+
+                      <div style={smallMuted}>
+                        Эти данные будут автоматически подставляться в оформление заказа.
+                      </div>
+
+                      <button
+                        style={{
+                          ...btnPrimary,
+                          width: "100%",
+                          opacity: profileSaveLoading ? 0.7 : 1,
+                        }}
+                        onClick={saveProfileData}
+                        disabled={profileSaveLoading}
+                      >
+                        {profileSaveLoading ? "Сохраняем..." : "Сохранить данные"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
