@@ -1494,34 +1494,75 @@ const logoStyle: React.CSSProperties = {
                 style={{
                   marginTop: 14,
                   display: "flex",
+                  flexDirection: "column",
                   gap: 10,
-                  flexWrap: "wrap",
                 }}
               >
                 <button
-                  style={btnTab(profileTab === "history")}
+                  style={{
+                    ...btnGhost,
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 16px",
+                    fontSize: 15,
+                    borderRadius: 16,
+                  }}
                   onClick={() => {
                     setProfileTab("history");
                     setSelectedMyOrderId(null);
                   }}
                 >
-                  История заказов
+                  <span style={{ fontWeight: 900 }}>История заказов</span>
+                  <span style={{ opacity: 0.6 }}>›</span>
                 </button>
 
                 <button
-                  style={btnTab(profileTab === "data")}
+                  style={{
+                    ...btnGhost,
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 16px",
+                    fontSize: 15,
+                    borderRadius: 16,
+                  }}
                   onClick={() => setProfileTab("data")}
                 >
-                  Мои данные
+                  <span style={{ fontWeight: 900 }}>Мои данные</span>
+                  <span style={{ opacity: 0.6 }}>›</span>
                 </button>
 
-                <button style={btnGhost} onClick={openSupport}>
-                  Тех. поддержка
+                <button
+                  style={{
+                    ...btnGhost,
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "14px 16px",
+                    fontSize: 15,
+                    borderRadius: 16,
+                  }}
+                  onClick={openSupport}
+                >
+                  <span style={{ fontWeight: 900 }}>Тех. поддержка</span>
+                  <span style={{ opacity: 0.6 }}>›</span>
                 </button>
 
                 {isAdmin && (
                   <button
-                    style={{ ...btnPrimary, background: BRAND_INK }}
+                    style={{
+                      ...btnPrimary,
+                      width: "100%",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "14px 16px",
+                      borderRadius: 16,
+                    }}
                     onClick={() => {
                       setSelectedOrderId(null);
                       setAdminError(null);
@@ -1530,12 +1571,15 @@ const logoStyle: React.CSSProperties = {
                       adminLoad();
                     }}
                   >
-                    Админка
+                    <span style={{ fontWeight: 900 }}>Админка</span>
+                    <span style={{ opacity: 0.8 }}>›</span>
                   </button>
                 )}
-              </div>
 
-              {isAdmin && <div style={{ marginTop: 8, ...smallMuted }}>Админ-режим включён</div>}
+                {isAdmin && (
+                  <div style={{ marginTop: 4, ...smallMuted }}>Админ-режим включён</div>
+                )}
+              </div>
             </div>
 
             {/* HISTORY */}
