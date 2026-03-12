@@ -832,7 +832,7 @@ export default function Page() {
 
   // Лого: чуть увеличили
 const logoStyle: React.CSSProperties = {
-  height: "clamp(36px, 8vw, 64px)",
+  height: "clamp(42px, 9vw, 78px)",
   width: "auto",
   display: "block",
   filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
