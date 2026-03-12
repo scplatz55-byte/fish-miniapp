@@ -831,14 +831,15 @@ export default function Page() {
   };
 
   // Лого: чуть увеличили
-  const logoStyle: React.CSSProperties = {
-    height: "clamp(44px, 8vw, 72px)",
-    width: "auto",
-    display: "block",
-    filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
-    pointerEvents: "none",
-    userSelect: "none",
-  };
+const logoStyle: React.CSSProperties = {
+  height: "clamp(44px, 8vw, 72px)",
+  width: "auto",
+  display: "block",
+  filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
+  pointerEvents: "none",
+  userSelect: "none",
+  transform: "translateY(6px)",
+};
 
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
   const contentBottomPadding = `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px + ${navTotalHeight}px + 22px)`;
