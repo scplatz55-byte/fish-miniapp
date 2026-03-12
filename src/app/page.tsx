@@ -190,7 +190,7 @@ export default function Page() {
 
   // Header
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 8;
+  const HEADER_TOP_PAD = 2;
 
   // Bottom nav
   const NAV_BTN_W = 58;
@@ -337,12 +337,22 @@ export default function Page() {
     } catch {}
 
     try {
-      // Разворачиваем только на телефонах (чтобы убрать верхний зазор),
-      // но НЕ на десктопе — там пусть окно остается обычного размера.
-      const platform = tg.platform || "";
-      const isDesktop = platform === "tdesktop" || platform === "macos" || platform === "web";
-      if (!isDesktop) {
-        try { tg.expand(); } catch {}
+      const ua = navigator.userAgent.toLowerCase();
+      const isDesktopUA =
+        ua.includes("windows") ||
+        ua.includes("macintosh") ||
+        ua.includes("linux x86_64") ||
+        ua.includes("x11");
+      const platform = String(tg.platform || "").toLowerCase();
+      const isDesktopPlatform =
+        platform === "tdesktop" || platform === "macos" || platform === "web" || platform === "weba" || platform === "webk";
+      const isPhoneLike = !isDesktopUA && !isDesktopPlatform && window.innerWidth < 900;
+
+      if (isPhoneLike) {
+        tg.expand?.();
+        try {
+          tg.requestFullscreen?.();
+        } catch {}
       }
     } catch {}
 
@@ -364,7 +374,6 @@ export default function Page() {
 
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
 
     const isTextField = (el: HTMLElement | null) => {
       return Boolean(
@@ -378,8 +387,8 @@ export default function Page() {
 
     const updateKeyboard = () => {
       const active = document.activeElement as HTMLElement | null;
-      const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(Boolean(isTextField(active) && diff > 10));
+      const diff = vv ? window.innerHeight - vv.height : 0;
+      setKeyboardOpen(Boolean(isTextField(active) && diff > 0));
     };
 
     const forceOpen = (event: Event) => {
@@ -388,21 +397,24 @@ export default function Page() {
     };
 
     const forceClose = () => {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         const active = document.activeElement as HTMLElement | null;
         if (!isTextField(active)) setKeyboardOpen(false);
-      }, 0);
+      });
     };
 
-    vv.addEventListener("resize", updateKeyboard);
-    vv.addEventListener("scroll", updateKeyboard);
+    if (vv) {
+      vv.addEventListener("resize", updateKeyboard);
+      vv.addEventListener("scroll", updateKeyboard);
+    }
     document.addEventListener("focusin", forceOpen, true);
     document.addEventListener("focusout", forceClose, true);
-    updateKeyboard();
 
     return () => {
-      vv.removeEventListener("resize", updateKeyboard);
-      vv.removeEventListener("scroll", updateKeyboard);
+      if (vv) {
+        vv.removeEventListener("resize", updateKeyboard);
+        vv.removeEventListener("scroll", updateKeyboard);
+      }
       document.removeEventListener("focusin", forceOpen, true);
       document.removeEventListener("focusout", forceClose, true);
     };
@@ -835,7 +847,7 @@ export default function Page() {
     position: "absolute",
     left: 0,
     right: 0,
-    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 6}px)`,
+    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
     bottom: 0,
     overflowY: "auto",
     WebkitOverflowScrolling: "touch",
@@ -896,6 +908,8 @@ export default function Page() {
   };
 
   // ===== Bottom nav =====
+  const hideBottomNav = keyboardOpen || checkoutOpen;
+
   const navWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
@@ -905,9 +919,9 @@ export default function Page() {
     paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px)`,
     display: "flex",
     justifyContent: "center",
-    pointerEvents: keyboardOpen ? "none" : "none",
-    opacity: keyboardOpen ? 0 : 1,
-    transform: keyboardOpen ? "translateY(160px)" : "translateY(0)",
+    pointerEvents: hideBottomNav ? "none" : "none",
+    opacity: hideBottomNav ? 0 : 1,
+    transform: hideBottomNav ? "translateY(180px)" : "translateY(0)",
     transition: "opacity 160ms ease, transform 160ms ease",
   };
 
@@ -1813,7 +1827,7 @@ export default function Page() {
       </div>
 
       {/* Bottom pill */}
-      {!keyboardOpen && <div style={navWrap}>
+      <div style={navWrap}>
         <div style={navPill}>
           <div style={indicator} />
 
