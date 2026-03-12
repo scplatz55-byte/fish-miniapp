@@ -832,13 +832,13 @@ export default function Page() {
 
   // Лого: чуть увеличили
 const logoStyle: React.CSSProperties = {
-  height: "clamp(42px, 9vw, 78px)",
+  height: "clamp(56px, 12vw, 84px)",
   width: "auto",
   display: "block",
   filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
   pointerEvents: "none",
   userSelect: "none",
-  transform: "translateY(36px)",
+  transform: "translateY(34px)",
 };
 
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
