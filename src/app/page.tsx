@@ -1213,24 +1213,93 @@ const logoStyle: React.CSSProperties = {
                           {!cartItem ? (
                             <button
                               style={{
-                                ...btnGhost,
+                                padding: "10px 16px",
+                                borderRadius: 999,
+                                border: "1px solid rgba(212,51,20,0.25)",
                                 background: "rgba(212,51,20,0.10)",
-                                border: "1px solid rgba(212,51,20,0.22)",
                                 color: BRAND_INK,
+                                fontWeight: 900,
+                                cursor: "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
                               }}
                               onClick={() => addToCart(p)}
                             >
-                              + В корзину
+                              + Добавить
                             </button>
                           ) : (
                             <div
                               style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: 8,
+                                gap: 6,
+                                padding: "4px",
+                                borderRadius: 999,
+                                border: "1px solid rgba(10,19,23,0.10)",
+                                background: "rgba(255,255,255,0.9)",
                               }}
                             >
-                              <button style={btnGhost} onClick={() => changeQuantity(p.id, -1)}>
+                              <button
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(10,19,23,0.10)",
+                                  background: "#fff",
+                                  fontWeight: 900,
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => changeQuantity(p.id, -1)}
+                              >
+                                −
+                              </button>
+
+                              <div
+                                style={{
+                                  minWidth: 26,
+                                  textAlign: "center",
+                                  fontWeight: 900,
+                                  fontSize: 14,
+                                }}
+                              >
+                                {cartItem.quantity}
+                              </div>
+
+                              <button
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(10,19,23,0.10)",
+                                  background: "#fff",
+                                  fontWeight: 900,
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => changeQuantity(p.id, 1)}
+                              >
+                                +
+                              </button>
+
+                              <button
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(10,19,23,0.10)",
+                                  background: "#fff",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                }}
+                                onClick={() => removeFromCart(p.id)}
+                                title="Убрать"
+                              >
+                                <IconTrash ink={BRAND_INK} />
+                              </button>
+                            </div>
+                          ) => changeQuantity(p.id, -1)}>
                                 −
                               </button>
 
