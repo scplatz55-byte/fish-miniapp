@@ -746,9 +746,10 @@ export default function Page() {
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
+    display: "flex",alignItems: "flex-end",
+    paddingBottom: 8,
+	marginTop: 40, // 👈 опустит только лого
+    justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
