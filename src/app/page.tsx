@@ -757,7 +757,7 @@ export default function Page() {
   };
 
   const logoStyle: React.CSSProperties = {
-    height: "clamp(44px, 8vw, 72px)",
+    height: "clamp(56px, 12vw, 84px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
