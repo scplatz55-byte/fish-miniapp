@@ -337,9 +337,7 @@ export default function Page() {
     } catch {}
 
     try {
-      if (window.innerWidth < 768) {
-        tg.requestFullscreen?.();
-      }
+      // Не форсим fullscreen: на десктопе размер окна решает сам Telegram-клиент.
     } catch {}
 
     setInitData(tg.initData || "");
@@ -800,7 +798,6 @@ export default function Page() {
     zIndex: 50,
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
-    paddingBottom: 8,
     boxSizing: "border-box",
     display: "flex",
     alignItems: "flex-end",
@@ -819,7 +816,7 @@ export default function Page() {
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
     pointerEvents: "none",
     userSelect: "none",
-    marginTop: 24,
+    transform: "translateY(8px)",
   };
 
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
@@ -829,7 +826,7 @@ export default function Page() {
     position: "absolute",
     left: 0,
     right: 0,
-    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px + ${HEADER_H}px)`,
+    top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H}px + 4px)`,
     bottom: 0,
     overflowY: "auto",
     WebkitOverflowScrolling: "touch",
@@ -1807,7 +1804,7 @@ export default function Page() {
       </div>
 
       {/* Bottom pill */}
-      <div style={navWrap}>
+      {!keyboardOpen && <div style={navWrap}>
         <div style={navPill}>
           <div style={indicator} />
 
@@ -1872,7 +1869,7 @@ export default function Page() {
             <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
         </div>
-      </div>
+      </div>}
     </div>
   );
 }
