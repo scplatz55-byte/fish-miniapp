@@ -1445,6 +1445,8 @@ const logoStyle: React.CSSProperties = {
         {/* PROFILE */}
         {view === "profile" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+            {profileScreen === "menu" && (
+              <>
             {/* Верх профиля */}
             <div style={card}>
               <div
@@ -1608,13 +1610,15 @@ const logoStyle: React.CSSProperties = {
                 </button>
               )}
             </div>
+              </>
+            )}
 
             {activeProfileOverlayScreen && (
               <div
                 style={{
                   position: "fixed",
-                  left: 16,
-                  right: 16,
+                  left: 0,
+                  right: 0,
                   top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
                   bottom: 0,
                   zIndex: 70,
@@ -1624,7 +1628,9 @@ const logoStyle: React.CSSProperties = {
                   transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
                   overflowY: "auto",
                   WebkitOverflowScrolling: "touch",
+                  padding: 16,
                   paddingBottom: contentBottomPadding,
+                  background: BRAND_BG,
                 }}
               >
                 <div
@@ -1988,7 +1994,11 @@ const logoStyle: React.CSSProperties = {
 
           <button
             style={{ ...navBtnBase, opacity: viewIndex === 2 ? 1 : 0.92 }}
-            onClick={() => setView("profile")}
+            onClick={() => {
+              setView("profile");
+              setProfileScreen("menu");
+              setClosingProfileScreen(null);
+            }}
             aria-label="Профиль"
             onPointerDown={onPressDown}
             onPointerUp={onPressUp}
