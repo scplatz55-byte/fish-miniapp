@@ -1095,6 +1095,10 @@ const logoStyle: React.CSSProperties = {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
+        @keyframes orderSheetIn {
+          0% { opacity: 0; transform: translateY(28px) scale(0.985); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
         .app-skeleton {
           background: linear-gradient(
             90deg,
@@ -1705,7 +1709,13 @@ const logoStyle: React.CSSProperties = {
                           )}
 
                           {selectedMyOrderId && (
-                            <div style={{ marginTop: 10 }}>
+                            <div
+                              style={{
+                                marginTop: 10,
+                                animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                                transformOrigin: "bottom center",
+                              }}
+                            >
                               <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
                                 ← Назад к списку
                               </button>
@@ -1870,7 +1880,13 @@ const logoStyle: React.CSSProperties = {
                   )}
 
                   {selectedOrderId && (
-                    <div style={{ marginTop: 12 }}>
+                    <div
+                      style={{
+                        marginTop: 12,
+                        animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                        transformOrigin: "bottom center",
+                      }}
+                    >
                       <button style={btnGhost} onClick={() => setSelectedOrderId(null)}>
                         ← Назад к списку
                       </button>
