@@ -1825,7 +1825,6 @@ export default function Page() {
           </div>
         )}
       </div>
-
       {/* Bottom pill */}
       <div style={navWrap}>
         <div style={navPill}>
@@ -1892,7 +1891,7 @@ export default function Page() {
             <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
         </div>
-      </div>}
+      </div>
     </div>
   );
 }
