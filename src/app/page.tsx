@@ -41,6 +41,26 @@ type OrderForUi = {
 };
 
 type View = "catalog" | "cart" | "profile" | "admin";
+type ProfileTab = "history" | "data";
+
+type TgUser = {
+  id?: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  photo_url?: string;
+};
+
+type UserProfile = {
+  telegram_user_id: number;
+  telegram_username: string | null;
+  telegram_first_name: string | null;
+  telegram_last_name: string | null;
+  telegram_photo_url: string | null;
+  full_name: string | null;
+  phone: string | null;
+  address: string | null;
+};
 
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
@@ -116,12 +136,50 @@ function IconProfile({ active, ink, accent }: { active: boolean; ink: string; ac
   );
 }
 
+function IconTrash({ ink }: { ink: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path
+        d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"
+        stroke={ink}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SkeletonBlock({
+  height = 16,
+  radius = 12,
+  style = {},
+}: {
+  height?: number;
+  radius?: number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <div
+      className="app-skeleton"
+      style={{
+        height,
+        borderRadius: radius,
+        width: "100%",
+        ...style,
+      }}
+    />
+  );
+}
+
 export default function Page() {
   const [view, setView] = useState<View>("catalog");
+  const [profileTab, setProfileTab] = useState<ProfileTab>("history");
 
   // Telegram
   const [tgUserId, setTgUserId] = useState<number | null>(null);
   const [initData, setInitData] = useState<string>("");
+  const [tgUser, setTgUser] = useState<TgUser | null>(null);
 
   // Brand colors
   const BRAND_BG = "#2B80A4";
@@ -131,7 +189,7 @@ export default function Page() {
 
   // Header
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 24; // ты поднял до 24 — закрепляем
+  const HEADER_TOP_PAD = 24;
 
   // Bottom nav
   const NAV_BTN_W = 58;
@@ -139,6 +197,14 @@ export default function Page() {
   const NAV_GAP = 10;
   const NAV_PAD = 10;
   const NAV_LIFT = 26;
+
+  // Boot loading
+  const [bootLoading, setBootLoading] = useState(true);
+
+  // Loading flags
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [profileSaveLoading, setProfileSaveLoading] = useState(false);
 
   // Shop
   const [categories, setCategories] = useState<Category[]>([]);
@@ -156,14 +222,21 @@ export default function Page() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   // Checkout fields
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [comment, setComment] = useState("");
+  const [orderFullName, setOrderFullName] = useState("");
+  const [orderPhone, setOrderPhone] = useState("");
+  const [orderAddress, setOrderAddress] = useState("");
+  const [orderComment, setOrderComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [promoCode, setPromoCode] = useState("");
 
   // Admin
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Profile data
+  const [profileData, setProfileData] = useState<UserProfile | null>(null);
+  const [profileFormFullName, setProfileFormFullName] = useState("");
+  const [profileFormPhone, setProfileFormPhone] = useState("");
+  const [profileFormAddress, setProfileFormAddress] = useState("");
 
   // Profile orders
   const [profileLoading, setProfileLoading] = useState(false);
@@ -185,7 +258,7 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
-  // ===== Spring indicator animation (пружинка) =====
+  // ===== Spring indicator animation =====
   const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
 
   const targetLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
@@ -200,19 +273,17 @@ export default function Page() {
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
-    const stiffness = 0.16; // жесткость
-    const damping = 0.78; // затухание (чем ниже — тем сильнее "пружинит")
-    const maxStep = 16; // ограничение рывка, чтобы не улетал
+    const stiffness = 0.12;
+    const damping = 0.78;
+    const maxStep = 24;
 
     const tick = () => {
       const x = xRef.current;
       let v = vRef.current;
 
-      // spring force
       const force = (target - x) * stiffness;
       v = v * damping + force;
 
-      // clamp speed
       if (v > maxStep) v = maxStep;
       if (v < -maxStep) v = -maxStep;
 
@@ -220,14 +291,12 @@ export default function Page() {
 
       xRef.current = nextX;
       vRef.current = v;
-
       setIndicatorLeft(nextX);
 
       const done = Math.abs(target - nextX) < 0.25 && Math.abs(v) < 0.25;
       if (!done) {
         animRef.current = requestAnimationFrame(tick);
       } else {
-        // snap идеально в цель
         xRef.current = target;
         vRef.current = 0;
         setIndicatorLeft(target);
@@ -241,7 +310,6 @@ export default function Page() {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       animRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetLeft]);
 
   // Telegram init
@@ -263,9 +331,10 @@ export default function Page() {
 
     setInitData(tg.initData || "");
 
-    const u = tg.initDataUnsafe?.user;
+    const u = (tg.initDataUnsafe?.user || null) as TgUser | null;
+    setTgUser(u);
+
     if (u?.id) setTgUserId(u.id);
-    if (u?.first_name) setName(u.first_name);
 
     // Скролл только внутри контента
     try {
@@ -298,12 +367,13 @@ export default function Page() {
 
   useEffect(() => {
     if (initData) detectAdmin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initData]);
 
   // Load categories
   useEffect(() => {
     async function loadCategories() {
+      setCategoriesLoading(true);
+
       const { data } = await supabase
         .from("categories")
         .select("id,name,sort_order")
@@ -312,15 +382,19 @@ export default function Page() {
       const list = (data || []) as Category[];
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
+
+      setCategoriesLoading(false);
     }
+
     loadCategories();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Load products
   useEffect(() => {
     async function loadProducts() {
       if (!selectedCategoryId) return;
+
+      setProductsLoading(true);
 
       const { data } = await supabase
         .from("products")
@@ -329,9 +403,102 @@ export default function Page() {
         .eq("is_active", true);
 
       setProducts((data || []) as Product[]);
+      setProductsLoading(false);
     }
+
     loadProducts();
   }, [selectedCategoryId]);
+
+  // Boot loading ends when basic data is there
+  useEffect(() => {
+    if (!categoriesLoading && initData !== "") {
+      const t = setTimeout(() => setBootLoading(false), 450);
+      return () => clearTimeout(t);
+    }
+  }, [categoriesLoading, initData]);
+
+  // Load user profile
+  useEffect(() => {
+    async function loadUserProfile() {
+      if (!tgUserId) return;
+
+      const { data, error } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("telegram_user_id", tgUserId)
+        .maybeSingle();
+
+      if (error) return;
+
+      if (data) {
+        const row = data as UserProfile;
+        setProfileData(row);
+
+        setProfileFormFullName(row.full_name || "");
+        setProfileFormPhone(row.phone || "");
+        setProfileFormAddress(row.address || "");
+
+        // Автоподставляем в оформление
+        setOrderFullName(row.full_name || tgDisplayName());
+        setOrderPhone(row.phone || "");
+        setOrderAddress(row.address || "");
+      } else {
+        // Если профиля нет — хотя бы имя телеги подставим
+        const fallbackName = tgDisplayName();
+        setProfileFormFullName(fallbackName);
+        setOrderFullName(fallbackName);
+      }
+    }
+
+    loadUserProfile();
+  }, [tgUserId]);
+
+  function tgDisplayName() {
+    const first = tgUser?.first_name || "";
+    const last = tgUser?.last_name || "";
+    const full = `${first} ${last}`.trim();
+    return full || tgUser?.username || "";
+  }
+
+  async function saveProfileData() {
+    if (!tgUserId) {
+      alert("Не удалось определить Telegram ID");
+      return;
+    }
+
+    setProfileSaveLoading(true);
+
+    const payload: UserProfile = {
+      telegram_user_id: tgUserId,
+      telegram_username: tgUser?.username || null,
+      telegram_first_name: tgUser?.first_name || null,
+      telegram_last_name: tgUser?.last_name || null,
+      telegram_photo_url: tgUser?.photo_url || null,
+      full_name: profileFormFullName.trim() || null,
+      phone: profileFormPhone.trim() || null,
+      address: profileFormAddress.trim() || null,
+    };
+
+    const { error } = await supabase
+      .from("user_profiles")
+      .upsert(payload, { onConflict: "telegram_user_id" });
+
+    setProfileSaveLoading(false);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setProfileData(payload);
+
+    // Автоподставляем в оформление
+    setOrderFullName(payload.full_name || tgDisplayName());
+    setOrderPhone(payload.phone || "");
+    setOrderAddress(payload.address || "");
+
+    alert("Данные сохранены");
+  }
 
   // Cart ops
   function addToCart(product: Product) {
@@ -356,10 +523,20 @@ export default function Page() {
     );
   }
 
+  function removeFromCart(productId: string) {
+    setCart((prev) => prev.filter((c) => c.product.id !== productId));
+  }
+
+  function getCartItem(productId: string) {
+    return cart.find((c) => c.product.id === productId) || null;
+  }
+
   // Submit order
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
-    if (!name || !phone || !address) return alert("Заполните имя, телефон и адрес");
+    if (!orderFullName || !orderPhone || !orderAddress) {
+      return alert("Заполните ФИО, телефон и адрес");
+    }
     if (cart.length === 0) return alert("Корзина пуста");
 
     const { data, error } = await supabase
@@ -367,10 +544,10 @@ export default function Page() {
       .insert([
         {
           user_telegram_id: tgUserId,
-          customer_name: name,
-          phone,
-          address,
-          comment,
+          customer_name: orderFullName,
+          phone: orderPhone,
+          address: orderAddress,
+          comment: orderComment,
           payment_method: paymentMethod,
           total_amount: total,
           status: "assembling",
@@ -405,7 +582,10 @@ export default function Page() {
     alert("Заказ оформлен!");
     setCart([]);
     setCheckoutOpen(false);
+    setOrderComment("");
+    setPromoCode("");
     setView("profile");
+    setProfileTab("history");
     await loadMyOrders();
   }
 
@@ -528,10 +708,25 @@ export default function Page() {
     }
   }
 
+  function openSupport() {
+    const SUPPORT_LINK = process.env.NEXT_PUBLIC_SUPPORT_LINK || "";
+    if (!SUPPORT_LINK) {
+      alert("Не задан NEXT_PUBLIC_SUPPORT_LINK в .env.local");
+      return;
+    }
+
+    const tg = (window as any)?.Telegram?.WebApp;
+    try {
+      tg?.openTelegramLink?.(SUPPORT_LINK);
+      return;
+    } catch {}
+
+    window.open(SUPPORT_LINK, "_blank");
+  }
+
   useEffect(() => {
-    if (view === "profile") loadMyOrders();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view]);
+    if (view === "profile" && profileTab === "history") loadMyOrders();
+  }, [view, profileTab]);
 
   // ===== Layout styles =====
   const root: React.CSSProperties = {
@@ -551,19 +746,17 @@ export default function Page() {
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
-    display: "flex",alignItems: "flex-end",
-    paddingBottom: 8,
-	marginTop: 40, // 👈 опустит только лого
-    justifyContent: "center", // 👈 центрируем лого
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
     backdropFilter: "blur(10px)",
   };
 
-  // Лого: чуть увеличили
   const logoStyle: React.CSSProperties = {
-    height: "clamp(56px, 12vw, 84px)",
+    height: "clamp(44px, 8vw, 72px)",
     width: "auto",
     display: "block",
     filter: "drop-shadow(0 10px 20px rgba(0,0,0,0.18))",
@@ -571,7 +764,6 @@ export default function Page() {
     userSelect: "none",
   };
 
-  // Контент: снизу оставляем место под пилюлю + safe area + lift
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
   const contentBottomPadding = `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px + ${navTotalHeight}px + 22px)`;
 
@@ -617,6 +809,18 @@ export default function Page() {
     cursor: "pointer",
   };
 
+  const btnTab = (active: boolean): React.CSSProperties => ({
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: active
+      ? "1px solid rgba(212,51,20,0.30)"
+      : "1px solid rgba(0,0,0,0.10)",
+    background: active ? "rgba(212,51,20,0.10)" : "rgba(255,255,255,0.85)",
+    color: BRAND_INK,
+    fontWeight: 900,
+    cursor: "pointer",
+  });
+
   const inputStyle: React.CSSProperties = {
     padding: 12,
     borderRadius: 14,
@@ -654,7 +858,6 @@ export default function Page() {
     boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
   };
 
-  // Индикатор делаем ЧУТЬ МЕНЬШЕ кнопки, чтобы не торчал угол (inset = 1)
   const IND_INSET = 1;
   const indicator: React.CSSProperties = {
     position: "absolute",
@@ -662,15 +865,13 @@ export default function Page() {
     left: indicatorLeft + IND_INSET,
     width: NAV_BTN_W - IND_INSET * 2,
     height: NAV_BTN_H - IND_INSET * 2,
-    borderRadius: 13, // кнопка 14 -> индикатор 13
+    borderRadius: 13,
     background: "rgba(212,51,20,0.22)",
     border: "1px solid rgba(212,51,20,0.35)",
     boxShadow: "0 12px 28px rgba(212,51,20,0.25)",
-    // transition отключен, потому что у нас пружинка через requestAnimationFrame
     transition: "none",
   };
 
-  // Кнопки прозрачные
   const navBtnBase: React.CSSProperties = {
     width: NAV_BTN_W,
     height: NAV_BTN_H,
@@ -697,9 +898,114 @@ export default function Page() {
     } catch {}
   }
 
-  // ===== Render =====
+  const avatarSrc =
+    tgUser?.photo_url ||
+    profileData?.telegram_photo_url ||
+    "";
+
+  if (bootLoading) {
+    return (
+      <div style={root}>
+        <style>{`
+          @keyframes appPulse {
+            0% { opacity: 0.45; }
+            50% { opacity: 1; }
+            100% { opacity: 0.45; }
+          }
+          .app-skeleton {
+            background: linear-gradient(
+              90deg,
+              rgba(255,255,255,0.35) 0%,
+              rgba(255,255,255,0.65) 50%,
+              rgba(255,255,255,0.35) 100%
+            );
+            background-size: 200% 100%;
+            animation: appShimmer 1.2s ease-in-out infinite;
+          }
+          @keyframes appShimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+          }
+        `}</style>
+
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              width: "min(360px, 100%)",
+              background: "rgba(255,255,255,0.20)",
+              border: "1px solid rgba(255,255,255,0.18)",
+              borderRadius: 28,
+              padding: 24,
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 18px 50px rgba(0,0,0,0.22)",
+            }}
+          >
+            <img
+              src="/logo.png"
+              alt="logo"
+              style={{
+                display: "block",
+                margin: "0 auto",
+                height: 54,
+                width: "auto",
+                animation: "appPulse 1.3s ease-in-out infinite",
+              }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+            <div
+              style={{
+                color: "#fff",
+                textAlign: "center",
+                marginTop: 14,
+                fontWeight: 900,
+                fontSize: 16,
+              }}
+            >
+              Загружаем приложение…
+            </div>
+
+            <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 12 }}>
+              <SkeletonBlock height={18} radius={12} />
+              <SkeletonBlock height={18} radius={12} style={{ width: "76%" }} />
+              <SkeletonBlock height={72} radius={18} />
+              <SkeletonBlock height={72} radius={18} />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={root}>
+      <style>{`
+        @keyframes appShimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .app-skeleton {
+          background: linear-gradient(
+            90deg,
+            rgba(10,19,23,0.06) 0%,
+            rgba(10,19,23,0.12) 50%,
+            rgba(10,19,23,0.06) 100%
+          );
+          background-size: 200% 100%;
+          animation: appShimmer 1.2s ease-in-out infinite;
+        }
+      `}</style>
+
       <div style={header}>
         <img
           src="/logo.png"
@@ -717,73 +1023,152 @@ export default function Page() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Категории</div>
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {categories.map((c) => {
-                  const active = selectedCategoryId === c.id;
-                  return (
-                    <button
-                      key={c.id}
-                      onClick={() => setSelectedCategoryId(c.id)}
-                      style={{
-                        padding: "8px 12px",
-                        borderRadius: 999,
-                        border: `1px solid ${
-                          active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
-                        }`,
-                        background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
-                        color: BRAND_INK,
-                        cursor: "pointer",
-                        fontWeight: 900,
-                      }}
-                    >
-                      {c.name}
-                    </button>
-                  );
-                })}
-              </div>
+
+              {categoriesLoading ? (
+                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <SkeletonBlock height={34} radius={999} style={{ width: 90 }} />
+                  <SkeletonBlock height={34} radius={999} style={{ width: 110 }} />
+                  <SkeletonBlock height={34} radius={999} style={{ width: 100 }} />
+                </div>
+              ) : (
+                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {categories.map((c) => {
+                    const active = selectedCategoryId === c.id;
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedCategoryId(c.id)}
+                        style={{
+                          padding: "8px 12px",
+                          borderRadius: 999,
+                          border: `1px solid ${
+                            active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
+                          }`,
+                          background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
+                          color: BRAND_INK,
+                          cursor: "pointer",
+                          fontWeight: 900,
+                        }}
+                      >
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Товары</div>
-              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                {products.map((p) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      borderRadius: 14,
-                      border: "1px solid rgba(10,19,23,0.10)",
-                      padding: 12,
-                      background: "rgba(10,19,23,0.02)",
-                    }}
-                  >
-                    <div style={{ fontWeight: 900 }}>{p.title}</div>
-                    {p.description && (
-                      <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>{p.description}</div>
-                    )}
-                    <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", gap: 10 }}>
-                      <div style={{ fontWeight: 900 }}>
-                        {formatPriceRub(p.price)}{" "}
-                        <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>
-                          {p.unit_type === "weight" ? "за кг" : "за шт"}
-                        </span>
-                      </div>
-                      <button
-                        style={{
-                          ...btnGhost,
-                          background: "rgba(212,51,20,0.10)",
-                          border: "1px solid rgba(212,51,20,0.22)",
-                          color: BRAND_INK,
-                        }}
-                        onClick={() => addToCart(p)}
-                      >
-                        + В корзину
-                      </button>
-                    </div>
-                  </div>
-                ))}
 
-                {products.length === 0 && <div style={smallMuted}>Пока нет товаров в этой категории.</div>}
-              </div>
+              {productsLoading ? (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <SkeletonBlock height={92} radius={14} />
+                  <SkeletonBlock height={92} radius={14} />
+                  <SkeletonBlock height={92} radius={14} />
+                </div>
+              ) : (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                  {products.map((p) => {
+                    const cartItem = getCartItem(p.id);
+
+                    return (
+                      <div
+                        key={p.id}
+                        style={{
+                          borderRadius: 14,
+                          border: "1px solid rgba(10,19,23,0.10)",
+                          padding: 12,
+                          background: "rgba(10,19,23,0.02)",
+                        }}
+                      >
+                        <div style={{ fontWeight: 900 }}>{p.title}</div>
+                        {p.description && (
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>
+                            {p.description}
+                          </div>
+                        )}
+
+                        <div
+                          style={{
+                            marginTop: 10,
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: 10,
+                            alignItems: "center",
+                          }}
+                        >
+                          <div style={{ fontWeight: 900 }}>
+                            {formatPriceRub(p.price)}{" "}
+                            <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>
+                              {p.unit_type === "weight" ? "за кг" : "за шт"}
+                            </span>
+                          </div>
+
+                          {!cartItem ? (
+                            <button
+                              style={{
+                                ...btnGhost,
+                                background: "rgba(212,51,20,0.10)",
+                                border: "1px solid rgba(212,51,20,0.22)",
+                                color: BRAND_INK,
+                              }}
+                              onClick={() => addToCart(p)}
+                            >
+                              + В корзину
+                            </button>
+                          ) : (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                              }}
+                            >
+                              <button style={btnGhost} onClick={() => changeQuantity(p.id, -1)}>
+                                −
+                              </button>
+
+                              <div
+                                style={{
+                                  minWidth: 20,
+                                  textAlign: "center",
+                                  fontWeight: 900,
+                                }}
+                              >
+                                {cartItem.quantity}
+                              </div>
+
+                              <button style={btnGhost} onClick={() => changeQuantity(p.id, 1)}>
+                                +
+                              </button>
+
+                              <button
+                                style={{
+                                  ...btnGhost,
+                                  width: 40,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  padding: 0,
+                                }}
+                                onClick={() => removeFromCart(p.id)}
+                                title="Убрать из корзины"
+                              >
+                                <IconTrash ink={BRAND_INK} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {products.length === 0 && (
+                    <div style={smallMuted}>Пока нет товаров в этой категории.</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -793,6 +1178,7 @@ export default function Page() {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Корзина</div>
+
               {cart.length === 0 ? (
                 <div style={{ marginTop: 10, opacity: 0.75 }}>Корзина пуста</div>
               ) : (
@@ -816,7 +1202,14 @@ export default function Page() {
                           </span>
                         </div>
 
-                        <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
+                        <div
+                          style={{
+                            marginTop: 10,
+                            display: "flex",
+                            gap: 10,
+                            alignItems: "center",
+                          }}
+                        >
                           <button style={btnGhost} onClick={() => changeQuantity(item.product.id, -1)}>
                             −
                           </button>
@@ -826,17 +1219,41 @@ export default function Page() {
                           <button style={btnGhost} onClick={() => changeQuantity(item.product.id, 1)}>
                             +
                           </button>
+                          <button
+                            style={{
+                              ...btnGhost,
+                              width: 40,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              padding: 0,
+                            }}
+                            onClick={() => removeFromCart(item.product.id)}
+                            title="Убрать из корзины"
+                          >
+                            <IconTrash ink={BRAND_INK} />
+                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", gap: 10 }}>
+                  <div
+                    style={{
+                      marginTop: 14,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                    }}
+                  >
                     <div style={{ fontWeight: 900, fontSize: 16 }}>Итого</div>
                     <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(total)}</div>
                   </div>
 
-                  <button style={{ ...btnPrimary, width: "100%", marginTop: 12 }} onClick={() => setCheckoutOpen(true)}>
+                  <button
+                    style={{ ...btnPrimary, width: "100%", marginTop: 12 }}
+                    onClick={() => setCheckoutOpen(true)}
+                  >
                     Оформить заказ
                   </button>
                 </>
@@ -845,7 +1262,14 @@ export default function Page() {
 
             {checkoutOpen && (
               <div style={card}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 10,
+                    alignItems: "center",
+                  }}
+                >
                   <div style={{ fontWeight: 900, fontSize: 16 }}>Оформление</div>
                   <button style={btnGhost} onClick={() => setCheckoutOpen(false)}>
                     Закрыть
@@ -853,33 +1277,61 @@ export default function Page() {
                 </div>
 
                 <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <input style={inputStyle} placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
+                  <div style={{ fontWeight: 900, fontSize: 14 }}>Получатель</div>
+
+                  <input
+                    style={inputStyle}
+                    placeholder="ФИО"
+                    value={orderFullName}
+                    onChange={(e) => setOrderFullName(e.target.value)}
+                  />
+
                   <input
                     style={inputStyle}
                     placeholder="Телефон"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    value={orderPhone}
+                    onChange={(e) => setOrderPhone(e.target.value)}
                   />
+
                   <input
                     style={inputStyle}
                     placeholder="Адрес"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                  />
-                  <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                    placeholder="Комментарий"
-                    value={comment}
-                    onChange={(e) => setComment(e.target.value)}
+                    value={orderAddress}
+                    onChange={(e) => setOrderAddress(e.target.value)}
                   />
 
-                  <select style={inputStyle} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
+
+                  <select
+                    style={inputStyle}
+                    value={paymentMethod}
+                    onChange={(e) => setPaymentMethod(e.target.value)}
+                  >
                     <option value="cash">Наличные</option>
                     <option value="transfer">Перевод</option>
                     <option value="qr">QR-код</option>
                   </select>
 
-                  <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
+                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
+                  <input
+                    style={inputStyle}
+                    placeholder="Введите промокод"
+                    value={promoCode}
+                    onChange={(e) => setPromoCode(e.target.value)}
+                  />
+
+                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                    placeholder="Комментарий к заказу"
+                    value={orderComment}
+                    onChange={(e) => setOrderComment(e.target.value)}
+                  />
+
+                  <div style={{ marginTop: 4, fontWeight: 900 }}>
+                    Итого: {formatPriceRub(total)}
+                  </div>
+
                   <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
                     Подтвердить заказ
                   </button>
@@ -892,15 +1344,97 @@ export default function Page() {
         {/* PROFILE */}
         {view === "profile" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {/* Верх профиля */}
             <div style={card}>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>Профиль</div>
-              <div style={{ marginTop: 8, opacity: 0.85 }}>
-                Telegram ID: <strong>{tgUserId ?? "—"}</strong>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 14,
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    background: "rgba(10,19,23,0.08)",
+                    flexShrink: 0,
+                    border: "1px solid rgba(10,19,23,0.10)",
+                  }}
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt="avatar"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 900,
+                        fontSize: 22,
+                        opacity: 0.65,
+                      }}
+                    >
+                      {tgDisplayName()?.[0] || "U"}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>
+                    {tgDisplayName() || "Пользователь"}
+                  </div>
+
+                  {tgUser?.username ? (
+                    <div style={{ marginTop: 4, opacity: 0.75 }}>@{tgUser.username}</div>
+                  ) : null}
+
+                  <div style={{ marginTop: 6, ...smallMuted }}>
+                    ID: {tgUserId ?? "—"}
+                  </div>
+                </div>
               </div>
 
-              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button style={btnGhost} onClick={loadMyOrders}>
-                  Обновить заказы
+              <div
+                style={{
+                  marginTop: 14,
+                  display: "flex",
+                  gap: 10,
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  style={btnTab(profileTab === "history")}
+                  onClick={() => {
+                    setProfileTab("history");
+                    setSelectedMyOrderId(null);
+                  }}
+                >
+                  История заказов
+                </button>
+
+                <button
+                  style={btnTab(profileTab === "data")}
+                  onClick={() => setProfileTab("data")}
+                >
+                  Мои данные
+                </button>
+
+                <button style={btnGhost} onClick={openSupport}>
+                  Тех. поддержка
                 </button>
 
                 {isAdmin && (
@@ -922,83 +1456,147 @@ export default function Page() {
               {isAdmin && <div style={{ marginTop: 8, ...smallMuted }}>Админ-режим включён</div>}
             </div>
 
-            <div style={card}>
-              <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
+            {/* HISTORY */}
+            {profileTab === "history" && (
+              <div style={card}>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
 
-              {profileLoading && <div style={{ marginTop: 10, opacity: 0.75 }}>Загрузка...</div>}
-              {profileError && (
-                <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
-                  Ошибка: {profileError}
-                </div>
-              )}
+                {profileLoading ? (
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SkeletonBlock height={84} radius={14} />
+                    <SkeletonBlock height={84} radius={14} />
+                  </div>
+                ) : profileError ? (
+                  <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                    Ошибка: {profileError}
+                  </div>
+                ) : (
+                  <>
+                    {!selectedMyOrderId && (
+                      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                        {myOrders.map((o) => (
+                          <button
+                            key={o.id}
+                            onClick={() => setSelectedMyOrderId(o.id)}
+                            style={{
+                              textAlign: "left",
+                              borderRadius: 14,
+                              border: "1px solid rgba(10,19,23,0.10)",
+                              background: "rgba(10,19,23,0.02)",
+                              padding: 12,
+                              cursor: "pointer",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                              <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                              <div style={{ fontSize: 12, opacity: 0.7 }}>
+                                {formatDateTime(o.created_at)}
+                              </div>
+                            </div>
+                            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
+                              Статус: <strong>{statusLabel(o.status)}</strong>
+                            </div>
+                            <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
+                              Сумма: {formatPriceRub(o.total_amount)}
+                            </div>
+                          </button>
+                        ))}
 
-              {!profileLoading && !profileError && (
-                <>
-                  {!selectedMyOrderId && (
-                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                      {myOrders.map((o) => (
-                        <button
-                          key={o.id}
-                          onClick={() => setSelectedMyOrderId(o.id)}
-                          style={{
-                            textAlign: "left",
-                            borderRadius: 14,
-                            border: "1px solid rgba(10,19,23,0.10)",
-                            background: "rgba(10,19,23,0.02)",
-                            padding: 12,
-                            cursor: "pointer",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                            <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                            <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
-                          </div>
-                          <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
-                            Статус: <strong>{statusLabel(o.status)}</strong>
-                          </div>
-                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
-                            Сумма: {formatPriceRub(o.total_amount)}
-                          </div>
+                        {myOrders.length === 0 && (
+                          <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedMyOrderId && (
+                      <div style={{ marginTop: 10 }}>
+                        <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
+                          ← Назад к списку
                         </button>
-                      ))}
 
-                      {myOrders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>}
-                    </div>
-                  )}
+                        {selectedMyOrder ? (
+                          <div style={{ marginTop: 12 }}>
+                            <div style={{ fontWeight: 900, fontSize: 16 }}>
+                              Заказ #{selectedMyOrder.id.slice(0, 8)}
+                            </div>
+                            <div style={{ marginTop: 8, opacity: 0.9 }}>
+                              Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
+                            </div>
+                            <div style={{ marginTop: 6, fontWeight: 900 }}>
+                              {formatPriceRub(selectedMyOrder.total_amount)}
+                            </div>
+                            <div style={{ marginTop: 6, ...smallMuted }}>
+                              {formatDateTime(selectedMyOrder.created_at)}
+                            </div>
 
-                  {selectedMyOrderId && (
-                    <div style={{ marginTop: 10 }}>
-                      <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
-                        ← Назад к списку
-                      </button>
+                            <div
+                              style={{
+                                marginTop: 12,
+                                whiteSpace: "pre-wrap",
+                                fontSize: 13,
+                                opacity: 0.95,
+                              }}
+                            >
+                              <strong>Состав:</strong>
+                              {"\n"}
+                              {selectedMyOrder.items_text || "Нет данных"}
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
 
-                      {selectedMyOrder ? (
-                        <div style={{ marginTop: 12 }}>
-                          <div style={{ fontWeight: 900, fontSize: 16 }}>
-                            Заказ #{selectedMyOrder.id.slice(0, 8)}
-                          </div>
-                          <div style={{ marginTop: 8, opacity: 0.9 }}>
-                            Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
-                          </div>
-                          <div style={{ marginTop: 6, fontWeight: 900 }}>
-                            {formatPriceRub(selectedMyOrder.total_amount)}
-                          </div>
-                          <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
+            {/* MY DATA */}
+            {profileTab === "data" && (
+              <div style={card}>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Мои данные</div>
 
-                          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
-                            <strong>Состав:</strong>
-                            {"\n"}
-                            {selectedMyOrder.items_text || "Нет данных"}
-                          </div>
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <input
+                    style={inputStyle}
+                    placeholder="ФИО"
+                    value={profileFormFullName}
+                    onChange={(e) => setProfileFormFullName(e.target.value)}
+                  />
+
+                  <input
+                    style={inputStyle}
+                    placeholder="Телефон"
+                    value={profileFormPhone}
+                    onChange={(e) => setProfileFormPhone(e.target.value)}
+                  />
+
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                    placeholder="Адрес"
+                    value={profileFormAddress}
+                    onChange={(e) => setProfileFormAddress(e.target.value)}
+                  />
+
+                  <div style={smallMuted}>
+                    Эти данные будут автоматически подставляться в оформление заказа.
+                  </div>
+
+                  <button
+                    style={{
+                      ...btnPrimary,
+                      width: "100%",
+                      opacity: profileSaveLoading ? 0.7 : 1,
+                    }}
+                    onClick={saveProfileData}
+                    disabled={profileSaveLoading}
+                  >
+                    {profileSaveLoading ? "Сохраняем..." : "Сохранить данные"}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1006,13 +1604,21 @@ export default function Page() {
         {view === "admin" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 10,
+                  alignItems: "center",
+                }}
+              >
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
                 <button
                   style={btnGhost}
                   onClick={() => {
                     setSelectedOrderId(null);
                     setView("profile");
+                    setProfileTab("history");
                   }}
                 >
                   ← В профиль
@@ -1025,14 +1631,16 @@ export default function Page() {
                 </button>
               </div>
 
-              {adminLoading && <div style={{ marginTop: 10, opacity: 0.75 }}>Загрузка...</div>}
-              {adminError && (
+              {adminLoading ? (
+                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                  <SkeletonBlock height={84} radius={14} />
+                  <SkeletonBlock height={84} radius={14} />
+                </div>
+              ) : adminError ? (
                 <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
                   Ошибка: {adminError}
                 </div>
-              )}
-
-              {!adminLoading && !adminError && (
+              ) : (
                 <>
                   {!selectedOrderId && (
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1051,7 +1659,9 @@ export default function Page() {
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                             <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                            <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
+                            <div style={{ fontSize: 12, opacity: 0.7 }}>
+                              {formatDateTime(o.created_at)}
+                            </div>
                           </div>
                           <div style={{ marginTop: 6, fontWeight: 900 }}>{o.customer_name}</div>
                           <div style={{ marginTop: 4, fontSize: 13, opacity: 0.9 }}>
@@ -1059,7 +1669,9 @@ export default function Page() {
                           </div>
                         </button>
                       ))}
-                      {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>}
+                      {orders.length === 0 && (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>
+                      )}
                     </div>
                   )}
 
@@ -1075,7 +1687,15 @@ export default function Page() {
                             Заказ #{selectedOrder.id.slice(0, 8)}
                           </div>
 
-                          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4, opacity: 0.95 }}>
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 4,
+                              opacity: 0.95,
+                            }}
+                          >
                             <div>👤 {selectedOrder.customer_name}</div>
                             <div>📞 {selectedOrder.phone}</div>
                             <div>📍 {selectedOrder.address}</div>
@@ -1085,7 +1705,14 @@ export default function Page() {
                             <div style={smallMuted}>{formatDateTime(selectedOrder.created_at)}</div>
                           </div>
 
-                          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
+                          <div
+                            style={{
+                              marginTop: 12,
+                              whiteSpace: "pre-wrap",
+                              fontSize: 13,
+                              opacity: 0.95,
+                            }}
+                          >
                             <strong>Состав:</strong>
                             {"\n"}
                             {selectedOrder.items_text || "Нет данных"}
