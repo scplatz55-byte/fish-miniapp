@@ -41,7 +41,8 @@ type OrderForUi = {
 };
 
 type View = "catalog" | "cart" | "profile" | "admin";
-type ProfileTab = "history" | "data";
+type ProfileScreen = "menu" | "history" | "data";
+type AdminFilter = "active" | "completed";
 
 type TgUser = {
   id?: number;
@@ -85,7 +86,17 @@ function statusLabel(s: OrderStatus) {
   return s;
 }
 
-/** Иконки (SVG) */
+function isActiveOrderStatus(status: OrderStatus) {
+  return status === "assembling" || status === "on_the_way";
+}
+
+function getTgDisplayName(user: TgUser | null) {
+  const first = user?.first_name || "";
+  const last = user?.last_name || "";
+  const full = `${first} ${last}`.trim();
+  return full || user?.username || "Пользователь";
+}
+
 function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
   const stroke = active ? accent : `${ink}A6`;
   return (
@@ -150,6 +161,14 @@ function IconTrash({ ink }: { ink: string }) {
   );
 }
 
+function IconChevron({ ink }: { ink: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 6l6 6-6 6" stroke={ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function SkeletonBlock({
   height = 16,
   radius = 12,
@@ -174,54 +193,45 @@ function SkeletonBlock({
 
 export default function Page() {
   const [view, setView] = useState<View>("catalog");
-  const [profileTab, setProfileTab] = useState<ProfileTab>("history");
+  const [profileScreen, setProfileScreen] = useState<ProfileScreen>("menu");
+  const [adminFilter, setAdminFilter] = useState<AdminFilter>("active");
 
-  // Telegram
   const [tgUserId, setTgUserId] = useState<number | null>(null);
-  const [initData, setInitData] = useState<string>("");
   const [tgUser, setTgUser] = useState<TgUser | null>(null);
+  const [initData, setInitData] = useState<string>("");
 
-  // Brand colors
   const BRAND_BG = "#2B80A4";
   const BRAND_ACCENT = "#D43314";
   const BRAND_INK = "#0A1317";
   const CARD_BG = "#FFFFFF";
 
-  // Header
   const HEADER_H = 64;
   const HEADER_TOP_PAD = 24;
 
-  // Bottom nav
   const NAV_BTN_W = 58;
   const NAV_BTN_H = 48;
   const NAV_GAP = 10;
   const NAV_PAD = 10;
   const NAV_LIFT = 26;
 
-  // Boot loading
   const [bootLoading, setBootLoading] = useState(true);
-
-  // Loading flags
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(false);
   const [profileSaveLoading, setProfileSaveLoading] = useState(false);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
-  // Shop
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
 
-  // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0),
     [cart]
   );
 
-  // Checkout overlay
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  // Checkout fields
   const [orderFullName, setOrderFullName] = useState("");
   const [orderPhone, setOrderPhone] = useState("");
   const [orderAddress, setOrderAddress] = useState("");
@@ -229,16 +239,13 @@ export default function Page() {
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [promoCode, setPromoCode] = useState("");
 
-  // Admin
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Profile data
   const [profileData, setProfileData] = useState<UserProfile | null>(null);
   const [profileFormFullName, setProfileFormFullName] = useState("");
   const [profileFormPhone, setProfileFormPhone] = useState("");
   const [profileFormAddress, setProfileFormAddress] = useState("");
 
-  // Profile orders
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [myOrders, setMyOrders] = useState<OrderForUi[]>([]);
@@ -248,7 +255,6 @@ export default function Page() {
     [myOrders, selectedMyOrderId]
   );
 
-  // Admin orders
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderForUi[]>([]);
@@ -258,9 +264,7 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
-  // ===== Spring indicator animation =====
   const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
-
   const targetLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
 
   const [indicatorLeft, setIndicatorLeft] = useState<number>(targetLeft);
@@ -268,19 +272,24 @@ export default function Page() {
   const xRef = useRef<number>(targetLeft);
   const vRef = useRef<number>(0);
 
+  const filteredAdminOrders = useMemo(() => {
+    if (adminFilter === "active") {
+      return orders.filter((o) => isActiveOrderStatus(o.status));
+    }
+    return orders.filter((o) => !isActiveOrderStatus(o.status));
+  }, [orders, adminFilter]);
+
   useEffect(() => {
     const target = targetLeft;
-
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
-    const stiffness = 0.12;
+    const stiffness = 0.16;
     const damping = 0.78;
-    const maxStep = 24;
+    const maxStep = 16;
 
     const tick = () => {
       const x = xRef.current;
       let v = vRef.current;
-
       const force = (target - x) * stiffness;
       v = v * damping + force;
 
@@ -288,7 +297,6 @@ export default function Page() {
       if (v < -maxStep) v = -maxStep;
 
       const nextX = x + v;
-
       xRef.current = nextX;
       vRef.current = v;
       setIndicatorLeft(nextX);
@@ -305,38 +313,46 @@ export default function Page() {
     };
 
     animRef.current = requestAnimationFrame(tick);
-
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       animRef.current = null;
     };
   }, [targetLeft]);
 
-  // Telegram init
   useEffect(() => {
+    let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.name = "viewport";
+      document.head.appendChild(meta);
+    }
+    meta.content = "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover";
+
+    document.documentElement.style.touchAction = "manipulation";
+    document.body.style.touchAction = "manipulation";
+
     const tg = (window as any)?.Telegram?.WebApp;
-    if (!tg) return;
+    if (tg) {
+      tg.ready();
+      tg.expand();
 
-    tg.ready();
-    tg.expand();
+      try {
+        tg.setHeaderColor?.(BRAND_BG);
+        tg.setBackgroundColor?.(BRAND_BG);
+      } catch {}
 
-    try {
-      tg.setHeaderColor?.(BRAND_BG);
-      tg.setBackgroundColor?.(BRAND_BG);
-    } catch {}
+      try {
+        if (window.innerWidth < 768) {
+          tg.requestFullscreen?.();
+        }
+      } catch {}
 
-    try {
-      tg.requestFullscreen?.();
-    } catch {}
+      setInitData(tg.initData || "");
+      const u = (tg.initDataUnsafe?.user || null) as TgUser | null;
+      setTgUser(u);
+      if (u?.id) setTgUserId(u.id);
+    }
 
-    setInitData(tg.initData || "");
-
-    const u = (tg.initDataUnsafe?.user || null) as TgUser | null;
-    setTgUser(u);
-
-    if (u?.id) setTgUserId(u.id);
-
-    // Скролл только внутри контента
     try {
       document.documentElement.style.height = "100%";
       document.body.style.height = "100%";
@@ -345,7 +361,36 @@ export default function Page() {
     } catch {}
   }, []);
 
-  // Detect admin
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const updateKeyboard = () => {
+      const active = document.activeElement as HTMLElement | null;
+      const isInputFocused =
+        active?.tagName === "INPUT" ||
+        active?.tagName === "TEXTAREA" ||
+        active?.tagName === "SELECT";
+
+      const diff = window.innerHeight - vv.height;
+      setKeyboardOpen(Boolean(isInputFocused && diff > 140));
+    };
+
+    vv.addEventListener("resize", updateKeyboard);
+    vv.addEventListener("scroll", updateKeyboard);
+    window.addEventListener("focusin", updateKeyboard);
+    window.addEventListener("focusout", updateKeyboard);
+
+    updateKeyboard();
+
+    return () => {
+      vv.removeEventListener("resize", updateKeyboard);
+      vv.removeEventListener("scroll", updateKeyboard);
+      window.removeEventListener("focusin", updateKeyboard);
+      window.removeEventListener("focusout", updateKeyboard);
+    };
+  }, []);
+
   async function detectAdmin() {
     if (!initData) return;
     try {
@@ -369,11 +414,9 @@ export default function Page() {
     if (initData) detectAdmin();
   }, [initData]);
 
-  // Load categories
   useEffect(() => {
     async function loadCategories() {
       setCategoriesLoading(true);
-
       const { data } = await supabase
         .from("categories")
         .select("id,name,sort_order")
@@ -382,20 +425,15 @@ export default function Page() {
       const list = (data || []) as Category[];
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
-
       setCategoriesLoading(false);
     }
-
     loadCategories();
   }, []);
 
-  // Load products
   useEffect(() => {
     async function loadProducts() {
       if (!selectedCategoryId) return;
-
       setProductsLoading(true);
-
       const { data } = await supabase
         .from("products")
         .select("id,category_id,title,description,price,unit_type,is_active")
@@ -405,19 +443,16 @@ export default function Page() {
       setProducts((data || []) as Product[]);
       setProductsLoading(false);
     }
-
     loadProducts();
   }, [selectedCategoryId]);
 
-  // Boot loading ends when basic data is there
   useEffect(() => {
     if (!categoriesLoading && initData !== "") {
-      const t = setTimeout(() => setBootLoading(false), 450);
+      const t = setTimeout(() => setBootLoading(false), 350);
       return () => clearTimeout(t);
     }
   }, [categoriesLoading, initData]);
 
-  // Load user profile
   useEffect(() => {
     async function loadUserProfile() {
       if (!tgUserId) return;
@@ -433,32 +468,20 @@ export default function Page() {
       if (data) {
         const row = data as UserProfile;
         setProfileData(row);
-
         setProfileFormFullName(row.full_name || "");
         setProfileFormPhone(row.phone || "");
         setProfileFormAddress(row.address || "");
-
-        // Автоподставляем в оформление
-        setOrderFullName(row.full_name || tgDisplayName());
+        setOrderFullName(row.full_name || getTgDisplayName(tgUser));
         setOrderPhone(row.phone || "");
         setOrderAddress(row.address || "");
       } else {
-        // Если профиля нет — хотя бы имя телеги подставим
-        const fallbackName = tgDisplayName();
+        const fallbackName = getTgDisplayName(tgUser);
         setProfileFormFullName(fallbackName);
         setOrderFullName(fallbackName);
       }
     }
-
     loadUserProfile();
-  }, [tgUserId]);
-
-  function tgDisplayName() {
-    const first = tgUser?.first_name || "";
-    const last = tgUser?.last_name || "";
-    const full = `${first} ${last}`.trim();
-    return full || tgUser?.username || "";
-  }
+  }, [tgUserId, tgUser]);
 
   async function saveProfileData() {
     if (!tgUserId) {
@@ -491,16 +514,13 @@ export default function Page() {
     }
 
     setProfileData(payload);
-
-    // Автоподставляем в оформление
-    setOrderFullName(payload.full_name || tgDisplayName());
+    setOrderFullName(payload.full_name || getTgDisplayName(tgUser));
     setOrderPhone(payload.phone || "");
     setOrderAddress(payload.address || "");
 
     alert("Данные сохранены");
   }
 
-  // Cart ops
   function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
@@ -531,7 +551,6 @@ export default function Page() {
     return cart.find((c) => c.product.id === productId) || null;
   }
 
-  // Submit order
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
     if (!orderFullName || !orderPhone || !orderAddress) {
@@ -585,11 +604,10 @@ export default function Page() {
     setOrderComment("");
     setPromoCode("");
     setView("profile");
-    setProfileTab("history");
+    setProfileScreen("history");
     await loadMyOrders();
   }
 
-  // Profile: load my orders
   async function loadMyOrders() {
     if (!initData) {
       setProfileError("Открой мини-апп через Telegram.");
@@ -629,7 +647,6 @@ export default function Page() {
     }
   }
 
-  // Admin: list orders
   async function adminLoad() {
     if (!initData) {
       setAdminError("Нет initData — открой через Telegram.");
@@ -709,26 +726,25 @@ export default function Page() {
   }
 
   function openSupport() {
-    const SUPPORT_LINK = process.env.NEXT_PUBLIC_SUPPORT_LINK || "";
-    if (!SUPPORT_LINK) {
+    const supportLink = process.env.NEXT_PUBLIC_SUPPORT_LINK || "";
+    if (!supportLink) {
       alert("Не задан NEXT_PUBLIC_SUPPORT_LINK в .env.local");
       return;
     }
 
     const tg = (window as any)?.Telegram?.WebApp;
     try {
-      tg?.openTelegramLink?.(SUPPORT_LINK);
+      tg?.openTelegramLink?.(supportLink);
       return;
     } catch {}
 
-    window.open(SUPPORT_LINK, "_blank");
+    window.open(supportLink, "_blank");
   }
 
   useEffect(() => {
-    if (view === "profile" && profileTab === "history") loadMyOrders();
-  }, [view, profileTab]);
+    if (view === "profile" && profileScreen === "history") loadMyOrders();
+  }, [view, profileScreen]);
 
-  // ===== Layout styles =====
   const root: React.CSSProperties = {
     height: "100vh",
     background: BRAND_BG,
@@ -746,10 +762,9 @@ export default function Page() {
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
-    display: "flex",alignItems: "flex-end",
-    paddingBottom: 8,
-	marginTop: 40, // 👈 опустит только лого
-    justifyContent: "center", // 👈 центрируем лого
+    display: "flex",
+    alignItems: "flex-end",
+    justifyContent: "center",
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
@@ -810,16 +825,10 @@ export default function Page() {
     cursor: "pointer",
   };
 
-  const btnTab = (active: boolean): React.CSSProperties => ({
-    padding: "10px 12px",
-    borderRadius: 14,
-    border: active
-      ? "1px solid rgba(212,51,20,0.30)"
-      : "1px solid rgba(0,0,0,0.10)",
-    background: active ? "rgba(212,51,20,0.10)" : "rgba(255,255,255,0.85)",
-    color: BRAND_INK,
-    fontWeight: 900,
-    cursor: "pointer",
+  const filterBtn = (active: boolean): React.CSSProperties => ({
+    ...btnGhost,
+    background: active ? "rgba(212,51,20,0.12)" : "rgba(255,255,255,0.85)",
+    border: active ? "1px solid rgba(212,51,20,0.28)" : "1px solid rgba(0,0,0,0.10)",
   });
 
   const inputStyle: React.CSSProperties = {
@@ -832,7 +841,53 @@ export default function Page() {
     fontSize: 14,
   };
 
-  // ===== Bottom nav =====
+  const profileActionCard: React.CSSProperties = {
+    width: "100%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    padding: 14,
+    borderRadius: 18,
+    border: "1px solid rgba(10,19,23,0.10)",
+    background: "rgba(10,19,23,0.02)",
+    cursor: "pointer",
+    textAlign: "left",
+  };
+
+  const qtyWrap: React.CSSProperties = {
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
+    background: "rgba(212,51,20,0.08)",
+    border: "1px solid rgba(212,51,20,0.16)",
+    borderRadius: 14,
+    padding: 4,
+  };
+
+  const qtyBtn: React.CSSProperties = {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    border: "1px solid rgba(10,19,23,0.08)",
+    background: "#fff",
+    color: BRAND_INK,
+    fontWeight: 900,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    padding: 0,
+    flexShrink: 0,
+  };
+
+  const qtyCount: React.CSSProperties = {
+    minWidth: 26,
+    textAlign: "center",
+    fontWeight: 900,
+    fontSize: 14,
+  };
+
   const navWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
@@ -840,7 +895,7 @@ export default function Page() {
     bottom: 0,
     zIndex: 60,
     paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px)`,
-    display: "flex",
+    display: keyboardOpen ? "none" : "flex",
     justifyContent: "center",
     pointerEvents: "none",
   };
@@ -868,7 +923,7 @@ export default function Page() {
     height: NAV_BTN_H - IND_INSET * 2,
     borderRadius: 13,
     background: "rgba(212,51,20,0.22)",
-    border: "1px solid rgba(212,51,20,0.35)",
+    border: "1px solid rgba(212,51,20,0.28)",
     boxShadow: "0 12px 28px rgba(212,51,20,0.25)",
     transition: "none",
   };
@@ -893,16 +948,14 @@ export default function Page() {
       (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.94)";
     } catch {}
   }
+
   function onPressUp(e: any) {
     try {
       (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
     } catch {}
   }
 
-  const avatarSrc =
-    tgUser?.photo_url ||
-    profileData?.telegram_photo_url ||
-    "";
+  const avatarSrc = tgUser?.photo_url || profileData?.telegram_photo_url || "";
 
   if (bootLoading) {
     return (
@@ -1019,7 +1072,6 @@ export default function Page() {
       </div>
 
       <div style={content}>
-        {/* CATALOG */}
         {view === "catalog" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
@@ -1085,9 +1137,7 @@ export default function Page() {
                       >
                         <div style={{ fontWeight: 900 }}>{p.title}</div>
                         {p.description && (
-                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>
-                            {p.description}
-                          </div>
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>{p.description}</div>
                         )}
 
                         <div
@@ -1095,8 +1145,8 @@ export default function Page() {
                             marginTop: 10,
                             display: "flex",
                             justifyContent: "space-between",
-                            gap: 10,
                             alignItems: "center",
+                            gap: 10,
                           }}
                         >
                           <div style={{ fontWeight: 900 }}>
@@ -1119,40 +1169,16 @@ export default function Page() {
                               + В корзину
                             </button>
                           ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 8,
-                              }}
-                            >
-                              <button style={btnGhost} onClick={() => changeQuantity(p.id, -1)}>
+                            <div style={qtyWrap}>
+                              <button style={qtyBtn} onClick={() => changeQuantity(p.id, -1)}>
                                 −
                               </button>
-
-                              <div
-                                style={{
-                                  minWidth: 20,
-                                  textAlign: "center",
-                                  fontWeight: 900,
-                                }}
-                              >
-                                {cartItem.quantity}
-                              </div>
-
-                              <button style={btnGhost} onClick={() => changeQuantity(p.id, 1)}>
+                              <div style={qtyCount}>{cartItem.quantity}</div>
+                              <button style={qtyBtn} onClick={() => changeQuantity(p.id, 1)}>
                                 +
                               </button>
-
                               <button
-                                style={{
-                                  ...btnGhost,
-                                  width: 40,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  padding: 0,
-                                }}
+                                style={qtyBtn}
                                 onClick={() => removeFromCart(p.id)}
                                 title="Убрать из корзины"
                               >
@@ -1174,12 +1200,10 @@ export default function Page() {
           </div>
         )}
 
-        {/* CART */}
         {view === "cart" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Корзина</div>
-
               {cart.length === 0 ? (
                 <div style={{ marginTop: 10, opacity: 0.75 }}>Корзина пуста</div>
               ) : (
@@ -1203,14 +1227,7 @@ export default function Page() {
                           </span>
                         </div>
 
-                        <div
-                          style={{
-                            marginTop: 10,
-                            display: "flex",
-                            gap: 10,
-                            alignItems: "center",
-                          }}
-                        >
+                        <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "center" }}>
                           <button style={btnGhost} onClick={() => changeQuantity(item.product.id, -1)}>
                             −
                           </button>
@@ -1220,41 +1237,17 @@ export default function Page() {
                           <button style={btnGhost} onClick={() => changeQuantity(item.product.id, 1)}>
                             +
                           </button>
-                          <button
-                            style={{
-                              ...btnGhost,
-                              width: 40,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              padding: 0,
-                            }}
-                            onClick={() => removeFromCart(item.product.id)}
-                            title="Убрать из корзины"
-                          >
-                            <IconTrash ink={BRAND_INK} />
-                          </button>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div
-                    style={{
-                      marginTop: 14,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
-                    }}
-                  >
+                  <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", gap: 10 }}>
                     <div style={{ fontWeight: 900, fontSize: 16 }}>Итого</div>
                     <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(total)}</div>
                   </div>
 
-                  <button
-                    style={{ ...btnPrimary, width: "100%", marginTop: 12 }}
-                    onClick={() => setCheckoutOpen(true)}
-                  >
+                  <button style={{ ...btnPrimary, width: "100%", marginTop: 12 }} onClick={() => setCheckoutOpen(true)}>
                     Оформить заказ
                   </button>
                 </>
@@ -1263,14 +1256,7 @@ export default function Page() {
 
             {checkoutOpen && (
               <div style={card}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                   <div style={{ fontWeight: 900, fontSize: 16 }}>Оформление</div>
                   <button style={btnGhost} onClick={() => setCheckoutOpen(false)}>
                     Закрыть
@@ -1279,47 +1265,19 @@ export default function Page() {
 
                 <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   <div style={{ fontWeight: 900, fontSize: 14 }}>Получатель</div>
-
-                  <input
-                    style={inputStyle}
-                    placeholder="ФИО"
-                    value={orderFullName}
-                    onChange={(e) => setOrderFullName(e.target.value)}
-                  />
-
-                  <input
-                    style={inputStyle}
-                    placeholder="Телефон"
-                    value={orderPhone}
-                    onChange={(e) => setOrderPhone(e.target.value)}
-                  />
-
-                  <input
-                    style={inputStyle}
-                    placeholder="Адрес"
-                    value={orderAddress}
-                    onChange={(e) => setOrderAddress(e.target.value)}
-                  />
+                  <input style={inputStyle} placeholder="ФИО" value={orderFullName} onChange={(e) => setOrderFullName(e.target.value)} />
+                  <input style={inputStyle} placeholder="Телефон" value={orderPhone} onChange={(e) => setOrderPhone(e.target.value)} />
+                  <input style={inputStyle} placeholder="Адрес" value={orderAddress} onChange={(e) => setOrderAddress(e.target.value)} />
 
                   <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
-
-                  <select
-                    style={inputStyle}
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  >
+                  <select style={inputStyle} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                     <option value="cash">Наличные</option>
                     <option value="transfer">Перевод</option>
                     <option value="qr">QR-код</option>
                   </select>
 
                   <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
-                  <input
-                    style={inputStyle}
-                    placeholder="Введите промокод"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                  />
+                  <input style={inputStyle} placeholder="Введите промокод" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
 
                   <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
                   <textarea
@@ -1329,10 +1287,7 @@ export default function Page() {
                     onChange={(e) => setOrderComment(e.target.value)}
                   />
 
-                  <div style={{ marginTop: 4, fontWeight: 900 }}>
-                    Итого: {formatPriceRub(total)}
-                  </div>
-
+                  <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
                   <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
                     Подтвердить заказ
                   </button>
@@ -1342,22 +1297,14 @@ export default function Page() {
           </div>
         )}
 
-        {/* PROFILE */}
         {view === "profile" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            {/* Верх профиля */}
             <div style={card}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 14,
-                  alignItems: "center",
-                }}
-              >
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                 <div
                   style={{
-                    width: 64,
-                    height: 64,
+                    width: 68,
+                    height: 68,
                     borderRadius: "50%",
                     overflow: "hidden",
                     background: "rgba(10,19,23,0.08)",
@@ -1369,12 +1316,7 @@ export default function Page() {
                     <img
                       src={avatarSrc}
                       alt="avatar"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                     />
                   ) : (
                     <div
@@ -1389,78 +1331,97 @@ export default function Page() {
                         opacity: 0.65,
                       }}
                     >
-                      {tgDisplayName()?.[0] || "U"}
+                      {getTgDisplayName(tgUser)?.[0] || "U"}
                     </div>
                   )}
                 </div>
 
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>
-                    {tgDisplayName() || "Пользователь"}
-                  </div>
-
-                  {tgUser?.username ? (
-                    <div style={{ marginTop: 4, opacity: 0.75 }}>@{tgUser.username}</div>
-                  ) : null}
-
-                  <div style={{ marginTop: 6, ...smallMuted }}>
-                    ID: {tgUserId ?? "—"}
-                  </div>
+                  <div style={{ fontWeight: 900, fontSize: 20 }}>{getTgDisplayName(tgUser)}</div>
+                  {tgUser?.username ? <div style={{ marginTop: 4, opacity: 0.75 }}>@{tgUser.username}</div> : null}
+                  <div style={{ marginTop: 6, ...smallMuted }}>ID: {tgUserId ?? "—"}</div>
                 </div>
               </div>
-
-              <div
-                style={{
-                  marginTop: 14,
-                  display: "flex",
-                  gap: 10,
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  style={btnTab(profileTab === "history")}
-                  onClick={() => {
-                    setProfileTab("history");
-                    setSelectedMyOrderId(null);
-                  }}
-                >
-                  История заказов
-                </button>
-
-                <button
-                  style={btnTab(profileTab === "data")}
-                  onClick={() => setProfileTab("data")}
-                >
-                  Мои данные
-                </button>
-
-                <button style={btnGhost} onClick={openSupport}>
-                  Тех. поддержка
-                </button>
-
-                {isAdmin && (
-                  <button
-                    style={{ ...btnPrimary, background: BRAND_INK }}
-                    onClick={() => {
-                      setSelectedOrderId(null);
-                      setAdminError(null);
-                      setOrders([]);
-                      setView("admin");
-                      adminLoad();
-                    }}
-                  >
-                    Админка
-                  </button>
-                )}
-              </div>
-
-              {isAdmin && <div style={{ marginTop: 8, ...smallMuted }}>Админ-режим включён</div>}
             </div>
 
-            {/* HISTORY */}
-            {profileTab === "history" && (
+            {profileScreen === "menu" && (
               <div style={card}>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  <button style={profileActionCard} onClick={() => { setProfileScreen("history"); setSelectedMyOrderId(null); }}>
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: 17 }}>История заказов</div>
+                      <div style={{ ...smallMuted, marginTop: 4 }}>Просмотр ваших оформленных заказов</div>
+                    </div>
+                    <IconChevron ink={BRAND_INK} />
+                  </button>
+
+                  <button style={profileActionCard} onClick={() => setProfileScreen("data")}>
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: 17 }}>Мои данные</div>
+                      <div style={{ ...smallMuted, marginTop: 4 }}>ФИО, телефон и адрес для автозаполнения</div>
+                    </div>
+                    <IconChevron ink={BRAND_INK} />
+                  </button>
+
+                  <button style={profileActionCard} onClick={openSupport}>
+                    <div>
+                      <div style={{ fontWeight: 900, fontSize: 17 }}>Тех. поддержка</div>
+                      <div style={{ ...smallMuted, marginTop: 4 }}>Открыть чат поддержки в Telegram</div>
+                    </div>
+                    <IconChevron ink={BRAND_INK} />
+                  </button>
+
+                  {isAdmin && (
+                    <button
+                      style={profileActionCard}
+                      onClick={() => {
+                        setSelectedOrderId(null);
+                        setAdminFilter("active");
+                        setAdminError(null);
+                        setOrders([]);
+                        setView("admin");
+                        adminLoad();
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 900, fontSize: 17 }}>Админка</div>
+                        <div style={{ ...smallMuted, marginTop: 4 }}>Управление заказами и статусами</div>
+                      </div>
+                      <IconChevron ink={BRAND_INK} />
+                    </button>
+                  )}
+
+                  {isAdmin && (
+                    <button
+                      style={profileActionCard}
+                      onClick={() => {
+                        setSelectedOrderId(null);
+                        setAdminFilter("active");
+                        setAdminError(null);
+                        setOrders([]);
+                        setView("admin");
+                        adminLoad();
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontWeight: 900, fontSize: 17 }}>Все заказы</div>
+                        <div style={{ ...smallMuted, marginTop: 4 }}>Список заказов с фильтрами по статусу</div>
+                      </div>
+                      <IconChevron ink={BRAND_INK} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {profileScreen === "history" && (
+              <div style={card}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                  <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
+                  <button style={btnGhost} onClick={() => { setProfileScreen("menu"); setSelectedMyOrderId(null); }}>
+                    ← Назад
+                  </button>
+                </div>
 
                 {profileLoading ? (
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1490,9 +1451,7 @@ export default function Page() {
                           >
                             <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                               <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                              <div style={{ fontSize: 12, opacity: 0.7 }}>
-                                {formatDateTime(o.created_at)}
-                              </div>
+                              <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
                             </div>
                             <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
                               Статус: <strong>{statusLabel(o.status)}</strong>
@@ -1526,20 +1485,12 @@ export default function Page() {
                             <div style={{ marginTop: 6, fontWeight: 900 }}>
                               {formatPriceRub(selectedMyOrder.total_amount)}
                             </div>
-                            <div style={{ marginTop: 6, ...smallMuted }}>
-                              {formatDateTime(selectedMyOrder.created_at)}
-                            </div>
+                            <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
 
-                            <div
-                              style={{
-                                marginTop: 12,
-                                whiteSpace: "pre-wrap",
-                                fontSize: 13,
-                                opacity: 0.95,
-                              }}
-                            >
+                            <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
                               <strong>Состав:</strong>
-                              {"\n"}
+                              {"
+"}
                               {selectedMyOrder.items_text || "Нет данных"}
                             </div>
                           </div>
@@ -1553,10 +1504,14 @@ export default function Page() {
               </div>
             )}
 
-            {/* MY DATA */}
-            {profileTab === "data" && (
+            {profileScreen === "data" && (
               <div style={card}>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Мои данные</div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                  <div style={{ fontWeight: 900, fontSize: 16 }}>Мои данные</div>
+                  <button style={btnGhost} onClick={() => setProfileScreen("menu")}>
+                    ← Назад
+                  </button>
+                </div>
 
                 <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                   <input
@@ -1581,15 +1536,11 @@ export default function Page() {
                   />
 
                   <div style={smallMuted}>
-                    Эти данные будут автоматически подставляться в оформление заказа.
+                    Эти данные автоматически подставляются в оформление заказа.
                   </div>
 
                   <button
-                    style={{
-                      ...btnPrimary,
-                      width: "100%",
-                      opacity: profileSaveLoading ? 0.7 : 1,
-                    }}
+                    style={{ ...btnPrimary, width: "100%", opacity: profileSaveLoading ? 0.7 : 1 }}
                     onClick={saveProfileData}
                     disabled={profileSaveLoading}
                   >
@@ -1601,32 +1552,30 @@ export default function Page() {
           </div>
         )}
 
-        {/* ADMIN */}
         {view === "admin" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Все заказы</div>
                 <button
                   style={btnGhost}
                   onClick={() => {
                     setSelectedOrderId(null);
                     setView("profile");
-                    setProfileTab("history");
+                    setProfileScreen("menu");
                   }}
                 >
                   ← В профиль
                 </button>
               </div>
 
-              <div style={{ marginTop: 10 }}>
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button style={filterBtn(adminFilter === "active")} onClick={() => setAdminFilter("active")}>
+                  Активные
+                </button>
+                <button style={filterBtn(adminFilter === "completed")} onClick={() => setAdminFilter("completed")}>
+                  Завершённые
+                </button>
                 <button style={btnGhost} onClick={adminLoad}>
                   Обновить
                 </button>
@@ -1645,7 +1594,7 @@ export default function Page() {
                 <>
                   {!selectedOrderId && (
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      {orders.map((o) => (
+                      {filteredAdminOrders.map((o) => (
                         <button
                           key={o.id}
                           onClick={() => setSelectedOrderId(o.id)}
@@ -1660,9 +1609,7 @@ export default function Page() {
                         >
                           <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                             <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                            <div style={{ fontSize: 12, opacity: 0.7 }}>
-                              {formatDateTime(o.created_at)}
-                            </div>
+                            <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
                           </div>
                           <div style={{ marginTop: 6, fontWeight: 900 }}>{o.customer_name}</div>
                           <div style={{ marginTop: 4, fontSize: 13, opacity: 0.9 }}>
@@ -1670,7 +1617,7 @@ export default function Page() {
                           </div>
                         </button>
                       ))}
-                      {orders.length === 0 && (
+                      {filteredAdminOrders.length === 0 && (
                         <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>
                       )}
                     </div>
@@ -1688,15 +1635,7 @@ export default function Page() {
                             Заказ #{selectedOrder.id.slice(0, 8)}
                           </div>
 
-                          <div
-                            style={{
-                              marginTop: 10,
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 4,
-                              opacity: 0.95,
-                            }}
-                          >
+                          <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4, opacity: 0.95 }}>
                             <div>👤 {selectedOrder.customer_name}</div>
                             <div>📞 {selectedOrder.phone}</div>
                             <div>📍 {selectedOrder.address}</div>
@@ -1706,16 +1645,10 @@ export default function Page() {
                             <div style={smallMuted}>{formatDateTime(selectedOrder.created_at)}</div>
                           </div>
 
-                          <div
-                            style={{
-                              marginTop: 12,
-                              whiteSpace: "pre-wrap",
-                              fontSize: 13,
-                              opacity: 0.95,
-                            }}
-                          >
+                          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
                             <strong>Состав:</strong>
-                            {"\n"}
+                            {"
+"}
                             {selectedOrder.items_text || "Нет данных"}
                           </div>
 
@@ -1746,7 +1679,6 @@ export default function Page() {
         )}
       </div>
 
-      {/* Bottom pill */}
       <div style={navWrap}>
         <div style={navPill}>
           <div style={indicator} />
@@ -1802,7 +1734,10 @@ export default function Page() {
 
           <button
             style={{ ...navBtnBase, opacity: viewIndex === 2 ? 1 : 0.92 }}
-            onClick={() => setView("profile")}
+            onClick={() => {
+              setView("profile");
+              setProfileScreen("menu");
+            }}
             aria-label="Профиль"
             onPointerDown={onPressDown}
             onPointerUp={onPressUp}
