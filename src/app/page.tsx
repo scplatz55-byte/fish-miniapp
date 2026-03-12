@@ -138,11 +138,11 @@ function IconProfile({ active, ink, accent }: { active: boolean; ink: string; ac
 
 function IconTrash({ ink }: { ink: string }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"
+        d="M9 3.75h6M4.5 6.75h15M8.25 6.75l.6 10.138A1.5 1.5 0 0 0 10.347 18.3h3.306a1.5 1.5 0 0 0 1.497-1.412l.6-10.138M10 10.5v4.5M14 10.5v4.5"
         stroke={ink}
-        strokeWidth="2"
+        strokeWidth="1.9"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -1280,24 +1280,6 @@ const logoStyle: React.CSSProperties = {
                               >
                                 +
                               </button>
-
-                              <button
-                                style={{
-                                  width: 34,
-                                  height: 34,
-                                  borderRadius: 999,
-                                  border: "1px solid rgba(10,19,23,0.10)",
-                                  background: "#fff",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  cursor: "pointer",
-                                }}
-                                onClick={() => removeFromCart(p.id)}
-                                title="Убрать"
-                              >
-                                <IconTrash ink={BRAND_INK} />
-                              </button>
                             </div>
                           )}
                         </div>
@@ -1347,26 +1329,64 @@ const logoStyle: React.CSSProperties = {
                           style={{
                             marginTop: 10,
                             display: "flex",
-                            gap: 10,
                             alignItems: "center",
+                            gap: 6,
+                            padding: "4px",
+                            borderRadius: 999,
+                            border: "1px solid rgba(10,19,23,0.10)",
+                            background: "rgba(255,255,255,0.9)",
+                            width: "fit-content",
                           }}
                         >
-                          <button style={btnGhost} onClick={() => changeQuantity(item.product.id, -1)}>
+                          <button
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 999,
+                              border: "1px solid rgba(10,19,23,0.10)",
+                              background: "#fff",
+                              fontWeight: 900,
+                              cursor: "pointer",
+                            }}
+                            onClick={() => changeQuantity(item.product.id, -1)}
+                          >
                             −
                           </button>
-                          <div style={{ minWidth: 24, textAlign: "center", fontWeight: 900 }}>
+                          <div
+                            style={{
+                              minWidth: 26,
+                              textAlign: "center",
+                              fontWeight: 900,
+                              fontSize: 14,
+                            }}
+                          >
                             {item.quantity}
                           </div>
-                          <button style={btnGhost} onClick={() => changeQuantity(item.product.id, 1)}>
+                          <button
+                            style={{
+                              width: 34,
+                              height: 34,
+                              borderRadius: 999,
+                              border: "1px solid rgba(10,19,23,0.10)",
+                              background: "#fff",
+                              fontWeight: 900,
+                              cursor: "pointer",
+                            }}
+                            onClick={() => changeQuantity(item.product.id, 1)}
+                          >
                             +
                           </button>
                           <button
                             style={{
-                              ...btnGhost,
-                              width: 40,
+                              width: 34,
+                              height: 34,
+                              borderRadius: 999,
+                              border: "1px solid rgba(10,19,23,0.10)",
+                              background: "#fff",
                               display: "flex",
                               alignItems: "center",
                               justifyContent: "center",
+                              cursor: "pointer",
                               padding: 0,
                             }}
                             onClick={() => removeFromCart(item.product.id)}
