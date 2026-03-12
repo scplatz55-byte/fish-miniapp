@@ -1521,6 +1521,7 @@ const logoStyle: React.CSSProperties = {
                   textAlign: "left",
                   cursor: "pointer",
                   border: "1px solid rgba(10,19,23,0.08)",
+                  color: BRAND_INK,
                 }}
                 onClick={() => {
                   setSelectedMyOrderId(null);
@@ -1544,6 +1545,7 @@ const logoStyle: React.CSSProperties = {
                   textAlign: "left",
                   cursor: "pointer",
                   border: "1px solid rgba(10,19,23,0.08)",
+                  color: BRAND_INK,
                 }}
                 onClick={() => openProfileScreen("data")}
               >
@@ -1564,6 +1566,7 @@ const logoStyle: React.CSSProperties = {
                   textAlign: "left",
                   cursor: "pointer",
                   border: "1px solid rgba(10,19,23,0.08)",
+                  color: BRAND_INK,
                 }}
                 onClick={openSupport}
               >
@@ -1586,6 +1589,7 @@ const logoStyle: React.CSSProperties = {
                     cursor: "pointer",
                     border: "1px solid rgba(212,51,20,0.18)",
                     boxShadow: "0 10px 30px rgba(212,51,20,0.10)",
+                    color: BRAND_INK,
                   }}
                   onClick={() => {
                     setSelectedOrderId(null);
@@ -1620,12 +1624,15 @@ const logoStyle: React.CSSProperties = {
                   transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
                   display: "flex",
                   flexDirection: "column",
+                  alignItems: "stretch",
+                  justifyContent: "flex-start",
                 }}
               >
                 <div
                   style={{
                     ...card,
-                    flex: 1,
+                    flex: "0 1 auto",
+                    maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - ${HEADER_H - 16}px - env(safe-area-inset-bottom, 0px) - ${NAV_LIFT + navTotalHeight + 24}px)`,
                     overflowY: "auto",
                     WebkitOverflowScrolling: "touch",
                     paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT + navTotalHeight + 24}px)`,
