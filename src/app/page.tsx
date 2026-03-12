@@ -41,27 +41,6 @@ type OrderForUi = {
 };
 
 type View = "catalog" | "cart" | "profile" | "admin";
-type ProfileScreen = "menu" | "history" | "data";
-type AdminFilter = "active" | "completed";
-
-type TgUser = {
-  id?: number;
-  username?: string;
-  first_name?: string;
-  last_name?: string;
-  photo_url?: string;
-};
-
-type UserProfile = {
-  telegram_user_id: number;
-  telegram_username: string | null;
-  telegram_first_name: string | null;
-  telegram_last_name: string | null;
-  telegram_photo_url: string | null;
-  full_name: string | null;
-  phone: string | null;
-  address: string | null;
-};
 
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
@@ -86,17 +65,7 @@ function statusLabel(s: OrderStatus) {
   return s;
 }
 
-function isActiveOrderStatus(status: OrderStatus) {
-  return status === "assembling" || status === "on_the_way";
-}
-
-function getTgDisplayName(user: TgUser | null) {
-  const first = user?.first_name || "";
-  const last = user?.last_name || "";
-  const full = `${first} ${last}`.trim();
-  return full || user?.username || "Пользователь";
-}
-
+/** Иконки (SVG) */
 function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
   const stroke = active ? accent : `${ink}A6`;
   return (
@@ -147,105 +116,57 @@ function IconProfile({ active, ink, accent }: { active: boolean; ink: string; ac
   );
 }
 
-function IconTrash({ ink }: { ink: string }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M4 7h16M9 7V5h6v2M8 7l1 12h6l1-12"
-        stroke={ink}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconChevron({ ink }: { ink: string }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M9 6l6 6-6 6" stroke={ink} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function SkeletonBlock({
-  height = 16,
-  radius = 12,
-  style = {},
-}: {
-  height?: number;
-  radius?: number;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <div
-      className="app-skeleton"
-      style={{
-        height,
-        borderRadius: radius,
-        width: "100%",
-        ...style,
-      }}
-    />
-  );
-}
-
 export default function Page() {
   const [view, setView] = useState<View>("catalog");
-  const [profileScreen, setProfileScreen] = useState<ProfileScreen>("menu");
-  const [adminFilter, setAdminFilter] = useState<AdminFilter>("active");
 
+  // Telegram
   const [tgUserId, setTgUserId] = useState<number | null>(null);
-  const [tgUser, setTgUser] = useState<TgUser | null>(null);
   const [initData, setInitData] = useState<string>("");
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
 
+  // Brand colors
   const BRAND_BG = "#2B80A4";
   const BRAND_ACCENT = "#D43314";
   const BRAND_INK = "#0A1317";
   const CARD_BG = "#FFFFFF";
 
+  // Header
   const HEADER_H = 64;
-  const HEADER_TOP_PAD = 24;
+  const HEADER_TOP_PAD = 24; // ты поднял до 24 — закрепляем
 
+  // Bottom nav
   const NAV_BTN_W = 58;
   const NAV_BTN_H = 48;
   const NAV_GAP = 10;
   const NAV_PAD = 10;
   const NAV_LIFT = 26;
 
-  const [bootLoading, setBootLoading] = useState(true);
-  const [categoriesLoading, setCategoriesLoading] = useState(true);
-  const [productsLoading, setProductsLoading] = useState(false);
-  const [profileSaveLoading, setProfileSaveLoading] = useState(false);
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
-
+  // Shop
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
 
+  // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
   const total = useMemo(
     () => cart.reduce((sum, item) => sum + Number(item.product.price) * item.quantity, 0),
     [cart]
   );
 
+  // Checkout overlay
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
-  const [orderFullName, setOrderFullName] = useState("");
-  const [orderPhone, setOrderPhone] = useState("");
-  const [orderAddress, setOrderAddress] = useState("");
-  const [orderComment, setOrderComment] = useState("");
+  // Checkout fields
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [comment, setComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [promoCode, setPromoCode] = useState("");
 
+  // Admin
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const [profileData, setProfileData] = useState<UserProfile | null>(null);
-  const [profileFormFullName, setProfileFormFullName] = useState("");
-  const [profileFormPhone, setProfileFormPhone] = useState("");
-  const [profileFormAddress, setProfileFormAddress] = useState("");
-
+  // Profile orders
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [myOrders, setMyOrders] = useState<OrderForUi[]>([]);
@@ -255,6 +176,7 @@ export default function Page() {
     [myOrders, selectedMyOrderId]
   );
 
+  // Admin orders
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderForUi[]>([]);
@@ -264,7 +186,9 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
+  // ===== Spring indicator animation (пружинка) =====
   const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
+
   const targetLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
 
   const [indicatorLeft, setIndicatorLeft] = useState<number>(targetLeft);
@@ -272,39 +196,39 @@ export default function Page() {
   const xRef = useRef<number>(targetLeft);
   const vRef = useRef<number>(0);
 
-  const filteredAdminOrders = useMemo(() => {
-    if (adminFilter === "active") {
-      return orders.filter((o) => isActiveOrderStatus(o.status));
-    }
-    return orders.filter((o) => !isActiveOrderStatus(o.status));
-  }, [orders, adminFilter]);
-
   useEffect(() => {
     const target = targetLeft;
+
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
-    const stiffness = 0.16;
-    const damping = 0.78;
-    const maxStep = 16;
+    const stiffness = 0.16; // жесткость
+    const damping = 0.78; // затухание (чем ниже — тем сильнее "пружинит")
+    const maxStep = 16; // ограничение рывка, чтобы не улетал
 
     const tick = () => {
       const x = xRef.current;
       let v = vRef.current;
+
+      // spring force
       const force = (target - x) * stiffness;
       v = v * damping + force;
 
+      // clamp speed
       if (v > maxStep) v = maxStep;
       if (v < -maxStep) v = -maxStep;
 
       const nextX = x + v;
+
       xRef.current = nextX;
       vRef.current = v;
+
       setIndicatorLeft(nextX);
 
       const done = Math.abs(target - nextX) < 0.25 && Math.abs(v) < 0.25;
       if (!done) {
         animRef.current = requestAnimationFrame(tick);
       } else {
+        // snap идеально в цель
         xRef.current = target;
         vRef.current = 0;
         setIndicatorLeft(target);
@@ -313,12 +237,15 @@ export default function Page() {
     };
 
     animRef.current = requestAnimationFrame(tick);
+
     return () => {
       if (animRef.current) cancelAnimationFrame(animRef.current);
       animRef.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [targetLeft]);
 
+  // Telegram init
   useEffect(() => {
     let meta = document.querySelector('meta[name="viewport"]') as HTMLMetaElement | null;
     if (!meta) {
@@ -332,27 +259,28 @@ export default function Page() {
     document.body.style.touchAction = "manipulation";
 
     const tg = (window as any)?.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
+    if (!tg) return;
 
-      try {
-        tg.setHeaderColor?.(BRAND_BG);
-        tg.setBackgroundColor?.(BRAND_BG);
-      } catch {}
+    tg.ready();
+    tg.expand();
 
-      try {
-        if (window.innerWidth < 768) {
-          tg.requestFullscreen?.();
-        }
-      } catch {}
+    try {
+      tg.setHeaderColor?.(BRAND_BG);
+      tg.setBackgroundColor?.(BRAND_BG);
+    } catch {}
+    try {
+      if (window.innerWidth < 768) {
+        tg.requestFullscreen?.();
+      }
+    } catch {}
 
-      setInitData(tg.initData || "");
-      const u = (tg.initDataUnsafe?.user || null) as TgUser | null;
-      setTgUser(u);
-      if (u?.id) setTgUserId(u.id);
-    }
+    setInitData(tg.initData || "");
 
+    const u = tg.initDataUnsafe?.user;
+    if (u?.id) setTgUserId(u.id);
+    if (u?.first_name) setName(u.first_name);
+
+    // Скролл только внутри контента
     try {
       document.documentElement.style.height = "100%";
       document.body.style.height = "100%";
@@ -360,27 +288,24 @@ export default function Page() {
       document.body.style.overflow = "hidden";
     } catch {}
   }, []);
-
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
 
     const updateKeyboard = () => {
       const active = document.activeElement as HTMLElement | null;
-      const isInputFocused =
+      const isFocused =
         active?.tagName === "INPUT" ||
         active?.tagName === "TEXTAREA" ||
         active?.tagName === "SELECT";
-
       const diff = window.innerHeight - vv.height;
-      setKeyboardOpen(Boolean(isInputFocused && diff > 140));
+      setKeyboardOpen(Boolean(isFocused && diff > 140));
     };
 
     vv.addEventListener("resize", updateKeyboard);
     vv.addEventListener("scroll", updateKeyboard);
     window.addEventListener("focusin", updateKeyboard);
     window.addEventListener("focusout", updateKeyboard);
-
     updateKeyboard();
 
     return () => {
@@ -391,6 +316,7 @@ export default function Page() {
     };
   }, []);
 
+  // Detect admin
   async function detectAdmin() {
     if (!initData) return;
     try {
@@ -412,11 +338,12 @@ export default function Page() {
 
   useEffect(() => {
     if (initData) detectAdmin();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initData]);
 
+  // Load categories
   useEffect(() => {
     async function loadCategories() {
-      setCategoriesLoading(true);
       const { data } = await supabase
         .from("categories")
         .select("id,name,sort_order")
@@ -425,15 +352,16 @@ export default function Page() {
       const list = (data || []) as Category[];
       setCategories(list);
       if (!selectedCategoryId && list.length > 0) setSelectedCategoryId(list[0].id);
-      setCategoriesLoading(false);
     }
     loadCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load products
   useEffect(() => {
     async function loadProducts() {
       if (!selectedCategoryId) return;
-      setProductsLoading(true);
+
       const { data } = await supabase
         .from("products")
         .select("id,category_id,title,description,price,unit_type,is_active")
@@ -441,86 +369,11 @@ export default function Page() {
         .eq("is_active", true);
 
       setProducts((data || []) as Product[]);
-      setProductsLoading(false);
     }
     loadProducts();
   }, [selectedCategoryId]);
 
-  useEffect(() => {
-    if (!categoriesLoading && initData !== "") {
-      const t = setTimeout(() => setBootLoading(false), 350);
-      return () => clearTimeout(t);
-    }
-  }, [categoriesLoading, initData]);
-
-  useEffect(() => {
-    async function loadUserProfile() {
-      if (!tgUserId) return;
-
-      const { data, error } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("telegram_user_id", tgUserId)
-        .maybeSingle();
-
-      if (error) return;
-
-      if (data) {
-        const row = data as UserProfile;
-        setProfileData(row);
-        setProfileFormFullName(row.full_name || "");
-        setProfileFormPhone(row.phone || "");
-        setProfileFormAddress(row.address || "");
-        setOrderFullName(row.full_name || getTgDisplayName(tgUser));
-        setOrderPhone(row.phone || "");
-        setOrderAddress(row.address || "");
-      } else {
-        const fallbackName = getTgDisplayName(tgUser);
-        setProfileFormFullName(fallbackName);
-        setOrderFullName(fallbackName);
-      }
-    }
-    loadUserProfile();
-  }, [tgUserId, tgUser]);
-
-  async function saveProfileData() {
-    if (!tgUserId) {
-      alert("Не удалось определить Telegram ID");
-      return;
-    }
-
-    setProfileSaveLoading(true);
-
-    const payload: UserProfile = {
-      telegram_user_id: tgUserId,
-      telegram_username: tgUser?.username || null,
-      telegram_first_name: tgUser?.first_name || null,
-      telegram_last_name: tgUser?.last_name || null,
-      telegram_photo_url: tgUser?.photo_url || null,
-      full_name: profileFormFullName.trim() || null,
-      phone: profileFormPhone.trim() || null,
-      address: profileFormAddress.trim() || null,
-    };
-
-    const { error } = await supabase
-      .from("user_profiles")
-      .upsert(payload, { onConflict: "telegram_user_id" });
-
-    setProfileSaveLoading(false);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setProfileData(payload);
-    setOrderFullName(payload.full_name || getTgDisplayName(tgUser));
-    setOrderPhone(payload.phone || "");
-    setOrderAddress(payload.address || "");
-
-    alert("Данные сохранены");
-  }
-
+  // Cart ops
   function addToCart(product: Product) {
     setCart((prev) => {
       const existing = prev.find((c) => c.product.id === product.id);
@@ -543,19 +396,10 @@ export default function Page() {
     );
   }
 
-  function removeFromCart(productId: string) {
-    setCart((prev) => prev.filter((c) => c.product.id !== productId));
-  }
-
-  function getCartItem(productId: string) {
-    return cart.find((c) => c.product.id === productId) || null;
-  }
-
+  // Submit order
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
-    if (!orderFullName || !orderPhone || !orderAddress) {
-      return alert("Заполните ФИО, телефон и адрес");
-    }
+    if (!name || !phone || !address) return alert("Заполните имя, телефон и адрес");
     if (cart.length === 0) return alert("Корзина пуста");
 
     const { data, error } = await supabase
@@ -563,10 +407,10 @@ export default function Page() {
       .insert([
         {
           user_telegram_id: tgUserId,
-          customer_name: orderFullName,
-          phone: orderPhone,
-          address: orderAddress,
-          comment: orderComment,
+          customer_name: name,
+          phone,
+          address,
+          comment,
           payment_method: paymentMethod,
           total_amount: total,
           status: "assembling",
@@ -601,13 +445,11 @@ export default function Page() {
     alert("Заказ оформлен!");
     setCart([]);
     setCheckoutOpen(false);
-    setOrderComment("");
-    setPromoCode("");
     setView("profile");
-    setProfileScreen("history");
     await loadMyOrders();
   }
 
+  // Profile: load my orders
   async function loadMyOrders() {
     if (!initData) {
       setProfileError("Открой мини-апп через Telegram.");
@@ -647,6 +489,7 @@ export default function Page() {
     }
   }
 
+  // Admin: list orders
   async function adminLoad() {
     if (!initData) {
       setAdminError("Нет initData — открой через Telegram.");
@@ -725,26 +568,12 @@ export default function Page() {
     }
   }
 
-  function openSupport() {
-    const supportLink = process.env.NEXT_PUBLIC_SUPPORT_LINK || "";
-    if (!supportLink) {
-      alert("Не задан NEXT_PUBLIC_SUPPORT_LINK в .env.local");
-      return;
-    }
-
-    const tg = (window as any)?.Telegram?.WebApp;
-    try {
-      tg?.openTelegramLink?.(supportLink);
-      return;
-    } catch {}
-
-    window.open(supportLink, "_blank");
-  }
-
   useEffect(() => {
-    if (view === "profile" && profileScreen === "history") loadMyOrders();
-  }, [view, profileScreen]);
+    if (view === "profile") loadMyOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
+  // ===== Layout styles =====
   const root: React.CSSProperties = {
     height: "100vh",
     background: BRAND_BG,
@@ -762,15 +591,17 @@ export default function Page() {
     height: HEADER_H,
     paddingTop: `calc(env(safe-area-inset-top, 0px) + ${HEADER_TOP_PAD}px)`,
     boxSizing: "border-box",
-    display: "flex",
-    alignItems: "flex-end",
-    justifyContent: "center",
+    display: "flex",alignItems: "flex-end",
+    paddingBottom: 8,
+	marginTop: 40, // 👈 опустит только лого
+    justifyContent: "center", // 👈 центрируем лого
     paddingLeft: 16,
     paddingRight: 16,
     background: "rgba(43,128,164,0.92)",
     backdropFilter: "blur(10px)",
   };
 
+  // Лого: чуть увеличили
   const logoStyle: React.CSSProperties = {
     height: "clamp(56px, 12vw, 84px)",
     width: "auto",
@@ -780,6 +611,7 @@ export default function Page() {
     userSelect: "none",
   };
 
+  // Контент: снизу оставляем место под пилюлю + safe area + lift
   const navTotalHeight = NAV_PAD * 2 + NAV_BTN_H;
   const contentBottomPadding = `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT}px + ${navTotalHeight}px + 22px)`;
 
@@ -825,12 +657,6 @@ export default function Page() {
     cursor: "pointer",
   };
 
-  const filterBtn = (active: boolean): React.CSSProperties => ({
-    ...btnGhost,
-    background: active ? "rgba(212,51,20,0.12)" : "rgba(255,255,255,0.85)",
-    border: active ? "1px solid rgba(212,51,20,0.28)" : "1px solid rgba(0,0,0,0.10)",
-  });
-
   const inputStyle: React.CSSProperties = {
     padding: 12,
     borderRadius: 14,
@@ -841,53 +667,7 @@ export default function Page() {
     fontSize: 14,
   };
 
-  const profileActionCard: React.CSSProperties = {
-    width: "100%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    gap: 12,
-    padding: 14,
-    borderRadius: 18,
-    border: "1px solid rgba(10,19,23,0.10)",
-    background: "rgba(10,19,23,0.02)",
-    cursor: "pointer",
-    textAlign: "left",
-  };
-
-  const qtyWrap: React.CSSProperties = {
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-    background: "rgba(212,51,20,0.08)",
-    border: "1px solid rgba(212,51,20,0.16)",
-    borderRadius: 14,
-    padding: 4,
-  };
-
-  const qtyBtn: React.CSSProperties = {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    border: "1px solid rgba(10,19,23,0.08)",
-    background: "#fff",
-    color: BRAND_INK,
-    fontWeight: 900,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    padding: 0,
-    flexShrink: 0,
-  };
-
-  const qtyCount: React.CSSProperties = {
-    minWidth: 26,
-    textAlign: "center",
-    fontWeight: 900,
-    fontSize: 14,
-  };
-
+  // ===== Bottom nav =====
   const navWrap: React.CSSProperties = {
     position: "fixed",
     left: 0,
@@ -914,6 +694,7 @@ export default function Page() {
     boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
   };
 
+  // Индикатор делаем ЧУТЬ МЕНЬШЕ кнопки, чтобы не торчал угол (inset = 1)
   const IND_INSET = 1;
   const indicator: React.CSSProperties = {
     position: "absolute",
@@ -921,13 +702,15 @@ export default function Page() {
     left: indicatorLeft + IND_INSET,
     width: NAV_BTN_W - IND_INSET * 2,
     height: NAV_BTN_H - IND_INSET * 2,
-    borderRadius: 13,
+    borderRadius: 13, // кнопка 14 -> индикатор 13
     background: "rgba(212,51,20,0.22)",
-    border: "1px solid rgba(212,51,20,0.28)",
+    border: "1px solid rgba(212,51,20,0.35)",
     boxShadow: "0 12px 28px rgba(212,51,20,0.25)",
+    // transition отключен, потому что у нас пружинка через requestAnimationFrame
     transition: "none",
   };
 
+  // Кнопки прозрачные
   const navBtnBase: React.CSSProperties = {
     width: NAV_BTN_W,
     height: NAV_BTN_H,
@@ -948,118 +731,15 @@ export default function Page() {
       (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.94)";
     } catch {}
   }
-
   function onPressUp(e: any) {
     try {
       (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)";
     } catch {}
   }
 
-  const avatarSrc = tgUser?.photo_url || profileData?.telegram_photo_url || "";
-
-  if (bootLoading) {
-    return (
-      <div style={root}>
-        <style>{`
-          @keyframes appPulse {
-            0% { opacity: 0.45; }
-            50% { opacity: 1; }
-            100% { opacity: 0.45; }
-          }
-          .app-skeleton {
-            background: linear-gradient(
-              90deg,
-              rgba(255,255,255,0.35) 0%,
-              rgba(255,255,255,0.65) 50%,
-              rgba(255,255,255,0.35) 100%
-            );
-            background-size: 200% 100%;
-            animation: appShimmer 1.2s ease-in-out infinite;
-          }
-          @keyframes appShimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-        `}</style>
-
-        <div
-          style={{
-            height: "100%",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-            boxSizing: "border-box",
-          }}
-        >
-          <div
-            style={{
-              width: "min(360px, 100%)",
-              background: "rgba(255,255,255,0.20)",
-              border: "1px solid rgba(255,255,255,0.18)",
-              borderRadius: 28,
-              padding: 24,
-              backdropFilter: "blur(10px)",
-              boxShadow: "0 18px 50px rgba(0,0,0,0.22)",
-            }}
-          >
-            <img
-              src="/logo.png"
-              alt="logo"
-              style={{
-                display: "block",
-                margin: "0 auto",
-                height: 54,
-                width: "auto",
-                animation: "appPulse 1.3s ease-in-out infinite",
-              }}
-              onError={(e) => {
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <div
-              style={{
-                color: "#fff",
-                textAlign: "center",
-                marginTop: 14,
-                fontWeight: 900,
-                fontSize: 16,
-              }}
-            >
-              Загружаем приложение…
-            </div>
-
-            <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 12 }}>
-              <SkeletonBlock height={18} radius={12} />
-              <SkeletonBlock height={18} radius={12} style={{ width: "76%" }} />
-              <SkeletonBlock height={72} radius={18} />
-              <SkeletonBlock height={72} radius={18} />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // ===== Render =====
   return (
     <div style={root}>
-      <style>{`
-        @keyframes appShimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-        .app-skeleton {
-          background: linear-gradient(
-            90deg,
-            rgba(10,19,23,0.06) 0%,
-            rgba(10,19,23,0.12) 50%,
-            rgba(10,19,23,0.06) 100%
-          );
-          background-size: 200% 100%;
-          animation: appShimmer 1.2s ease-in-out infinite;
-        }
-      `}</style>
-
       <div style={header}>
         <img
           src="/logo.png"
@@ -1072,134 +752,83 @@ export default function Page() {
       </div>
 
       <div style={content}>
+        {/* CATALOG */}
         {view === "catalog" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Категории</div>
-
-              {categoriesLoading ? (
-                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <SkeletonBlock height={34} radius={999} style={{ width: 90 }} />
-                  <SkeletonBlock height={34} radius={999} style={{ width: 110 }} />
-                  <SkeletonBlock height={34} radius={999} style={{ width: 100 }} />
-                </div>
-              ) : (
-                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {categories.map((c) => {
-                    const active = selectedCategoryId === c.id;
-                    return (
-                      <button
-                        key={c.id}
-                        onClick={() => setSelectedCategoryId(c.id)}
-                        style={{
-                          padding: "8px 12px",
-                          borderRadius: 999,
-                          border: `1px solid ${
-                            active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
-                          }`,
-                          background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
-                          color: BRAND_INK,
-                          cursor: "pointer",
-                          fontWeight: 900,
-                        }}
-                      >
-                        {c.name}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
+              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {categories.map((c) => {
+                  const active = selectedCategoryId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedCategoryId(c.id)}
+                      style={{
+                        padding: "8px 12px",
+                        borderRadius: 999,
+                        border: `1px solid ${
+                          active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
+                        }`,
+                        background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
+                        color: BRAND_INK,
+                        cursor: "pointer",
+                        fontWeight: 900,
+                      }}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div style={card}>
               <div style={{ fontWeight: 900, fontSize: 16 }}>Товары</div>
-
-              {productsLoading ? (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <SkeletonBlock height={92} radius={14} />
-                  <SkeletonBlock height={92} radius={14} />
-                  <SkeletonBlock height={92} radius={14} />
-                </div>
-              ) : (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                  {products.map((p) => {
-                    const cartItem = getCartItem(p.id);
-
-                    return (
-                      <div
-                        key={p.id}
-                        style={{
-                          borderRadius: 14,
-                          border: "1px solid rgba(10,19,23,0.10)",
-                          padding: 12,
-                          background: "rgba(10,19,23,0.02)",
-                        }}
-                      >
-                        <div style={{ fontWeight: 900 }}>{p.title}</div>
-                        {p.description && (
-                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>{p.description}</div>
-                        )}
-
-                        <div
-                          style={{
-                            marginTop: 10,
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                            gap: 10,
-                          }}
-                        >
-                          <div style={{ fontWeight: 900 }}>
-                            {formatPriceRub(p.price)}{" "}
-                            <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>
-                              {p.unit_type === "weight" ? "за кг" : "за шт"}
-                            </span>
-                          </div>
-
-                          {!cartItem ? (
-                            <button
-                              style={{
-                                ...btnGhost,
-                                background: "rgba(212,51,20,0.10)",
-                                border: "1px solid rgba(212,51,20,0.22)",
-                                color: BRAND_INK,
-                              }}
-                              onClick={() => addToCart(p)}
-                            >
-                              + В корзину
-                            </button>
-                          ) : (
-                            <div style={qtyWrap}>
-                              <button style={qtyBtn} onClick={() => changeQuantity(p.id, -1)}>
-                                −
-                              </button>
-                              <div style={qtyCount}>{cartItem.quantity}</div>
-                              <button style={qtyBtn} onClick={() => changeQuantity(p.id, 1)}>
-                                +
-                              </button>
-                              <button
-                                style={qtyBtn}
-                                onClick={() => removeFromCart(p.id)}
-                                title="Убрать из корзины"
-                              >
-                                <IconTrash ink={BRAND_INK} />
-                              </button>
-                            </div>
-                          )}
-                        </div>
+              <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                {products.map((p) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      borderRadius: 14,
+                      border: "1px solid rgba(10,19,23,0.10)",
+                      padding: 12,
+                      background: "rgba(10,19,23,0.02)",
+                    }}
+                  >
+                    <div style={{ fontWeight: 900 }}>{p.title}</div>
+                    {p.description && (
+                      <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>{p.description}</div>
+                    )}
+                    <div style={{ marginTop: 10, display: "flex", justifyContent: "space-between", gap: 10 }}>
+                      <div style={{ fontWeight: 900 }}>
+                        {formatPriceRub(p.price)}{" "}
+                        <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>
+                          {p.unit_type === "weight" ? "за кг" : "за шт"}
+                        </span>
                       </div>
-                    );
-                  })}
+                      <button
+                        style={{
+                          ...btnGhost,
+                          background: "rgba(212,51,20,0.10)",
+                          border: "1px solid rgba(212,51,20,0.22)",
+                          color: BRAND_INK,
+                        }}
+                        onClick={() => addToCart(p)}
+                      >
+                        + В корзину
+                      </button>
+                    </div>
+                  </div>
+                ))}
 
-                  {products.length === 0 && (
-                    <div style={smallMuted}>Пока нет товаров в этой категории.</div>
-                  )}
-                </div>
-              )}
+                {products.length === 0 && <div style={smallMuted}>Пока нет товаров в этой категории.</div>}
+              </div>
             </div>
           </div>
         )}
 
+        {/* CART */}
         {view === "cart" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
@@ -1264,28 +893,31 @@ export default function Page() {
                 </div>
 
                 <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14 }}>Получатель</div>
-                  <input style={inputStyle} placeholder="ФИО" value={orderFullName} onChange={(e) => setOrderFullName(e.target.value)} />
-                  <input style={inputStyle} placeholder="Телефон" value={orderPhone} onChange={(e) => setOrderPhone(e.target.value)} />
-                  <input style={inputStyle} placeholder="Адрес" value={orderAddress} onChange={(e) => setOrderAddress(e.target.value)} />
+                  <input style={inputStyle} placeholder="Имя" value={name} onChange={(e) => setName(e.target.value)} />
+                  <input
+                    style={inputStyle}
+                    placeholder="Телефон"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                  <input
+                    style={inputStyle}
+                    placeholder="Адрес"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                  />
+                  <textarea
+                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                    placeholder="Комментарий"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                  />
 
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
                   <select style={inputStyle} value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                     <option value="cash">Наличные</option>
                     <option value="transfer">Перевод</option>
                     <option value="qr">QR-код</option>
                   </select>
-
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
-                  <input style={inputStyle} placeholder="Введите промокод" value={promoCode} onChange={(e) => setPromoCode(e.target.value)} />
-
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
-                  <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                    placeholder="Комментарий к заказу"
-                    value={orderComment}
-                    onChange={(e) => setOrderComment(e.target.value)}
-                  />
 
                   <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
                   <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
@@ -1297,304 +929,154 @@ export default function Page() {
           </div>
         )}
 
+        {/* PROFILE */}
         {view === "profile" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
-              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                <div
-                  style={{
-                    width: 68,
-                    height: 68,
-                    borderRadius: "50%",
-                    overflow: "hidden",
-                    background: "rgba(10,19,23,0.08)",
-                    flexShrink: 0,
-                    border: "1px solid rgba(10,19,23,0.10)",
-                  }}
-                >
-                  {avatarSrc ? (
-                    <img
-                      src={avatarSrc}
-                      alt="avatar"
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 900,
-                        fontSize: 22,
-                        opacity: 0.65,
-                      }}
-                    >
-                      {getTgDisplayName(tgUser)?.[0] || "U"}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 20 }}>{getTgDisplayName(tgUser)}</div>
-                  {tgUser?.username ? <div style={{ marginTop: 4, opacity: 0.75 }}>@{tgUser.username}</div> : null}
-                  <div style={{ marginTop: 6, ...smallMuted }}>ID: {tgUserId ?? "—"}</div>
-                </div>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>Профиль</div>
+              <div style={{ marginTop: 8, opacity: 0.85 }}>
+                Telegram ID: <strong>{tgUserId ?? "—"}</strong>
               </div>
-            </div>
 
-            {profileScreen === "menu" && (
-              <div style={card}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <button style={profileActionCard} onClick={() => { setProfileScreen("history"); setSelectedMyOrderId(null); }}>
-                    <div>
-                      <div style={{ fontWeight: 900, fontSize: 17 }}>История заказов</div>
-                      <div style={{ ...smallMuted, marginTop: 4 }}>Просмотр ваших оформленных заказов</div>
-                    </div>
-                    <IconChevron ink={BRAND_INK} />
+              <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button style={btnGhost} onClick={loadMyOrders}>
+                  Обновить заказы
+                </button>
+
+                {isAdmin && (
+                  <button
+                    style={{ ...btnPrimary, background: BRAND_INK }}
+                    onClick={() => {
+                      setSelectedOrderId(null);
+                      setAdminError(null);
+                      setOrders([]);
+                      setView("admin");
+                      adminLoad();
+                    }}
+                  >
+                    Админка
                   </button>
-
-                  <button style={profileActionCard} onClick={() => setProfileScreen("data")}>
-                    <div>
-                      <div style={{ fontWeight: 900, fontSize: 17 }}>Мои данные</div>
-                      <div style={{ ...smallMuted, marginTop: 4 }}>ФИО, телефон и адрес для автозаполнения</div>
-                    </div>
-                    <IconChevron ink={BRAND_INK} />
-                  </button>
-
-                  <button style={profileActionCard} onClick={openSupport}>
-                    <div>
-                      <div style={{ fontWeight: 900, fontSize: 17 }}>Тех. поддержка</div>
-                      <div style={{ ...smallMuted, marginTop: 4 }}>Открыть чат поддержки в Telegram</div>
-                    </div>
-                    <IconChevron ink={BRAND_INK} />
-                  </button>
-
-                  {isAdmin && (
-                    <button
-                      style={profileActionCard}
-                      onClick={() => {
-                        setSelectedOrderId(null);
-                        setAdminFilter("active");
-                        setAdminError(null);
-                        setOrders([]);
-                        setView("admin");
-                        adminLoad();
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 900, fontSize: 17 }}>Админка</div>
-                        <div style={{ ...smallMuted, marginTop: 4 }}>Управление заказами и статусами</div>
-                      </div>
-                      <IconChevron ink={BRAND_INK} />
-                    </button>
-                  )}
-
-                  {isAdmin && (
-                    <button
-                      style={profileActionCard}
-                      onClick={() => {
-                        setSelectedOrderId(null);
-                        setAdminFilter("active");
-                        setAdminError(null);
-                        setOrders([]);
-                        setView("admin");
-                        adminLoad();
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontWeight: 900, fontSize: 17 }}>Все заказы</div>
-                        <div style={{ ...smallMuted, marginTop: 4 }}>Список заказов с фильтрами по статусу</div>
-                      </div>
-                      <IconChevron ink={BRAND_INK} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {profileScreen === "history" && (
-              <div style={card}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                  <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
-                  <button style={btnGhost} onClick={() => { setProfileScreen("menu"); setSelectedMyOrderId(null); }}>
-                    ← Назад
-                  </button>
-                </div>
-
-                {profileLoading ? (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={84} radius={14} />
-                    <SkeletonBlock height={84} radius={14} />
-                  </div>
-                ) : profileError ? (
-                  <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
-                    Ошибка: {profileError}
-                  </div>
-                ) : (
-                  <>
-                    {!selectedMyOrderId && (
-                      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                        {myOrders.map((o) => (
-                          <button
-                            key={o.id}
-                            onClick={() => setSelectedMyOrderId(o.id)}
-                            style={{
-                              textAlign: "left",
-                              borderRadius: 14,
-                              border: "1px solid rgba(10,19,23,0.10)",
-                              background: "rgba(10,19,23,0.02)",
-                              padding: 12,
-                              cursor: "pointer",
-                            }}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-                              <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
-                              <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
-                            </div>
-                            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
-                              Статус: <strong>{statusLabel(o.status)}</strong>
-                            </div>
-                            <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
-                              Сумма: {formatPriceRub(o.total_amount)}
-                            </div>
-                          </button>
-                        ))}
-
-                        {myOrders.length === 0 && (
-                          <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
-                        )}
-                      </div>
-                    )}
-
-                    {selectedMyOrderId && (
-                      <div style={{ marginTop: 10 }}>
-                        <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
-                          ← Назад к списку
-                        </button>
-
-                        {selectedMyOrder ? (
-                          <div style={{ marginTop: 12 }}>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>
-                              Заказ #{selectedMyOrder.id.slice(0, 8)}
-                            </div>
-                            <div style={{ marginTop: 8, opacity: 0.9 }}>
-                              Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
-                            </div>
-                            <div style={{ marginTop: 6, fontWeight: 900 }}>
-                              {formatPriceRub(selectedMyOrder.total_amount)}
-                            </div>
-                            <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
-
-                            <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
-                              <strong>Состав:</strong>
-                              {"
-"}
-                              {selectedMyOrder.items_text || "Нет данных"}
-                            </div>
-                          </div>
-                        ) : (
-                          <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
-                        )}
-                      </div>
-                    )}
-                  </>
                 )}
               </div>
-            )}
 
-            {profileScreen === "data" && (
-              <div style={card}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                  <div style={{ fontWeight: 900, fontSize: 16 }}>Мои данные</div>
-                  <button style={btnGhost} onClick={() => setProfileScreen("menu")}>
-                    ← Назад
-                  </button>
+              {isAdmin && <div style={{ marginTop: 8, ...smallMuted }}>Админ-режим включён</div>}
+            </div>
+
+            <div style={card}>
+              <div style={{ fontWeight: 900, fontSize: 16 }}>История заказов</div>
+
+              {profileLoading && <div style={{ marginTop: 10, opacity: 0.75 }}>Загрузка...</div>}
+              {profileError && (
+                <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                  Ошибка: {profileError}
                 </div>
+              )}
 
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <input
-                    style={inputStyle}
-                    placeholder="ФИО"
-                    value={profileFormFullName}
-                    onChange={(e) => setProfileFormFullName(e.target.value)}
-                  />
+              {!profileLoading && !profileError && (
+                <>
+                  {!selectedMyOrderId && (
+                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {myOrders.map((o) => (
+                        <button
+                          key={o.id}
+                          onClick={() => setSelectedMyOrderId(o.id)}
+                          style={{
+                            textAlign: "left",
+                            borderRadius: 14,
+                            border: "1px solid rgba(10,19,23,0.10)",
+                            background: "rgba(10,19,23,0.02)",
+                            padding: 12,
+                            cursor: "pointer",
+                          }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
+                            <div style={{ fontWeight: 900 }}>#{o.id.slice(0, 8)}</div>
+                            <div style={{ fontSize: 12, opacity: 0.7 }}>{formatDateTime(o.created_at)}</div>
+                          </div>
+                          <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
+                            Статус: <strong>{statusLabel(o.status)}</strong>
+                          </div>
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
+                            Сумма: {formatPriceRub(o.total_amount)}
+                          </div>
+                        </button>
+                      ))}
 
-                  <input
-                    style={inputStyle}
-                    placeholder="Телефон"
-                    value={profileFormPhone}
-                    onChange={(e) => setProfileFormPhone(e.target.value)}
-                  />
+                      {myOrders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>}
+                    </div>
+                  )}
 
-                  <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                    placeholder="Адрес"
-                    value={profileFormAddress}
-                    onChange={(e) => setProfileFormAddress(e.target.value)}
-                  />
+                  {selectedMyOrderId && (
+                    <div style={{ marginTop: 10 }}>
+                      <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
+                        ← Назад к списку
+                      </button>
 
-                  <div style={smallMuted}>
-                    Эти данные автоматически подставляются в оформление заказа.
-                  </div>
+                      {selectedMyOrder ? (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontWeight: 900, fontSize: 16 }}>
+                            Заказ #{selectedMyOrder.id.slice(0, 8)}
+                          </div>
+                          <div style={{ marginTop: 8, opacity: 0.9 }}>
+                            Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
+                          </div>
+                          <div style={{ marginTop: 6, fontWeight: 900 }}>
+                            {formatPriceRub(selectedMyOrder.total_amount)}
+                          </div>
+                          <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
 
-                  <button
-                    style={{ ...btnPrimary, width: "100%", opacity: profileSaveLoading ? 0.7 : 1 }}
-                    onClick={saveProfileData}
-                    disabled={profileSaveLoading}
-                  >
-                    {profileSaveLoading ? "Сохраняем..." : "Сохранить данные"}
-                  </button>
-                </div>
-              </div>
-            )}
+                          <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
+                            <strong>Состав:</strong>
+                            {"\n"}
+                            {selectedMyOrder.items_text || "Нет данных"}
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
 
+        {/* ADMIN */}
         {view === "admin" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={card}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Все заказы</div>
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
                 <button
                   style={btnGhost}
                   onClick={() => {
                     setSelectedOrderId(null);
                     setView("profile");
-                    setProfileScreen("menu");
                   }}
                 >
                   ← В профиль
                 </button>
               </div>
 
-              <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button style={filterBtn(adminFilter === "active")} onClick={() => setAdminFilter("active")}>
-                  Активные
-                </button>
-                <button style={filterBtn(adminFilter === "completed")} onClick={() => setAdminFilter("completed")}>
-                  Завершённые
-                </button>
+              <div style={{ marginTop: 10 }}>
                 <button style={btnGhost} onClick={adminLoad}>
                   Обновить
                 </button>
               </div>
 
-              {adminLoading ? (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <SkeletonBlock height={84} radius={14} />
-                  <SkeletonBlock height={84} radius={14} />
-                </div>
-              ) : adminError ? (
+              {adminLoading && <div style={{ marginTop: 10, opacity: 0.75 }}>Загрузка...</div>}
+              {adminError && (
                 <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
                   Ошибка: {adminError}
                 </div>
-              ) : (
+              )}
+
+              {!adminLoading && !adminError && (
                 <>
                   {!selectedOrderId && (
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      {filteredAdminOrders.map((o) => (
+                      {orders.map((o) => (
                         <button
                           key={o.id}
                           onClick={() => setSelectedOrderId(o.id)}
@@ -1617,9 +1099,7 @@ export default function Page() {
                           </div>
                         </button>
                       ))}
-                      {filteredAdminOrders.length === 0 && (
-                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>
-                      )}
+                      {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>}
                     </div>
                   )}
 
@@ -1647,8 +1127,7 @@ export default function Page() {
 
                           <div style={{ marginTop: 12, whiteSpace: "pre-wrap", fontSize: 13, opacity: 0.95 }}>
                             <strong>Состав:</strong>
-                            {"
-"}
+                            {"\n"}
                             {selectedOrder.items_text || "Нет данных"}
                           </div>
 
@@ -1679,6 +1158,7 @@ export default function Page() {
         )}
       </div>
 
+      {/* Bottom pill */}
       <div style={navWrap}>
         <div style={navPill}>
           <div style={indicator} />
@@ -1734,10 +1214,7 @@ export default function Page() {
 
           <button
             style={{ ...navBtnBase, opacity: viewIndex === 2 ? 1 : 0.92 }}
-            onClick={() => {
-              setView("profile");
-              setProfileScreen("menu");
-            }}
+            onClick={() => setView("profile")}
             aria-label="Профиль"
             onPointerDown={onPressDown}
             onPointerUp={onPressUp}
