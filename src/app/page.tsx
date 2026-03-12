@@ -1727,7 +1727,6 @@ const logoStyle: React.CSSProperties = {
 "}
                                     {selectedMyOrder.items_text || "Нет данных"}
                                   </div>
-                                  </div>
                                 </div>
                               ) : (
                                 <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
