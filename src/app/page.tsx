@@ -1723,8 +1723,7 @@ const logoStyle: React.CSSProperties = {
                                     }}
                                   >
                                     <strong>Состав:</strong>
-                                    {"
-"}
+                                    {"\n"}
                                     {selectedMyOrder.items_text || "Нет данных"}
                                   </div>
                                 </div>
