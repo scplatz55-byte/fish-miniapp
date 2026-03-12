@@ -1299,39 +1299,6 @@ const logoStyle: React.CSSProperties = {
                                 <IconTrash ink={BRAND_INK} />
                               </button>
                             </div>
-                          ) => changeQuantity(p.id, -1)}>
-                                −
-                              </button>
-
-                              <div
-                                style={{
-                                  minWidth: 20,
-                                  textAlign: "center",
-                                  fontWeight: 900,
-                                }}
-                              >
-                                {cartItem.quantity}
-                              </div>
-
-                              <button style={btnGhost} onClick={() => changeQuantity(p.id, 1)}>
-                                +
-                              </button>
-
-                              <button
-                                style={{
-                                  ...btnGhost,
-                                  width: 40,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  padding: 0,
-                                }}
-                                onClick={() => removeFromCart(p.id)}
-                                title="Убрать из корзины"
-                              >
-                                <IconTrash ink={BRAND_INK} />
-                              </button>
-                            </div>
                           )}
                         </div>
                       </div>
