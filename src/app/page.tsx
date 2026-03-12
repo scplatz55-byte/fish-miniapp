@@ -1622,20 +1622,14 @@ const logoStyle: React.CSSProperties = {
                   opacity: isProfileOverlayVisible ? 1 : 0,
                   transform: isProfileOverlayVisible ? "translateY(0)" : "translateY(100%)",
                   transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "stretch",
-                  justifyContent: "flex-start",
+                  overflowY: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  paddingBottom: contentBottomPadding,
                 }}
               >
                 <div
                   style={{
                     ...card,
-                    flex: "0 1 auto",
-                    maxHeight: `calc(100vh - env(safe-area-inset-top, 0px) - ${HEADER_H - 16}px - env(safe-area-inset-bottom, 0px) - ${NAV_LIFT + navTotalHeight + 24}px)`,
-                    overflowY: "auto",
-                    WebkitOverflowScrolling: "touch",
-                    paddingBottom: `calc(env(safe-area-inset-bottom, 0px) + ${NAV_LIFT + navTotalHeight + 24}px)`,
                   }}
                 >
                   <div
