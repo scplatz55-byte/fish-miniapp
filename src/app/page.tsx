@@ -197,7 +197,7 @@ export default function Page() {
   const NAV_BTN_H = 48;
   const NAV_GAP = 10;
   const NAV_PAD = 10;
-  const NAV_LIFT = 26;
+  const NAV_LIFT = 42;
 
   // Boot loading
   const [bootLoading, setBootLoading] = useState(true);
