@@ -140,11 +140,29 @@ function IconTrash({ ink }: { ink: string }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
-        d="M9 3.75h6M4.5 6.75h15M8.25 6.75l.6 10.138A1.5 1.5 0 0 0 10.347 18.3h3.306a1.5 1.5 0 0 0 1.497-1.412l.6-10.138M10 10.5v4.5M14 10.5v4.5"
+        d="M9 3.75h6"
         stroke={ink}
-        strokeWidth="1.9"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M5 6.75h14"
+        stroke={ink}
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M8 6.75l.55 10.1a1.5 1.5 0 0 0 1.5 1.42h3.9a1.5 1.5 0 0 0 1.5-1.42L16 6.75"
+        stroke={ink}
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
+      />
+      <path
+        d="M10 10.25v4.75M14 10.25v4.75"
+        stroke={ink}
+        strokeWidth="2.2"
+        strokeLinecap="round"
       />
     </svg>
   );
