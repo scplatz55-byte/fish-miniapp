@@ -664,12 +664,14 @@ export default function Page() {
   // Submit order
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
-  if (!orderFullName || !orderPhone || !orderAddress) {
-  return alert("Заполните ФИО, телефон и адрес");
-}
-if (cart.length === 0) {
-  return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
-}
+    if (!orderFullName || !orderPhone || !orderAddress) {
+      return alert("Заполните ФИО, телефон и адрес");
+    }
+    if (cart.length === 0) {
+      return alert("🧺 Корзина пока пуста
+
+Добавьте товары из каталога, чтобы оформить заказ.");
+    }
 
     const { data, error } = await supabase
       .from("orders")
@@ -1359,7 +1361,24 @@ const logoStyle: React.CSSProperties = {
               <div style={{ fontWeight: 900, fontSize: 16 }}>Корзина</div>
 
               {cart.length === 0 ? (
-                <div style={{ marginTop: 10, opacity: 0.75 }}>Корзина пуста</div>
+                <div
+                  style={{
+                    marginTop: 14,
+                    padding: 18,
+                    borderRadius: 16,
+                    border: "1px dashed rgba(10,19,23,0.14)",
+                    background: "rgba(10,19,23,0.02)",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: 26, lineHeight: 1 }}>🧺</div>
+                  <div style={{ marginTop: 10, fontWeight: 900, fontSize: 16 }}>
+                    Корзина пока пуста
+                  </div>
+                  <div style={{ marginTop: 6, fontSize: 13, opacity: 0.72 }}>
+                    Добавьте товары из каталога, чтобы оформить заказ.
+                  </div>
+                </div>
               ) : (
                 <>
                   <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
