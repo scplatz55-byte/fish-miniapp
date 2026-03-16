@@ -85,6 +85,33 @@ function statusLabel(s: OrderStatus) {
   return s;
 }
 
+function statusColor(s: OrderStatus) {
+  if (s === "assembling") return "#E6A23C";
+  if (s === "on_the_way") return "#2B80A4";
+  if (s === "delivered") return "#2FA36B";
+  if (s === "canceled") return "#D43314";
+  return "#888";
+}
+
+function StatusBadge({ status }: { status: OrderStatus }) {
+  const color = statusColor(status);
+  return (
+    <span
+      style={{
+        padding: "4px 10px",
+        borderRadius: 999,
+        fontSize: 12,
+        fontWeight: 900,
+        background: color + "22",
+        color: color,
+        border: `1px solid ${color}55`,
+      }}
+    >
+      {statusLabel(status)}
+    </span>
+  );
+}
+
 /** Иконки (SVG) */
 function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
   const stroke = active ? accent : `${ink}A6`;
@@ -1768,7 +1795,7 @@ const logoStyle: React.CSSProperties = {
                                     </div>
                                   </div>
                                   <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>
-                                    Статус: <strong>{statusLabel(o.status)}</strong>
+                                    Статус: <StatusBadge status={o.status} />
                                   </div>
                                   <div style={{ marginTop: 4, fontSize: 13, opacity: 0.85 }}>
                                     Сумма: {formatPriceRub(o.total_amount)}
@@ -1800,7 +1827,7 @@ const logoStyle: React.CSSProperties = {
                                     Заказ #{selectedMyOrder.id.slice(0, 8)}
                                   </div>
                                   <div style={{ marginTop: 8, opacity: 0.9 }}>
-                                    Статус: <strong>{statusLabel(selectedMyOrder.status)}</strong>
+                                    Статус: <StatusBadge status={selectedMyOrder.status} />
                                   </div>
                                   <div style={{ marginTop: 6, fontWeight: 900 }}>
                                     {formatPriceRub(selectedMyOrder.total_amount)}
@@ -1943,7 +1970,7 @@ const logoStyle: React.CSSProperties = {
                           </div>
                           <div style={{ marginTop: 6, fontWeight: 900 }}>{o.customer_name}</div>
                           <div style={{ marginTop: 4, fontSize: 13, opacity: 0.9 }}>
-                            {statusLabel(o.status)} • {formatPriceRub(o.total_amount)}
+                            <StatusBadge status={o.status} /> • {formatPriceRub(o.total_amount)}
                           </div>
                         </button>
                       ))}
