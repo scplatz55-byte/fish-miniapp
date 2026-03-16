@@ -664,12 +664,12 @@ export default function Page() {
   // Submit order
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
-    if (!orderFullName || !orderPhone || !orderAddress) {
-      return alert("Заполните ФИО, телефон и адрес");
-    }
-    if (cart.length === 0) return alert("🧺 Корзина пока пуста
-
-Добавьте товары из каталога, чтобы оформить заказ.");
+  if (!orderFullName || !orderPhone || !orderAddress) {
+  return alert("Заполните ФИО, телефон и адрес");
+}
+if (cart.length === 0) {
+  return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
+}
 
     const { data, error } = await supabase
       .from("orders")
