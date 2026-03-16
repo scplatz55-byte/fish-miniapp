@@ -29,6 +29,7 @@ type OrderStatus = "assembling" | "on_the_way" | "delivered" | "canceled";
 type OrderForUi = {
   id: string;
   user_telegram_id?: number;
+  telegram_username?: string;
   customer_name: string;
   phone: string;
   address: string;
@@ -183,18 +184,8 @@ function IconProfile({ active, ink, accent }: { active: boolean; ink: string; ac
 function IconTrash({ ink }: { ink: string }) {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M9 3.75h6"
-        stroke={ink}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M5 6.75h14"
-        stroke={ink}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
+      <path d="M9 3.75h6" stroke={ink} strokeWidth="2.2" strokeLinecap="round" />
+      <path d="M5 6.75h14" stroke={ink} strokeWidth="2.2" strokeLinecap="round" />
       <path
         d="M8 6.75l.55 10.1a1.5 1.5 0 0 0 1.5 1.42h3.9a1.5 1.5 0 0 0 1.5-1.42L16 6.75"
         stroke={ink}
@@ -202,12 +193,16 @@ function IconTrash({ ink }: { ink: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <path
-        d="M10 10.25v4.75M14 10.25v4.75"
-        stroke={ink}
-        strokeWidth="2.2"
-        strokeLinecap="round"
-      />
+      <path d="M10 10.25v4.75M14 10.25v4.75" stroke={ink} strokeWidth="2.2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconCopy({ ink }: { ink: string }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="9" y="9" width="10" height="10" rx="2" stroke={ink} strokeWidth="2" />
+      <path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1" stroke={ink} strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -873,25 +868,29 @@ if (cart.length === 0) {
     }
   }
 
-  function openUserChat(telegramUserId?: number) {
-    if (!telegramUserId) {
-      alert("Telegram ID пользователя не найден");
-      return;
-    }
-
-    const deepLink = `tg://user?id=${telegramUserId}`;
+  async function openUserChat(telegramUserId?: number, telegramUsername?: string) {
     const tg = (window as any)?.Telegram?.WebApp;
 
-    try {
-      tg?.openLink?.(deepLink);
+    if (telegramUsername) {
+      const clean = telegramUsername.replace(/^@/, "");
+      const url = `https://t.me/${clean}`;
+      try {
+        tg?.openTelegramLink?.(url);
+        return;
+      } catch {}
+      window.open(url, "_blank");
       return;
-    } catch {}
-
-    try {
-      window.location.href = deepLink;
-    } catch {
-      alert("Не удалось открыть чат пользователя");
     }
+
+    if (telegramUserId) {
+      try {
+        await navigator.clipboard.writeText(String(telegramUserId));
+      } catch {}
+      alert("У пользователя нет публичного @username. Telegram ID скопирован, но прямой переход в чат по одному ID в mini app работает нестабильно.");
+      return;
+    }
+
+    alert("Не найден Telegram username или ID пользователя");
   }
 
   function openProfileScreen(screen: Exclude<ProfileScreen, "menu">) {
@@ -2138,14 +2137,7 @@ const logoStyle: React.CSSProperties = {
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                                 <button
                                   style={btnGhost}
-                                  onClick={() => copyPhone(selectedOrder.phone)}
-                                  title="Скопировать номер"
-                                >
-                                  Скопировать номер
-                                </button>
-                                <button
-                                  style={btnGhost}
-                                  onClick={() => openUserChat(selectedOrder.user_telegram_id)}
+                                  onClick={() => openUserChat(selectedOrder.user_telegram_id, selectedOrder.telegram_username)}
                                   title="Открыть чат"
                                 >
                                   Чат
@@ -2163,7 +2155,28 @@ const logoStyle: React.CSSProperties = {
                                 background: "rgba(10,19,23,0.03)",
                               }}
                             >
-                              <div>📞 {selectedOrder.phone}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <span>📞 {selectedOrder.phone}</span>
+                                <button
+                                  style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(10,19,23,0.10)",
+                                    background: "#fff",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    flexShrink: 0,
+                                  }}
+                                  onClick={() => copyPhone(selectedOrder.phone)}
+                                  title="Скопировать номер"
+                                >
+                                  <IconCopy ink={BRAND_INK} />
+                                </button>
+                              </div>
                               <div>📍 {selectedOrder.address}</div>
                               <div>💳 {selectedOrder.payment_method}</div>
                               <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
