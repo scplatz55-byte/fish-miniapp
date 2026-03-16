@@ -115,7 +115,8 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 function orderPreviewItems(itemsText?: string, maxLines = 2) {
   if (!itemsText) return [];
   return itemsText
-    .split("\n")
+    .split("
+")
     .map((line) => line.trim())
     .filter(Boolean)
     .slice(0, maxLines);
@@ -667,7 +668,9 @@ export default function Page() {
     if (!orderFullName || !orderPhone || !orderAddress) {
       return alert("Заполните ФИО, телефон и адрес");
     }
-    if (cart.length === 0) return alert("Корзина пуста");
+    if (cart.length === 0) return alert("🧺 Корзина пока пуста
+
+Добавьте товары из каталога, чтобы оформить заказ.");
 
     const { data, error } = await supabase
       .from("orders")
@@ -1827,7 +1830,9 @@ const logoStyle: React.CSSProperties = {
                               })}
 
                               {myOrders.length === 0 && (
-                                <div style={{ marginTop: 10, opacity: 0.75 }}>Пока нет заказов.</div>
+                                <div style={{ marginTop: 10, opacity: 0.75 }}>📦 У вас пока нет заказов.
+
+После оформления они будут появляться здесь.</div>
                               )}
                             </div>
                           )}
@@ -2016,7 +2021,7 @@ const logoStyle: React.CSSProperties = {
                         );
                       })}
                       {orders.length === 0 && (
-                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказов нет.</div>
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>📦 Пока нет заказов в системе.</div>
                       )}
                     </div>
                   )}
@@ -2104,7 +2109,7 @@ const logoStyle: React.CSSProperties = {
           <button
             style={{ ...navBtnBase, opacity: viewIndex === 0 ? 1 : 0.92 }}
             onClick={() => setView("catalog")}
-            aria-label="Каталог."
+            aria-label="Каталог"
             onPointerDown={onPressDown}
             onPointerUp={onPressUp}
             onPointerCancel={onPressUp}
