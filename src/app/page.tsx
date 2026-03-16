@@ -115,10 +115,20 @@ function StatusBadge({ status }: { status: OrderStatus }) {
 function orderPreviewItems(itemsText?: string, maxLines = 2) {
   if (!itemsText) return [];
   return itemsText
-    .split("\n")
+    .split("
+")
     .map((line) => line.trim())
     .filter(Boolean)
     .slice(0, maxLines);
+}
+
+function orderItemsList(itemsText?: string) {
+  if (!itemsText) return [];
+  return itemsText
+    .split("
+")
+    .map((line) => line.trim())
+    .filter(Boolean);
 }
 
 /** Иконки (SVG) */
@@ -854,6 +864,36 @@ if (cart.length === 0) {
     } catch {}
 
     window.open(SUPPORT_LINK, "_blank");
+  }
+
+  async function copyPhone(phone: string) {
+    try {
+      await navigator.clipboard.writeText(phone);
+      alert("Номер скопирован");
+    } catch {
+      alert(`Не удалось скопировать автоматически. Номер: ${phone}`);
+    }
+  }
+
+  function openUserChat(telegramUserId?: number) {
+    if (!telegramUserId) {
+      alert("Telegram ID пользователя не найден");
+      return;
+    }
+
+    const deepLink = `tg://user?id=${telegramUserId}`;
+    const tg = (window as any)?.Telegram?.WebApp;
+
+    try {
+      tg?.openLink?.(deepLink);
+      return;
+    } catch {}
+
+    try {
+      window.location.href = deepLink;
+    } catch {
+      alert("Не удалось открыть чат пользователя");
+    }
   }
 
   function openProfileScreen(screen: Exclude<ProfileScreen, "menu">) {
@@ -2078,30 +2118,103 @@ const logoStyle: React.CSSProperties = {
                               marginTop: 10,
                               display: "flex",
                               flexDirection: "column",
-                              gap: 4,
+                              gap: 10,
                               opacity: 0.95,
                             }}
                           >
-                            <div>👤 {selectedOrder.customer_name}</div>
-                            <div>📞 {selectedOrder.phone}</div>
-                            <div>📍 {selectedOrder.address}</div>
-                            <div>💳 {selectedOrder.payment_method}</div>
-                            <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                            {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
-                            <div style={smallMuted}>{formatDateTime(selectedOrder.created_at)}</div>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                gap: 10,
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontWeight: 900, fontSize: 16 }}>👤 {selectedOrder.customer_name}</div>
+                                <div style={{ marginTop: 6, ...smallMuted }}>
+                                  {formatDateTime(selectedOrder.created_at)}
+                                </div>
+                              </div>
+
+                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                                <button
+                                  style={btnGhost}
+                                  onClick={() => copyPhone(selectedOrder.phone)}
+                                  title="Скопировать номер"
+                                >
+                                  Скопировать номер
+                                </button>
+                                <button
+                                  style={btnGhost}
+                                  onClick={() => openUserChat(selectedOrder.user_telegram_id)}
+                                  title="Открыть чат"
+                                >
+                                  Чат
+                                </button>
+                              </div>
+                            </div>
+
+                            <div
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                                padding: 12,
+                                borderRadius: 14,
+                                border: "1px solid rgba(10,19,23,0.08)",
+                                background: "rgba(10,19,23,0.03)",
+                              }}
+                            >
+                              <div>📞 {selectedOrder.phone}</div>
+                              <div>📍 {selectedOrder.address}</div>
+                              <div>💳 {selectedOrder.payment_method}</div>
+                              <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
+                              {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
+                            </div>
                           </div>
 
                           <div
                             style={{
-                              marginTop: 12,
-                              whiteSpace: "pre-wrap",
-                              fontSize: 13,
-                              opacity: 0.95,
+                              marginTop: 14,
+                              borderRadius: 16,
+                              border: "1px solid rgba(10,19,23,0.08)",
+                              background: "rgba(10,19,23,0.03)",
+                              overflow: "hidden",
                             }}
                           >
-                            <strong>Состав:</strong>
-                            {"\n"}
-                            {selectedOrder.items_text || "Нет данных"}
+                            <div
+                              style={{
+                                padding: "12px 14px",
+                                borderBottom: "1px solid rgba(10,19,23,0.08)",
+                                fontWeight: 900,
+                              }}
+                            >
+                              Состав заказа
+                            </div>
+                            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                              {orderItemsList(selectedOrder.items_text).length > 0 ? (
+                                orderItemsList(selectedOrder.items_text).map((line, index) => (
+                                  <div
+                                    key={index}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 8,
+                                      padding: "10px 12px",
+                                      borderRadius: 12,
+                                      background: "rgba(255,255,255,0.82)",
+                                      border: "1px solid rgba(10,19,23,0.06)",
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>•</span>
+                                    <span>{line}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div style={{ opacity: 0.7 }}>Нет данных</div>
+                              )}
+                            </div>
                           </div>
 
                           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
