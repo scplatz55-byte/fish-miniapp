@@ -63,6 +63,18 @@ type UserProfile = {
   address: string | null;
 };
 
+type OrderChatMessage = {
+  id: string;
+  order_id: string;
+  telegram_user_id: number;
+  direction: "incoming" | "outgoing";
+  text: string;
+  bot_message_id?: number | null;
+  reply_to_bot_message_id?: number | null;
+  sender_role: "admin" | "customer" | "system";
+  created_at: string;
+};
+
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
   if (Number.isNaN(n)) return String(value);
@@ -312,6 +324,12 @@ export default function Page() {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderForUi[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [chatText, setChatText] = useState("");
+  const [chatSending, setChatSending] = useState(false);
   const selectedOrder = useMemo(
     () => orders.find((o) => o.id === selectedOrderId) || null,
     [orders, selectedOrderId]
@@ -843,6 +861,64 @@ if (cart.length === 0) {
     }
   }
 
+  async function loadOrderChat(orderId: string) {
+    if (!initData) return;
+
+    setChatLoading(true);
+    setChatError(null);
+
+    try {
+      const res = await fetch("/api/admin/chat/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, orderId }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setChatError(data?.error || `Ошибка загрузки чата (HTTP ${res.status})`);
+        setChatMessages([]);
+        return;
+      }
+
+      setChatMessages((data.messages || []) as OrderChatMessage[]);
+    } catch (e: any) {
+      setChatError(e?.message || "Ошибка сети");
+      setChatMessages([]);
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+  async function sendOrderChat(orderId: string) {
+    const text = chatText.trim();
+    if (!text || !initData) return;
+
+    setChatSending(true);
+    setChatError(null);
+
+    try {
+      const res = await fetch("/api/admin/chat/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, orderId, text }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setChatError(data?.error || `Ошибка отправки (HTTP ${res.status})`);
+        return;
+      }
+
+      setChatText("");
+      await loadOrderChat(orderId);
+    } catch (e: any) {
+      setChatError(e?.message || "Ошибка сети");
+    } finally {
+      setChatSending(false);
+    }
+  }
+
   function openSupport() {
     const SUPPORT_LINK = process.env.NEXT_PUBLIC_SUPPORT_LINK || "";
     if (!SUPPORT_LINK) {
@@ -910,6 +986,12 @@ if (cart.length === 0) {
   useEffect(() => {
     if (view === "profile" && profileScreen === "history") loadMyOrders();
   }, [view, profileScreen]);
+
+  useEffect(() => {
+    if (selectedOrderId && chatOpen) {
+      loadOrderChat(selectedOrderId);
+    }
+  }, [selectedOrderId, chatOpen]);
 
   // ===== Layout styles =====
   const root: React.CSSProperties = {
@@ -2048,7 +2130,13 @@ const logoStyle: React.CSSProperties = {
                         return (
                         <button
                           key={o.id}
-                          onClick={() => setSelectedOrderId(o.id)}
+                          onClick={() => {
+                            setSelectedOrderId(o.id);
+                            setChatOpen(false);
+                            setChatMessages([]);
+                            setChatError(null);
+                            setChatText("");
+                          }}
                           style={{
                             textAlign: "left",
                             borderRadius: 16,
@@ -2136,8 +2224,24 @@ const logoStyle: React.CSSProperties = {
 
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
                                 <button
-                                  style={btnGhost}
-                                  onClick={() => openUserChat(selectedOrder.user_telegram_id, selectedOrder.telegram_username)}
+                                  style={{
+                                    ...btnGhost,
+                                    border: chatOpen
+                                      ? `1px solid ${BRAND_ACCENT}`
+                                      : btnGhost.border,
+                                    background: chatOpen
+                                      ? "rgba(212,51,20,0.10)"
+                                      : btnGhost.background,
+                                  }}
+                                  onClick={() => {
+                                    const next = !chatOpen;
+                                    setChatOpen(next);
+                                    if (!chatOpen) {
+                                      setChatMessages([]);
+                                      setChatError(null);
+                                      loadOrderChat(selectedOrder.id);
+                                    }
+                                  }}
                                   title="Открыть чат"
                                 >
                                   Чат
@@ -2227,6 +2331,116 @@ const logoStyle: React.CSSProperties = {
                               )}
                             </div>
                           </div>
+
+                          {chatOpen && (
+                            <div
+                              style={{
+                                marginTop: 14,
+                                borderRadius: 16,
+                                border: "1px solid rgba(10,19,23,0.08)",
+                                background: "rgba(10,19,23,0.03)",
+                                overflow: "hidden",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  padding: "12px 14px",
+                                  borderBottom: "1px solid rgba(10,19,23,0.08)",
+                                  fontWeight: 900,
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: 10,
+                                }}
+                              >
+                                <span>Чат по заказу</span>
+                                <button style={btnGhost} onClick={() => loadOrderChat(selectedOrder.id)}>
+                                  Обновить
+                                </button>
+                              </div>
+
+                              <div
+                                style={{
+                                  padding: 12,
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 10,
+                                  maxHeight: 320,
+                                  overflowY: "auto",
+                                  WebkitOverflowScrolling: "touch",
+                                }}
+                              >
+                                {chatLoading ? (
+                                  <>
+                                    <SkeletonBlock height={54} radius={14} />
+                                    <SkeletonBlock height={54} radius={14} style={{ width: "82%" }} />
+                                  </>
+                                ) : chatError ? (
+                                  <div style={{ color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                                    Ошибка: {chatError}
+                                  </div>
+                                ) : chatMessages.length === 0 ? (
+                                  <div style={{ opacity: 0.72 }}>Сообщений пока нет.</div>
+                                ) : (
+                                  chatMessages.map((msg) => {
+                                    const outgoing = msg.direction === "outgoing";
+                                    return (
+                                      <div
+                                        key={msg.id}
+                                        style={{
+                                          alignSelf: outgoing ? "flex-end" : "flex-start",
+                                          maxWidth: "86%",
+                                          padding: "10px 12px",
+                                          borderRadius: 14,
+                                          background: outgoing
+                                            ? "rgba(212,51,20,0.10)"
+                                            : "rgba(255,255,255,0.90)",
+                                          border: outgoing
+                                            ? "1px solid rgba(212,51,20,0.18)"
+                                            : "1px solid rgba(10,19,23,0.08)",
+                                        }}
+                                      >
+                                        <div style={{ fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>
+                                          {msg.text}
+                                        </div>
+                                        <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>
+                                          {outgoing ? "Вы" : "Клиент"} • {formatDateTime(msg.created_at)}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              <div
+                                style={{
+                                  padding: 12,
+                                  borderTop: "1px solid rgba(10,19,23,0.08)",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 10,
+                                }}
+                              >
+                                <textarea
+                                  style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                                  placeholder="Напишите сообщение клиенту..."
+                                  value={chatText}
+                                  onChange={(e) => setChatText(e.target.value)}
+                                />
+                                <button
+                                  style={{
+                                    ...btnPrimary,
+                                    width: "100%",
+                                    opacity: chatSending ? 0.7 : 1,
+                                  }}
+                                  onClick={() => sendOrderChat(selectedOrder.id)}
+                                  disabled={chatSending}
+                                >
+                                  {chatSending ? "Отправляем..." : "Отправить сообщение"}
+                                </button>
+                              </div>
+                            </div>
+                          )}
 
                           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button
