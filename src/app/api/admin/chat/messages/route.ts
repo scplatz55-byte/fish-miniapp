@@ -24,7 +24,10 @@ export async function POST(request: Request) {
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN!;
     if (!botToken) {
-      return NextResponse.json({ ok: false, error: "Missing TELEGRAM_BOT_TOKEN" }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: "Missing TELEGRAM_BOT_TOKEN" },
+        { status: 500 }
+      );
     }
 
     const verified = verifyTelegramInitData(initData, botToken);
@@ -39,10 +42,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Нет доступа" }, { status: 403 });
     }
 
+    const { data: order, error: orderError } = await supabaseAdmin
+      .from("orders")
+      .select("id,user_telegram_id")
+      .eq("id", orderId)
+      .single();
+
+    if (orderError || !order) {
+      return NextResponse.json({ ok: false, error: "Заказ не найден" }, { status: 404 });
+    }
+
+    const telegramUserId = Number(order.user_telegram_id || 0);
+    if (!telegramUserId) {
+      return NextResponse.json(
+        { ok: false, error: "У заказа нет Telegram ID клиента" },
+        { status: 400 }
+      );
+    }
+
     const { data, error } = await supabaseAdmin
       .from("order_chat_messages")
-      .select("id,order_id,telegram_user_id,direction,text,bot_message_id,reply_to_bot_message_id,sender_role,created_at")
-      .eq("order_id", orderId)
+      .select(
+        "id,order_id,telegram_user_id,direction,text,bot_message_id,reply_to_bot_message_id,sender_role,created_at"
+      )
+      .eq("telegram_user_id", telegramUserId)
       .order("created_at", { ascending: true });
 
     if (error) {

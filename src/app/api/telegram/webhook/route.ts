@@ -21,6 +21,7 @@ export async function POST(request: Request) {
 
     let orderId: string | null = null;
 
+    // 1. Если клиент ответил на сообщение бота — пробуем найти заказ по bot_message_id
     if (replyToBotMessageId) {
       const { data: repliedMessage } = await supabaseAdmin
         .from("order_chat_messages")
@@ -31,6 +32,7 @@ export async function POST(request: Request) {
       orderId = repliedMessage?.order_id || null;
     }
 
+    // 2. Если orderId не нашли — берём последний заказ этого клиента
     if (!orderId) {
       const { data: lastOrder } = await supabaseAdmin
         .from("orders")
@@ -43,6 +45,7 @@ export async function POST(request: Request) {
       orderId = lastOrder?.id || null;
     }
 
+    // 3. Если вообще нет заказа — просто игнорируем
     if (!orderId) {
       return NextResponse.json({ ok: true });
     }
