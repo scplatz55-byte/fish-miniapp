@@ -124,8 +124,7 @@ function orderPreviewItems(itemsText?: string, maxLines = 2) {
 function orderItemsList(itemsText?: string) {
   if (!itemsText) return [];
   return itemsText
-    .split("
-")
+    .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
 }
