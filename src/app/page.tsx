@@ -131,6 +131,15 @@ function orderItemsList(itemsText?: string) {
     .filter(Boolean);
 }
 
+function orderItemsList(itemsText?: string) {
+  if (!itemsText) return [];
+  return itemsText
+    .split("
+")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 /** Иконки (SVG) */
 function IconCatalog({ active, ink, accent }: { active: boolean; ink: string; accent: string }) {
   const stroke = active ? accent : `${ink}A6`;
