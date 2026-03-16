@@ -2105,7 +2105,7 @@ const logoStyle: React.CSSProperties = {
           <button
             style={{ ...navBtnBase, opacity: viewIndex === 0 ? 1 : 0.92 }}
             onClick={() => setView("catalog")}
-            aria-label="Каталог"
+            aria-label="Каталог."
             onPointerDown={onPressDown}
             onPointerUp={onPressUp}
             onPointerCancel={onPressUp}
