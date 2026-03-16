@@ -957,6 +957,19 @@ const logoStyle: React.CSSProperties = {
     cursor: "pointer",
   };
 
+  const statusActionBtn = (status: OrderStatus, active: boolean): React.CSSProperties => ({
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: active
+      ? `1px solid ${statusColor(status)}`
+      : "1px solid rgba(0,0,0,0.10)",
+    background: active ? `${statusColor(status)}22` : "rgba(255,255,255,0.85)",
+    color: active ? statusColor(status) : BRAND_INK,
+    fontWeight: 900,
+    cursor: "pointer",
+    boxShadow: active ? `0 8px 18px ${statusColor(status)}22` : "none",
+  });
+
   const btnTab = (active: boolean): React.CSSProperties => ({
     padding: "10px 12px",
     borderRadius: 14,
@@ -2092,16 +2105,28 @@ const logoStyle: React.CSSProperties = {
                           </div>
 
                           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>
+                            <button
+                              style={statusActionBtn("assembling", selectedOrder.status === "assembling")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "assembling")}
+                            >
                               Собирается
                             </button>
-                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>
+                            <button
+                              style={statusActionBtn("on_the_way", selectedOrder.status === "on_the_way")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}
+                            >
                               В пути
                             </button>
-                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>
+                            <button
+                              style={statusActionBtn("delivered", selectedOrder.status === "delivered")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "delivered")}
+                            >
                               Доставлен
                             </button>
-                            <button style={btnGhost} onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>
+                            <button
+                              style={statusActionBtn("canceled", selectedOrder.status === "canceled")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "canceled")}
+                            >
                               Отменён
                             </button>
                           </div>
