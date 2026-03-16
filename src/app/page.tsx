@@ -1410,7 +1410,7 @@ const logoStyle: React.CSSProperties = {
                             onClick={() => removeFromCart(item.product.id)}
                             title="Убрать из корзины"
                           >
-                            <IconTrash ink={BRAND_INK} />
+                            <span style={{color: "#D43314", fontSize: 18, fontWeight: 900, lineHeight: 1}}>✕</span>
                           </button>
                         </div>
                       </div>
