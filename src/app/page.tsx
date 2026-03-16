@@ -2282,7 +2282,7 @@ const logoStyle: React.CSSProperties = {
           <button
             style={{ ...navBtnBase, opacity: viewIndex === 1 ? 1 : 0.92 }}
             onClick={() => setView("cart")}
-            aria-label="Корзина"
+            aria-label="Корзина."
             onPointerDown={onPressDown}
             onPointerUp={onPressUp}
             onPointerCancel={onPressUp}
