@@ -2292,34 +2292,7 @@ const logoStyle: React.CSSProperties = {
                                 </div>
                               </div>
 
-                              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                                <button
-                                  style={{
-                                    ...btnGhost,
-                                    border: chatOpen
-                                      ? `1px solid ${BRAND_ACCENT}`
-                                      : btnGhost.border,
-                                    background: chatOpen
-                                      ? "rgba(212,51,20,0.10)"
-                                      : btnGhost.background,
-                                  }}
-                                  onClick={() => {
-                                    const next = !chatOpen;
-                                    setChatOpen(next);
-                                    if (!chatOpen) {
-                                      setChatMessages([]);
-                                      setChatError(null);
-                                      setChatUnreadCount(0);
-                                      setChatAtBottom(true);
-                                      lastChatMessageIdRef.current = null;
-                                      loadOrderChat(selectedOrder.id);
-                                    }
-                                  }}
-                                  title="Открыть чат"
-                                >
-                                  Чат
-                                </button>
-                              </div>
+                              {/* убрали кнопку чат сверху */}
                             </div>
 
                             <div
@@ -2405,29 +2378,188 @@ const logoStyle: React.CSSProperties = {
                             </div>
                           </div>
 
-                          {chatOpen && (
+                          <div
+                            style={{
+                              marginTop: 14,
+                              borderRadius: 16,
+                              border: "1px solid rgba(10,19,23,0.08)",
+                              background: "rgba(10,19,23,0.03)",
+                              overflow: "hidden",
+                            }}
+                          >
                             <div
                               style={{
-                                marginTop: 14,
-                                borderRadius: 16,
-                                border: "1px solid rgba(10,19,23,0.08)",
-                                background: "rgba(10,19,23,0.03)",
-                                overflow: "hidden",
+                                padding: "12px 14px",
+                                borderBottom: "1px solid rgba(10,19,23,0.08)",
+                                fontWeight: 900,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 10,
                               }}
                             >
-                              <div
-                                style={{
-                                  padding: "12px 14px",
-                                  borderBottom: "1px solid rgba(10,19,23,0.08)",
-                                  fontWeight: 900,
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  gap: 10,
-                                }}
-                              >
-                                <span>Чат по заказу</span>
-                                <button style={btnGhost} onClick={() => loadOrderChat(selectedOrder.id)}>
+                              <span>Чат по заказу</span>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  style={btnGhost}
+                                  onClick={() => {
+                                    if (!chatOpen) {
+                                      setChatMessages([]);
+                                      setChatError(null);
+                                      setChatUnreadCount(0);
+                                      setChatAtBottom(true);
+                                      lastChatMessageIdRef.current = null;
+                                      loadOrderChat(selectedOrder.id);
+                                    }
+                                    setChatOpen(!chatOpen);
+                                  }}
+                                >
+                                  {chatOpen ? "Скрыть" : "Открыть"}
+                                </button>
+                                <button
+                                  style={{ ...btnGhost, width: 40, display: "flex", justifyContent: "center" }}
+                                  onClick={() => loadOrderChat(selectedOrder.id)}
+                                  title="Обновить"
+                                >
+                                  ↻
+                                </button>
+                              </div>
+                            </div>
+
+                            {chatOpen && (
+                              <>
+                                <div style={{ position: "relative" }}>
+                                  <div
+                                    ref={chatListRef}
+                                    onScroll={handleChatScroll}
+                                    style={{
+                                      padding: 12,
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 10,
+                                      maxHeight: 320,
+                                      overflowY: "auto",
+                                      WebkitOverflowScrolling: "touch",
+                                    }}
+                                  >
+                                    {chatLoading ? (
+                                      <>
+                                        <SkeletonBlock height={54} radius={14} />
+                                        <SkeletonBlock height={54} radius={14} style={{ width: "82%" }} />
+                                      </>
+                                    ) : chatError ? (
+                                      <div style={{ color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                                        Ошибка: {chatError}
+                                      </div>
+                                    ) : chatMessages.length === 0 ? (
+                                      <div style={{ opacity: 0.72 }}>Сообщений пока нет.</div>
+                                    ) : (
+                                      chatMessages.map((msg) => {
+                                        const outgoing = msg.direction === "outgoing";
+                                        return (
+                                          <div
+                                            key={msg.id}
+                                            style={{
+                                              alignSelf: outgoing ? "flex-end" : "flex-start",
+                                              maxWidth: "86%",
+                                              padding: "10px 12px",
+                                              borderRadius: 14,
+                                              background: outgoing
+                                                ? "rgba(212,51,20,0.10)"
+                                                : "rgba(255,255,255,0.90)",
+                                              border: outgoing
+                                                ? "1px solid rgba(212,51,20,0.18)"
+                                                : "1px solid rgba(10,19,23,0.08)",
+                                            }}
+                                          >
+                                            <div style={{ fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>
+                                              {msg.text}
+                                            </div>
+                                            <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>
+                                              {outgoing ? "Вы" : "Клиент"} • {formatDateTime(msg.created_at)}
+                                            </div>
+                                          </div>
+                                        );
+                                      })
+                                    )}
+                                  </div>
+
+                                  {!chatAtBottom && (
+                                    <button
+                                      style={{
+                                        position: "absolute",
+                                        right: 14,
+                                        bottom: 14,
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: 999,
+                                        border: "1px solid rgba(10,19,23,0.10)",
+                                        background: "rgba(255,255,255,0.96)",
+                                        boxShadow: "0 10px 24px rgba(10,19,23,0.12)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        zIndex: 2,
+                                      }}
+                                      onClick={scrollChatToBottom}
+                                    >
+                                      ↓
+                                      {chatUnreadCount > 0 && (
+                                        <span
+                                          style={{
+                                            position: "absolute",
+                                            top: -4,
+                                            right: -4,
+                                            width: 18,
+                                            height: 18,
+                                            borderRadius: 999,
+                                            background: BRAND_ACCENT,
+                                            color: "#fff",
+                                            fontSize: 11,
+                                            fontWeight: 900,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                          }}
+                                        >
+                                          {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                                        </span>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+
+                                <div
+                                  style={{
+                                    padding: 12,
+                                    borderTop: "1px solid rgba(10,19,23,0.08)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 10,
+                                  }}
+                                >
+                                  <textarea
+                                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                                    placeholder="Напишите сообщение клиенту..."
+                                    value={chatText}
+                                    onChange={(e) => setChatText(e.target.value)}
+                                  />
+                                  <button
+                                    style={{
+                                      ...btnPrimary,
+                                      width: "100%",
+                                      opacity: chatSending ? 0.7 : 1,
+                                    }}
+                                    onClick={() => sendOrderChat(selectedOrder.id)}
+                                    disabled={chatSending}
+                                  >
+                                    {chatSending ? "Отправляем..." : "Отправить сообщение"}
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>>
                                   Обновить
                                 </button>
                               </div>
