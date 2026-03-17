@@ -43,6 +43,7 @@ type OrderForUi = {
 
 type View = "catalog" | "cart" | "profile" | "admin";
 type ProfileScreen = "menu" | "history" | "data";
+type AdminSection = "orders" | "slots";
 
 type TgUser = {
   id?: number;
@@ -307,23 +308,9 @@ export default function Page() {
   const [orderPhone, setOrderPhone] = useState("");
   const [orderAddress, setOrderAddress] = useState("");
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
-  const PICKUP_POINTS = [
-    {
-      id: "vo",
-      title: "Василеостровский рынок",
-      address: "Санкт-Петербург, Большой просп. Васильевского острова, 16/14Б, этаж 1",
-    },
-    {
-      id: "mos",
-      title: "Московский рынок",
-      address: "Санкт-Петербург, ул. Решетникова, 12, этаж 1",
-    },
-    {
-      id: "strelna",
-      title: "Стрельна",
-      address: "посёлок Стрельна, ул. Нижняя Колония, 24",
-    },
-  ] as const;
+  const PICKUP_POINTS = [$1] as const;
+  const DEFAULT_DELIVERY_INTERVALS = ["10:00–13:00", "13:00–16:00", "16:00–19:00"] as const;
+  const DEFAULT_PICKUP_INTERVALS = ["10:00–20:00"] as const;
   const [pickupPointId, setPickupPointId] = useState<(typeof PICKUP_POINTS)[number]["id"]>("vo");
   const [isPrivateHouse, setIsPrivateHouse] = useState(false);
   const [orderEntrance, setOrderEntrance] = useState("");
@@ -366,6 +353,7 @@ export default function Page() {
   const [slotFormDate, setSlotFormDate] = useState("");
   const [slotFormLabel, setSlotFormLabel] = useState("");
   const [slotFormType, setSlotFormType] = useState<"delivery" | "pickup">("delivery");
+  const [adminSection, setAdminSection] = useState<AdminSection>("orders");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -614,7 +602,6 @@ export default function Page() {
       const { data } = await supabase
         .from("delivery_slots")
         .select("id,slot_date,slot_label,delivery_type,is_active,sort_order")
-        .eq("is_active", true)
         .gte("slot_date", today)
         .order("slot_date", { ascending: true })
         .order("sort_order", { ascending: true });
@@ -1129,29 +1116,70 @@ if (cart.length === 0) {
     return parts.filter(Boolean).join(", ");
   }
 
+  function getDefaultGeneratedSlots(type: "delivery" | "pickup") {
+    const result: DeliverySlotRow[] = [];
+    const now = new Date();
+    const labels = type === "delivery" ? DEFAULT_DELIVERY_INTERVALS : DEFAULT_PICKUP_INTERVALS;
+
+    for (let i = 0; i < 35; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      const day = d.getDay();
+      if (day !== 3 && day !== 5) continue;
+
+      const slotDate = d.toISOString().slice(0, 10);
+      labels.forEach((label, idx) => {
+        result.push({
+          id: `generated-${type}-${slotDate}-${label}`,
+          slot_date: slotDate,
+          slot_label: label,
+          delivery_type: type,
+          is_active: true,
+          sort_order: idx,
+        });
+      });
+    }
+
+    return result;
+  }
+
+  function getEffectiveSlots(type: "delivery" | "pickup") {
+    const defaults = getDefaultGeneratedSlots(type);
+    const overrides = deliverySlots.filter((slot) => slot.delivery_type === type);
+    const overrideDates = new Set(overrides.map((slot) => slot.slot_date));
+
+    const merged = [
+      ...defaults.filter((slot) => !overrideDates.has(slot.slot_date)),
+      ...overrides.filter((slot) => slot.is_active),
+    ];
+
+    return merged.sort((a, b) => {
+      if (a.slot_date !== b.slot_date) return a.slot_date.localeCompare(b.slot_date);
+      return a.sort_order - b.sort_order;
+    });
+  }
+
   function getAvailableDeliveryDates() {
     const unique = new Map<string, string>();
 
-    deliverySlots
-      .filter((slot) => slot.delivery_type === deliveryType)
-      .forEach((slot) => {
-        if (!unique.has(slot.slot_date)) {
-          const d = new Date(`${slot.slot_date}T12:00:00`);
-          const label = d.toLocaleDateString("ru-RU", {
-            day: "2-digit",
-            month: "2-digit",
-            weekday: "short",
-          });
-          unique.set(slot.slot_date, label);
-        }
-      });
+    getEffectiveSlots(deliveryType).forEach((slot) => {
+      if (!unique.has(slot.slot_date)) {
+        const d = new Date(`${slot.slot_date}T12:00:00`);
+        const label = d.toLocaleDateString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          weekday: "short",
+        });
+        unique.set(slot.slot_date, label);
+      }
+    });
 
     return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
   }
 
   function getAvailableTimeSlots() {
-    return deliverySlots
-      .filter((slot) => slot.delivery_type === deliveryType && slot.slot_date === deliveryDate)
+    return getEffectiveSlots(deliveryType)
+      .filter((slot) => slot.slot_date === deliveryDate)
       .map((slot) => slot.slot_label);
   }
 
@@ -2394,6 +2422,7 @@ const logoStyle: React.CSSProperties = {
                     setSelectedOrderId(null);
                     setAdminError(null);
                     setOrders([]);
+                    setAdminSection("orders");
                     setView("admin");
                     setProfileScreen("menu");
                     adminLoad();
@@ -2663,17 +2692,19 @@ const logoStyle: React.CSSProperties = {
                       setChatClosedUnread(0);
                       setChatAtBottom(true);
                       lastChatMessageIdRef.current = null;
+                    } else if (adminSection === "slots") {
+                      setAdminSection("orders");
                     } else {
                       setView("profile");
                       setProfileScreen("menu");
                     }
                   }}
-                  title={selectedOrderId ? "Назад к списку" : "В профиль"}
+                  title={selectedOrderId ? "Назад к списку" : adminSection === "slots" ? "Назад к заказам" : "В профиль"}
                 >
                   ←
                 </button>
 
-                <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>Админка</div>
+                <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>{adminSection === "slots" ? "Слоты" : "Админка"}</div>
 
                 <button
                   style={{
@@ -2695,7 +2726,7 @@ const logoStyle: React.CSSProperties = {
                 </button>
               </div>
 
-              {!selectedOrderId && (
+              {!selectedOrderId && adminSection === "slots" && (
               <div
                 style={{
                   ...card,
@@ -2803,7 +2834,20 @@ const logoStyle: React.CSSProperties = {
 
               {adminLoading ? (
                 <>
-                  {!selectedOrderId && (
+                  {!selectedOrderId && adminSection === "orders" && (
+                    <>
+                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                        <button
+                          style={btnGhost}
+                          onClick={() => {
+                            setAdminSection("slots");
+                            loadAdminSlots();
+                          }}
+                        >
+                          Слоты
+                        </button>
+                      </div>
+
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                       <SkeletonBlock height={96} radius={16} />
                       <SkeletonBlock height={96} radius={16} />
