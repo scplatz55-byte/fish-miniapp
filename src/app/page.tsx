@@ -1065,6 +1065,7 @@ if (cart.length === 0) {
     color: BRAND_INK,
     fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, Arial",
     overflow: "hidden",
+    overscrollBehaviorX: "none",
   };
 
   const header: React.CSSProperties = {
@@ -1106,6 +1107,7 @@ const logoStyle: React.CSSProperties = {
     top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
     bottom: 0,
     overflowY: "auto",
+    overflowX: "hidden",
     WebkitOverflowScrolling: "touch",
     padding: 16,
     paddingBottom: contentBottomPadding,
@@ -2355,7 +2357,7 @@ const logoStyle: React.CSSProperties = {
                               <div>📍 {selectedOrder.address}</div>
                               <div>💳 {selectedOrder.payment_method}</div>
                               <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                              {selectedOrder.comment ? <div>💬 {selectedOrder.comment}</div> : null}
+                              {selectedOrder.comment ? <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>💬 {selectedOrder.comment}</div> : null}
                             </div>
                           </div>
 
@@ -2516,9 +2518,9 @@ const logoStyle: React.CSSProperties = {
                                         position: "absolute",
                                         top: -4,
                                         right: -4,
-                                        minWidth: 18,
+                                        width: 18,
                                         height: 18,
-                                        padding: "0 5px",
+                                        padding: 0,
                                         borderRadius: 999,
                                         background: BRAND_ACCENT,
                                         color: "#fff",
