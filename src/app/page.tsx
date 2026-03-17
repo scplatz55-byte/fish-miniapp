@@ -1861,7 +1861,7 @@ const logoStyle: React.CSSProperties = {
                       </button>
 
                       {!isPrivateHouse && (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}>
                           <input
                             style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                             placeholder="Подъезд"
