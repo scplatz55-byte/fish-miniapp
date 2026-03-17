@@ -328,6 +328,7 @@ export default function Page() {
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const chatListRef = useRef<HTMLDivElement | null>(null);
+  const lastChatMessageIdRef = useRef<string | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatText, setChatText] = useState("");
   const [chatSending, setChatSending] = useState(false);
@@ -862,10 +863,12 @@ if (cart.length === 0) {
     }
   }
 
-  async function loadOrderChat(orderId: string) {
+  async function loadOrderChat(orderId: string, silent = false) {
     if (!initData) return;
 
-    setChatLoading(true);
+    if (!silent) {
+      setChatLoading(true);
+    }
     setChatError(null);
 
     try {
@@ -878,16 +881,22 @@ if (cart.length === 0) {
       const data = await res.json();
       if (!res.ok || !data.ok) {
         setChatError(data?.error || `Ошибка загрузки чата (HTTP ${res.status})`);
-        setChatMessages([]);
+        if (!silent) {
+          setChatMessages([]);
+        }
         return;
       }
 
       setChatMessages((data.messages || []) as OrderChatMessage[]);
     } catch (e: any) {
       setChatError(e?.message || "Ошибка сети");
-      setChatMessages([]);
+      if (!silent) {
+        setChatMessages([]);
+      }
     } finally {
-      setChatLoading(false);
+      if (!silent) {
+        setChatLoading(false);
+      }
     }
   }
 
@@ -998,7 +1007,7 @@ if (cart.length === 0) {
     if (!chatOpen || !selectedOrderId) return;
 
     const t = window.setInterval(() => {
-      loadOrderChat(selectedOrderId);
+      loadOrderChat(selectedOrderId, true);
     }, 5000);
 
     return () => window.clearInterval(t);
@@ -1008,6 +1017,12 @@ if (cart.length === 0) {
     if (!chatOpen) return;
     const el = chatListRef.current;
     if (!el) return;
+
+    const lastId = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].id : null;
+    const shouldScroll = lastId !== lastChatMessageIdRef.current;
+    lastChatMessageIdRef.current = lastId;
+
+    if (!shouldScroll) return;
 
     requestAnimationFrame(() => {
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
