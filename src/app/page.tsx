@@ -1779,197 +1779,226 @@ const logoStyle: React.CSSProperties = {
               )}
             </div>
 
-            {checkoutOpen && (
-              <div style={card}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: 10,
-                    alignItems: "center",
-                  }}
-                >
-                  <div style={{ fontWeight: 900, fontSize: 16 }}>Оформление</div>
-                  <button style={btnGhost} onClick={() => setCheckoutOpen(false)}>
-                    Закрыть
-                  </button>
-                </div>
-
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14 }}>Получатель</div>
-
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ получения</div>
-                  <div style={{ display: "flex", gap: 8 }}>
+                        {checkoutOpen && (
+              <div
+                style={{
+                  position: "fixed",
+                  left: 0,
+                  right: 0,
+                  top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
+                  bottom: 0,
+                  zIndex: 70,
+                  overflowY: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  padding: 16,
+                  paddingBottom: contentBottomPadding,
+                  background: BRAND_BG,
+                }}
+              >
+                <div style={card}>
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "48px 1fr 48px",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
                     <button
-                      type="button"
-                      style={btnTab(deliveryType === "delivery")}
-                      onClick={() => setDeliveryType("delivery")}
+                      style={{
+                        ...btnGhost,
+                        width: 48,
+                        height: 40,
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onClick={() => setCheckoutOpen(false)}
+                      title="Назад в корзину"
                     >
-                      Доставка
+                      ←
                     </button>
-                    <button
-                      type="button"
-                      style={btnTab(deliveryType === "pickup")}
-                      onClick={() => setDeliveryType("pickup")}
-                    >
-                      Самовывоз
-                    </button>
+                    <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>Оформление</div>
+                    <div />
                   </div>
 
-                  <input
-                    style={inputStyle}
-                    placeholder="ФИО"
-                    value={orderFullName}
-                    onChange={(e) => setOrderFullName(e.target.value)}
-                  />
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ fontWeight: 900, fontSize: 14 }}>Получатель</div>
 
-                  <input
-                    style={inputStyle}
-                    placeholder="Телефон"
-                    value={orderPhone}
-                    onChange={(e) => setOrderPhone(e.target.value)}
-                  />
-
-                  {deliveryType === "delivery" ? (
-                    <>
-                      <input
-                        style={inputStyle}
-                        placeholder="Адрес доставки"
-                        value={orderAddress}
-                        onChange={(e) => setOrderAddress(e.target.value)}
-                      />
-
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ получения</div>
+                    <div style={{ display: "flex", gap: 8 }}>
                       <button
                         type="button"
-                        onClick={() => setIsPrivateHouse(!isPrivateHouse)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: 12,
-                          padding: 0,
-                          border: "none",
-                          background: "transparent",
-                          cursor: "pointer",
-                          width: "100%",
-                        }}
+                        style={btnTab(deliveryType === "delivery")}
+                        onClick={() => setDeliveryType("delivery")}
                       >
-                        <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
-                        <div style={iosSwitchWrap(isPrivateHouse)}>
-                          <div style={iosSwitchKnob(isPrivateHouse)} />
-                        </div>
+                        Доставка
                       </button>
-
-                      {!isPrivateHouse && (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}>
-                          <input
-                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                            placeholder="Подъезд"
-                            value={orderEntrance}
-                            onChange={(e) => setOrderEntrance(e.target.value)}
-                          />
-                          <input
-                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                            placeholder="Этаж"
-                            value={orderFloor}
-                            onChange={(e) => setOrderFloor(e.target.value)}
-                          />
-                          <input
-                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                            placeholder="Квартира"
-                            value={orderApartment}
-                            onChange={(e) => setOrderApartment(e.target.value)}
-                          />
-                          <input
-                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                            placeholder="Домофон"
-                            value={orderIntercom}
-                            onChange={(e) => setOrderIntercom(e.target.value)}
-                          />
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {PICKUP_POINTS.map((point) => {
-                        const active = pickupPointId === point.id;
-                        return (
-                          <button
-                            key={point.id}
-                            type="button"
-                            style={{
-                              ...card,
-                              padding: 12,
-                              textAlign: "left",
-                              cursor: "pointer",
-                              border: active
-                                ? "1px solid rgba(212,51,20,0.30)"
-                                : "1px solid rgba(10,19,23,0.10)",
-                              background: active ? "rgba(212,51,20,0.08)" : "rgba(255,255,255,0.96)",
-                              boxShadow: active ? "0 10px 24px rgba(212,51,20,0.10)" : "none",
-                            }}
-                            onClick={() => setPickupPointId(point.id)}
-                          >
-                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                              <div style={{ fontWeight: 900, fontSize: 15 }}>{point.title}</div>
-                              {active && <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>✓</span>}
-                            </div>
-                            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
-                          </button>
-                        );
-                      })}
+                      <button
+                        type="button"
+                        style={btnTab(deliveryType === "pickup")}
+                        onClick={() => setDeliveryType("pickup")}
+                      >
+                        Самовывоз
+                      </button>
                     </div>
-                  )}
 
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
+                    <input
+                      style={inputStyle}
+                      placeholder="ФИО"
+                      value={orderFullName}
+                      onChange={(e) => setOrderFullName(e.target.value)}
+                    />
 
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                    <button
-                      type="button"
-                      style={btnTab(paymentMethod === "cash")}
-                      onClick={() => setPaymentMethod("cash")}
-                    >
-                      Наличные
-                    </button>
-                    <button
-                      type="button"
-                      style={btnTab(paymentMethod === "transfer")}
-                      onClick={() => setPaymentMethod("transfer")}
-                    >
-                      Перевод
-                    </button>
-                    <button
-                      type="button"
-                      style={btnTab(paymentMethod === "qr")}
-                      onClick={() => setPaymentMethod("qr")}
-                    >
-                      QR-код
+                    <input
+                      style={inputStyle}
+                      placeholder="Телефон"
+                      value={orderPhone}
+                      onChange={(e) => setOrderPhone(e.target.value)}
+                    />
+
+                    {deliveryType === "delivery" ? (
+                      <>
+                        <input
+                          style={inputStyle}
+                          placeholder="Адрес доставки"
+                          value={orderAddress}
+                          onChange={(e) => setOrderAddress(e.target.value)}
+                        />
+
+                        <button
+                          type="button"
+                          onClick={() => setIsPrivateHouse(!isPrivateHouse)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 12,
+                            padding: 0,
+                            border: "none",
+                            background: "transparent",
+                            cursor: "pointer",
+                            width: "100%",
+                          }}
+                        >
+                          <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
+                          <div style={iosSwitchWrap(isPrivateHouse)}>
+                            <div style={iosSwitchKnob(isPrivateHouse)} />
+                          </div>
+                        </button>
+
+                        {!isPrivateHouse && (
+                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}>
+                            <input
+                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                              placeholder="Подъезд"
+                              value={orderEntrance}
+                              onChange={(e) => setOrderEntrance(e.target.value)}
+                            />
+                            <input
+                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                              placeholder="Этаж"
+                              value={orderFloor}
+                              onChange={(e) => setOrderFloor(e.target.value)}
+                            />
+                            <input
+                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                              placeholder="Квартира"
+                              value={orderApartment}
+                              onChange={(e) => setOrderApartment(e.target.value)}
+                            />
+                            <input
+                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                              placeholder="Домофон"
+                              value={orderIntercom}
+                              onChange={(e) => setOrderIntercom(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {PICKUP_POINTS.map((point) => {
+                          const active = pickupPointId === point.id;
+                          return (
+                            <button
+                              key={point.id}
+                              type="button"
+                              style={{
+                                ...card,
+                                padding: 12,
+                                textAlign: "left",
+                                cursor: "pointer",
+                                border: active
+                                  ? "1px solid rgba(212,51,20,0.30)"
+                                  : "1px solid rgba(10,19,23,0.10)",
+                                background: active ? "rgba(212,51,20,0.08)" : "rgba(255,255,255,0.96)",
+                                boxShadow: active ? "0 10px 24px rgba(212,51,20,0.10)" : "none",
+                              }}
+                              onClick={() => setPickupPointId(point.id)}
+                            >
+                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                                <div style={{ fontWeight: 900, fontSize: 15 }}>{point.title}</div>
+                                {active && <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>✓</span>}
+                              </div>
+                              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                      <button
+                        type="button"
+                        style={btnTab(paymentMethod === "cash")}
+                        onClick={() => setPaymentMethod("cash")}
+                      >
+                        Наличные
+                      </button>
+                      <button
+                        type="button"
+                        style={btnTab(paymentMethod === "transfer")}
+                        onClick={() => setPaymentMethod("transfer")}
+                      >
+                        Перевод
+                      </button>
+                      <button
+                        type="button"
+                        style={btnTab(paymentMethod === "qr")}
+                        onClick={() => setPaymentMethod("qr")}
+                      >
+                        QR-код
+                      </button>
+                    </div>
+
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
+                    <input
+                      style={inputStyle}
+                      placeholder="Введите промокод"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value)}
+                    />
+
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
+                    <textarea
+                      style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                      placeholder="Комментарий к заказу"
+                      value={orderComment}
+                      onChange={(e) => setOrderComment(e.target.value)}
+                    />
+
+                    <div style={{ marginTop: 4, fontWeight: 900 }}>
+                      Итого: {formatPriceRub(total)}
+                    </div>
+
+                    <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
+                      Подтвердить заказ
                     </button>
                   </div>
-
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
-                  <input
-                    style={inputStyle}
-                    placeholder="Введите промокод"
-                    value={promoCode}
-                    onChange={(e) => setPromoCode(e.target.value)}
-                  />
-
-                  <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
-                  <textarea
-                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                    placeholder="Комментарий к заказу"
-                    value={orderComment}
-                    onChange={(e) => setOrderComment(e.target.value)}
-                  />
-
-                  <div style={{ marginTop: 4, fontWeight: 900 }}>
-                    Итого: {formatPriceRub(total)}
-                  </div>
-
-                  <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
-                    Подтвердить заказ
-                  </button>
                 </div>
               </div>
             )}
