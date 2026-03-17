@@ -331,6 +331,7 @@ export default function Page() {
   const lastChatMessageIdRef = useRef<string | null>(null);
   const [chatAtBottom, setChatAtBottom] = useState(true);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
+  const [chatClosedUnread, setChatClosedUnread] = useState(0);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatText, setChatText] = useState("");
   const [chatSending, setChatSending] = useState(false);
@@ -1016,16 +1017,25 @@ if (cart.length === 0) {
   }, [chatOpen, selectedOrderId]);
 
   useEffect(() => {
-    if (!chatOpen) return;
-    const el = chatListRef.current;
-    if (!el) return;
-
     const lastId = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].id : null;
     const hasNewLastMessage = lastId !== lastChatMessageIdRef.current;
     const hadLastMessageBefore = lastChatMessageIdRef.current !== null;
     lastChatMessageIdRef.current = lastId;
 
     if (!hasNewLastMessage) return;
+
+    if (!chatOpen) {
+      if (hadLastMessageBefore) {
+        const lastMessage = chatMessages[chatMessages.length - 1];
+        if (lastMessage?.direction === "incoming") {
+          setChatClosedUnread((prev) => prev + 1);
+        }
+      }
+      return;
+    }
+
+    const el = chatListRef.current;
+    if (!el) return;
 
     const shouldForceInitialScroll = !hadLastMessageBefore;
     if (shouldForceInitialScroll || chatAtBottom) {
@@ -1036,7 +1046,10 @@ if (cart.length === 0) {
       return;
     }
 
-    setChatUnreadCount((prev) => prev + 1);
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    if (lastMessage?.direction === "incoming") {
+      setChatUnreadCount((prev) => prev + 1);
+    }
   }, [chatMessages, chatOpen, chatAtBottom]);
 
   function scrollChatToBottom() {
@@ -2250,6 +2263,7 @@ const logoStyle: React.CSSProperties = {
                             setChatError(null);
                             setChatText("");
                             setChatUnreadCount(0);
+                            setChatClosedUnread(0);
                             setChatAtBottom(true);
                             lastChatMessageIdRef.current = null;
                           }}
@@ -2445,12 +2459,13 @@ const logoStyle: React.CSSProperties = {
                               <span>Чат по заказу</span>
                               <div style={{ display: "flex", gap: 8 }}>
                                 <button
-                                  style={btnGhost}
+                                  style={{ ...btnGhost, position: "relative" }}
                                   onClick={() => {
                                     if (!chatOpen) {
                                       setChatMessages([]);
                                       setChatError(null);
                                       setChatUnreadCount(0);
+                                      setChatClosedUnread(0);
                                       setChatAtBottom(true);
                                       lastChatMessageIdRef.current = null;
                                       loadOrderChat(selectedOrder.id);
@@ -2459,6 +2474,27 @@ const logoStyle: React.CSSProperties = {
                                   }}
                                 >
                                   {chatOpen ? "Скрыть" : "Открыть"}
+                                  {!chatOpen && chatClosedUnread > 0 && (
+                                    <span
+                                      style={{
+                                        position: "absolute",
+                                        top: -6,
+                                        right: -6,
+                                        width: 18,
+                                        height: 18,
+                                        borderRadius: 999,
+                                        background: BRAND_ACCENT,
+                                        color: "#fff",
+                                        fontSize: 11,
+                                        fontWeight: 900,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                      }}
+                                    >
+                                      {chatClosedUnread > 9 ? "9+" : chatClosedUnread}
+                                    </span>
+                                  )}
                                 </button>
                                 <button
                                   style={{ ...btnGhost, width: 40, display: "flex", justifyContent: "center" }}
