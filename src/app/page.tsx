@@ -1824,7 +1824,7 @@ const logoStyle: React.CSSProperties = {
                   </div>
 
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ получения</div>
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Получатель</div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         type="button"
@@ -1841,8 +1841,6 @@ const logoStyle: React.CSSProperties = {
                         Самовывоз
                       </button>
                     </div>
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 10 }}>Получатель</div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         type="button"
