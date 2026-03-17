@@ -75,6 +75,15 @@ type OrderChatMessage = {
   created_at: string;
 };
 
+type DeliverySlotRow = {
+  id: string;
+  slot_date: string;
+  slot_label: string;
+  delivery_type: "delivery" | "pickup";
+  is_active: boolean;
+  sort_order: number;
+};
+
 function formatPriceRub(value: string | number) {
   const n = typeof value === "string" ? Number(value) : value;
   if (Number.isNaN(n)) return String(value);
@@ -281,6 +290,7 @@ export default function Page() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
+  const [deliverySlots, setDeliverySlots] = useState<DeliverySlotRow[]>([]);
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -591,6 +601,24 @@ export default function Page() {
     loadProducts();
   }, [selectedCategoryId]);
 
+  useEffect(() => {
+    async function loadDeliverySlots() {
+      const today = new Date().toISOString().slice(0, 10);
+
+      const { data } = await supabase
+        .from("delivery_slots")
+        .select("id,slot_date,slot_label,delivery_type,is_active,sort_order")
+        .eq("is_active", true)
+        .gte("slot_date", today)
+        .order("slot_date", { ascending: true })
+        .order("sort_order", { ascending: true });
+
+      setDeliverySlots((data || []) as DeliverySlotRow[]);
+    }
+
+    loadDeliverySlots();
+  }, []);
+
   // Boot loading ends when basic data is there
   useEffect(() => {
     if (!categoriesLoading && initData !== "") {
@@ -728,8 +756,8 @@ if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
 if (!deliveryDate) {
   return alert("Выберите дату");
 }
-if (!deliverySlot) {
-  return alert("Выберите интервал времени");
+if (!getAvailableTimeSlots().includes(deliverySlot)) {
+  return alert("Выберите доступный интервал времени");
 }
 if (cart.length === 0) {
   return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
@@ -990,27 +1018,30 @@ if (cart.length === 0) {
   }
 
   function getAvailableDeliveryDates() {
-    const result: { value: string; label: string }[] = [];
-    const now = new Date();
-    for (let i = 0; i < 21; i++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + i);
-      const day = d.getDay();
-      if (day === 3 || day === 5) {
-        const value = d.toISOString().slice(0, 10);
-        const label = d.toLocaleDateString("ru-RU", {
-          day: "2-digit",
-          month: "2-digit",
-          weekday: "short",
-        });
-        result.push({ value, label });
-      }
-      if (result.length >= 6) break;
-    }
-    return result;
+    const unique = new Map<string, string>();
+
+    deliverySlots
+      .filter((slot) => slot.delivery_type === deliveryType)
+      .forEach((slot) => {
+        if (!unique.has(slot.slot_date)) {
+          const d = new Date(`${slot.slot_date}T12:00:00`);
+          const label = d.toLocaleDateString("ru-RU", {
+            day: "2-digit",
+            month: "2-digit",
+            weekday: "short",
+          });
+          unique.set(slot.slot_date, label);
+        }
+      });
+
+    return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
   }
 
-  const DELIVERY_SLOTS = ["10:00–13:00", "13:00–16:00", "16:00–19:00"];
+  function getAvailableTimeSlots() {
+    return deliverySlots
+      .filter((slot) => slot.delivery_type === deliveryType && slot.slot_date === deliveryDate)
+      .map((slot) => slot.slot_label);
+  }
 
   function buildOrderComment() {
     const parts: string[] = [];
@@ -1886,14 +1917,22 @@ const logoStyle: React.CSSProperties = {
                       <button
                         type="button"
                         style={btnTab(deliveryType === "delivery")}
-                        onClick={() => setDeliveryType("delivery")}
+                        onClick={() => {
+                          setDeliveryType("delivery");
+                          setDeliveryDate("");
+                          setDeliverySlot("");
+                        }}
                       >
                         Доставка
                       </button>
                       <button
                         type="button"
                         style={btnTab(deliveryType === "pickup")}
-                        onClick={() => setDeliveryType("pickup")}
+                        onClick={() => {
+                          setDeliveryType("pickup");
+                          setDeliveryDate("");
+                          setDeliverySlot("");
+                        }}
                       >
                         Самовывоз
                       </button>
@@ -2046,7 +2085,7 @@ const logoStyle: React.CSSProperties = {
                     </div>
 
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                      {DELIVERY_SLOTS.map((slot) => (
+                      {getAvailableTimeSlots().map((slot) => (
                         <button
                           key={slot}
                           type="button"
