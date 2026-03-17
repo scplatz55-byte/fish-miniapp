@@ -2154,28 +2154,58 @@ const logoStyle: React.CSSProperties = {
             <div style={card}>
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: 10,
+                  display: "grid",
+                  gridTemplateColumns: "48px 1fr 48px",
                   alignItems: "center",
+                  gap: 10,
                 }}
               >
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Админка</div>
                 <button
-                  style={btnGhost}
-                  onClick={() => {
-                    setSelectedOrderId(null);
-                    setView("profile");
-                    setProfileScreen("menu");
+                  style={{
+                    ...btnGhost,
+                    width: 48,
+                    height: 40,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
+                  onClick={() => {
+                    if (selectedOrderId) {
+                      setSelectedOrderId(null);
+                      setChatOpen(false);
+                      setChatMessages([]);
+                      setChatError(null);
+                      setChatText("");
+                      setChatUnreadCount(0);
+                      setChatAtBottom(true);
+                      lastChatMessageIdRef.current = null;
+                    } else {
+                      setView("profile");
+                      setProfileScreen("menu");
+                    }
+                  }}
+                  title={selectedOrderId ? "Назад к списку" : "В профиль"}
                 >
-                  ← В профиль
+                  ←
                 </button>
-              </div>
 
-              <div style={{ marginTop: 10 }}>
-                <button style={btnGhost} onClick={adminLoad}>
-                  Обновить
+                <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>Админка</div>
+
+                <button
+                  style={{
+                    ...btnGhost,
+                    width: 48,
+                    height: 40,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onClick={adminLoad}
+                  title="Обновить список заказов"
+                >
+                  ↻
                 </button>
               </div>
 
@@ -2258,10 +2288,6 @@ const logoStyle: React.CSSProperties = {
                         transformOrigin: "bottom center",
                       }}
                     >
-                      <button style={btnGhost} onClick={() => setSelectedOrderId(null)}>
-                        ← Назад к списку
-                      </button>
-
                       {selectedOrder ? (
                         <div style={{ marginTop: 12 }}>
                           <div style={{ fontWeight: 900, fontSize: 16 }}>
