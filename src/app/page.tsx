@@ -1824,23 +1824,6 @@ const logoStyle: React.CSSProperties = {
                   </div>
 
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Получатель</div>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        style={btnTab(deliveryType === "delivery")}
-                        onClick={() => setDeliveryType("delivery")}
-                      >
-                        Доставка
-                      </button>
-                      <button
-                        type="button"
-                        style={btnTab(deliveryType === "pickup")}
-                        onClick={() => setDeliveryType("pickup")}
-                      >
-                        Самовывоз
-                      </button>
-                    </div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         type="button"
