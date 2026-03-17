@@ -329,6 +329,8 @@ export default function Page() {
   const [chatLoading, setChatLoading] = useState(false);
   const chatListRef = useRef<HTMLDivElement | null>(null);
   const lastChatMessageIdRef = useRef<string | null>(null);
+  const [chatAtBottom, setChatAtBottom] = useState(true);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatText, setChatText] = useState("");
   const [chatSending, setChatSending] = useState(false);
@@ -1019,15 +1021,42 @@ if (cart.length === 0) {
     if (!el) return;
 
     const lastId = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].id : null;
-    const shouldScroll = lastId !== lastChatMessageIdRef.current;
+    const hasNewLastMessage = lastId !== lastChatMessageIdRef.current;
+    const hadLastMessageBefore = lastChatMessageIdRef.current !== null;
     lastChatMessageIdRef.current = lastId;
 
-    if (!shouldScroll) return;
+    if (!hasNewLastMessage) return;
 
-    requestAnimationFrame(() => {
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-    });
-  }, [chatMessages, chatOpen]);
+    const shouldForceInitialScroll = !hadLastMessageBefore;
+    if (shouldForceInitialScroll || chatAtBottom) {
+      requestAnimationFrame(() => {
+        el.scrollTo({ top: el.scrollHeight, behavior: shouldForceInitialScroll ? "auto" : "smooth" });
+        setChatUnreadCount(0);
+      });
+      return;
+    }
+
+    setChatUnreadCount((prev) => prev + 1);
+  }, [chatMessages, chatOpen, chatAtBottom]);
+
+  function scrollChatToBottom() {
+    const el = chatListRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setChatUnreadCount(0);
+    setChatAtBottom(true);
+  }
+
+  function handleChatScroll() {
+    const el = chatListRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const isNearBottom = distanceFromBottom < 48;
+    setChatAtBottom(isNearBottom);
+    if (isNearBottom) {
+      setChatUnreadCount(0);
+    }
+  }
 
   // ===== Layout styles =====
   const root: React.CSSProperties = {
@@ -2172,6 +2201,9 @@ const logoStyle: React.CSSProperties = {
                             setChatMessages([]);
                             setChatError(null);
                             setChatText("");
+                            setChatUnreadCount(0);
+                            setChatAtBottom(true);
+                            lastChatMessageIdRef.current = null;
                           }}
                           style={{
                             textAlign: "left",
@@ -2275,6 +2307,9 @@ const logoStyle: React.CSSProperties = {
                                     if (!chatOpen) {
                                       setChatMessages([]);
                                       setChatError(null);
+                                      setChatUnreadCount(0);
+                                      setChatAtBottom(true);
+                                      lastChatMessageIdRef.current = null;
                                       loadOrderChat(selectedOrder.id);
                                     }
                                   }}
@@ -2396,7 +2431,11 @@ const logoStyle: React.CSSProperties = {
                               </div>
 
                               <div
+                                style={{ position: "relative" }}
+                              >
+                              <div
                                 ref={chatListRef}
+                                onScroll={handleChatScroll}
                                 style={{
                                   padding: 12,
                                   display: "flex",
@@ -2446,7 +2485,55 @@ const logoStyle: React.CSSProperties = {
                                       </div>
                                     );
                                   })
-                                )}
+                                                                )}
+                              </div>
+
+                              {!chatAtBottom && (
+                                <button
+                                  style={{
+                                    position: "absolute",
+                                    right: 14,
+                                    bottom: 14,
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(10,19,23,0.10)",
+                                    background: "rgba(255,255,255,0.96)",
+                                    boxShadow: "0 10px 24px rgba(10,19,23,0.12)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    zIndex: 2,
+                                  }}
+                                  onClick={scrollChatToBottom}
+                                  title="К последним сообщениям"
+                                >
+                                  <span style={{ fontSize: 18, lineHeight: 1, color: BRAND_INK }}>↓</span>
+                                  {chatUnreadCount > 0 && (
+                                    <span
+                                      style={{
+                                        position: "absolute",
+                                        top: -4,
+                                        right: -4,
+                                        minWidth: 18,
+                                        height: 18,
+                                        padding: "0 5px",
+                                        borderRadius: 999,
+                                        background: BRAND_ACCENT,
+                                        color: "#fff",
+                                        fontSize: 11,
+                                        fontWeight: 900,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                      }}
+                                    >
+                                      {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                                    </span>
+                                  )}
+                                </button>
+                              )}
                               </div>
 
                               <div
