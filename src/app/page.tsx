@@ -1007,14 +1007,14 @@ if (cart.length === 0) {
   }, [selectedOrderId, chatOpen]);
 
   useEffect(() => {
-    if (!chatOpen || !selectedOrderId) return;
+    if (!selectedOrderId) return;
 
     const t = window.setInterval(() => {
       loadOrderChat(selectedOrderId, true);
     }, 5000);
 
     return () => window.clearInterval(t);
-  }, [chatOpen, selectedOrderId]);
+  }, [selectedOrderId]);
 
   useEffect(() => {
     const lastId = chatMessages.length > 0 ? chatMessages[chatMessages.length - 1].id : null;
@@ -2207,6 +2207,7 @@ const logoStyle: React.CSSProperties = {
                       setChatError(null);
                       setChatText("");
                       setChatUnreadCount(0);
+                      setChatClosedUnread(0);
                       setChatAtBottom(true);
                       lastChatMessageIdRef.current = null;
                     } else {
@@ -2469,6 +2470,8 @@ const logoStyle: React.CSSProperties = {
                                       setChatAtBottom(true);
                                       lastChatMessageIdRef.current = null;
                                       loadOrderChat(selectedOrder.id);
+                                    } else {
+                                      setChatClosedUnread(0);
                                     }
                                     setChatOpen(!chatOpen);
                                   }}
