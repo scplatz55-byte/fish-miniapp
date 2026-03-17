@@ -1972,19 +1972,31 @@ const logoStyle: React.CSSProperties = {
                 >
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 10,
+                      display: "grid",
+                      gridTemplateColumns: "48px 1fr 48px",
                       alignItems: "center",
+                      gap: 10,
                     }}
                   >
-                    <button style={btnGhost} onClick={closeProfileScreen}>
-                      ← Назад
+                    <button
+                      style={{
+                        ...btnGhost,
+                        width: 48,
+                        height: 40,
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onClick={closeProfileScreen}
+                      title="Назад"
+                    >
+                      ←
                     </button>
-                    <div style={{ fontWeight: 900, fontSize: 16 }}>
+                    <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>
                       {activeProfileOverlayScreen === "history" ? "История заказов" : "Мои данные"}
                     </div>
-                    <div style={{ width: 76 }} />
+                    <div />
                   </div>
 
                   {activeProfileOverlayScreen === "history" && (
@@ -2060,8 +2072,19 @@ const logoStyle: React.CSSProperties = {
                                 transformOrigin: "bottom center",
                               }}
                             >
-                              <button style={btnGhost} onClick={() => setSelectedMyOrderId(null)}>
-                                ← Назад к списку
+                              <button
+                                style={{
+                                  ...btnGhost,
+                                  width: 48,
+                                  height: 40,
+                                  padding: 0,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                }}
+                                onClick={() => setSelectedMyOrderId(null)}
+                              >
+                                ←
                               </button>
 
                               {selectedMyOrder ? (
