@@ -327,6 +327,7 @@ export default function Page() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
+  const chatListRef = useRef<HTMLDivElement | null>(null);
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatText, setChatText] = useState("");
   const [chatSending, setChatSending] = useState(false);
@@ -992,6 +993,26 @@ if (cart.length === 0) {
       loadOrderChat(selectedOrderId);
     }
   }, [selectedOrderId, chatOpen]);
+
+  useEffect(() => {
+    if (!chatOpen || !selectedOrderId) return;
+
+    const t = window.setInterval(() => {
+      loadOrderChat(selectedOrderId);
+    }, 5000);
+
+    return () => window.clearInterval(t);
+  }, [chatOpen, selectedOrderId]);
+
+  useEffect(() => {
+    if (!chatOpen) return;
+    const el = chatListRef.current;
+    if (!el) return;
+
+    requestAnimationFrame(() => {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    });
+  }, [chatMessages, chatOpen]);
 
   // ===== Layout styles =====
   const root: React.CSSProperties = {
@@ -2360,6 +2381,7 @@ const logoStyle: React.CSSProperties = {
                               </div>
 
                               <div
+                                ref={chatListRef}
                                 style={{
                                   padding: 12,
                                   display: "flex",
