@@ -2848,10 +2848,11 @@ const logoStyle: React.CSSProperties = {
                         </button>
                       </div>
 
-                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <SkeletonBlock height={96} radius={16} />
-                      <SkeletonBlock height={96} radius={16} />
-                    </div>
+                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                        <SkeletonBlock height={96} radius={16} />
+                        <SkeletonBlock height={96} radius={16} />
+                      </div>
+                    </>
                   )}
 
                   {selectedOrderId && (
