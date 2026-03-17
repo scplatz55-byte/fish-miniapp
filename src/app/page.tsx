@@ -1230,6 +1230,30 @@ const logoStyle: React.CSSProperties = {
     cursor: "pointer",
   });
 
+  const iosSwitchWrap = (active: boolean): React.CSSProperties => ({
+    width: 52,
+    height: 32,
+    borderRadius: 999,
+    border: active ? "1px solid rgba(212,51,20,0.28)" : "1px solid rgba(10,19,23,0.10)",
+    background: active ? "rgba(212,51,20,0.18)" : "rgba(10,19,23,0.08)",
+    position: "relative",
+    transition: "all 160ms ease",
+    cursor: "pointer",
+    flexShrink: 0,
+  });
+
+  const iosSwitchKnob = (active: boolean): React.CSSProperties => ({
+    position: "absolute",
+    top: 3,
+    left: active ? 23 : 3,
+    width: 24,
+    height: 24,
+    borderRadius: 999,
+    background: active ? BRAND_ACCENT : "#fff",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.18)",
+    transition: "all 160ms ease",
+  });
+
   const inputStyle: React.CSSProperties = {
     padding: 12,
     borderRadius: 14,
@@ -1817,34 +1841,47 @@ const logoStyle: React.CSSProperties = {
 
                       <button
                         type="button"
-                        style={{ ...btnTab(isPrivateHouse), width: "fit-content" }}
                         onClick={() => setIsPrivateHouse(!isPrivateHouse)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: 12,
+                          padding: 0,
+                          border: "none",
+                          background: "transparent",
+                          cursor: "pointer",
+                          width: "100%",
+                        }}
                       >
-                        {isPrivateHouse ? "✓ Частный дом" : "Частный дом"}
+                        <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
+                        <div style={iosSwitchWrap(isPrivateHouse)}>
+                          <div style={iosSwitchKnob(isPrivateHouse)} />
+                        </div>
                       </button>
 
                       {!isPrivateHouse && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}
                           <input
-                            style={inputStyle}
+                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                             placeholder="Подъезд"
                             value={orderEntrance}
                             onChange={(e) => setOrderEntrance(e.target.value)}
                           />
                           <input
-                            style={inputStyle}
+                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                             placeholder="Этаж"
                             value={orderFloor}
                             onChange={(e) => setOrderFloor(e.target.value)}
                           />
                           <input
-                            style={inputStyle}
+                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                             placeholder="Квартира"
                             value={orderApartment}
                             onChange={(e) => setOrderApartment(e.target.value)}
                           />
                           <input
-                            style={inputStyle}
+                            style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                             placeholder="Домофон"
                             value={orderIntercom}
                             onChange={(e) => setOrderIntercom(e.target.value)}
@@ -1886,15 +1923,29 @@ const logoStyle: React.CSSProperties = {
 
                   <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
 
-                  <select
-                    style={inputStyle}
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                  >
-                    <option value="cash">Наличные</option>
-                    <option value="transfer">Перевод</option>
-                    <option value="qr">QR-код</option>
-                  </select>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    <button
+                      type="button"
+                      style={btnTab(paymentMethod === "cash")}
+                      onClick={() => setPaymentMethod("cash")}
+                    >
+                      Наличные
+                    </button>
+                    <button
+                      type="button"
+                      style={btnTab(paymentMethod === "transfer")}
+                      onClick={() => setPaymentMethod("transfer")}
+                    >
+                      Перевод
+                    </button>
+                    <button
+                      type="button"
+                      style={btnTab(paymentMethod === "qr")}
+                      onClick={() => setPaymentMethod("qr")}
+                    >
+                      QR-код
+                    </button>
+                  </div>
 
                   <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
                   <input
