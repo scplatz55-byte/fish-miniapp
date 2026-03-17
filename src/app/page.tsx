@@ -1132,18 +1132,29 @@ if (cart.length === 0) {
     return parts.filter(Boolean).join(", ");
   }
 
+  function formatLocalDate(date: Date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
+  function parseLocalDate(dateStr: string) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0, 0);
+  }
+
   function getDefaultGeneratedSlots(type: "delivery" | "pickup") {
     const result: DeliverySlotRow[] = [];
     const now = new Date();
     const labels = type === "delivery" ? DEFAULT_DELIVERY_INTERVALS : DEFAULT_PICKUP_INTERVALS;
 
     for (let i = 0; i < 35; i++) {
-      const d = new Date(now);
-      d.setDate(now.getDate() + i);
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12, 0, 0, 0);
       const day = d.getDay();
       if (day !== 3 && day !== 5) continue;
 
-      const slotDate = d.toISOString().slice(0, 10);
+      const slotDate = formatLocalDate(d);
       labels.forEach((label, idx) => {
         result.push({
           id: `generated-${type}-${slotDate}-${label}`,
@@ -1169,10 +1180,29 @@ if (cart.length === 0) {
       ...overrides.filter((slot) => slot.is_active),
     ];
 
-    return merged.sort((a, b) => {
-      if (a.slot_date !== b.slot_date) return a.slot_date.localeCompare(b.slot_date);
-      return a.sort_order - b.sort_order;
+    const now = new Date();
+    const byDate = new Map<string, DeliverySlotRow[]>();
+
+    merged.forEach((slot) => {
+      const cutoff = parseLocalDate(slot.slot_date);
+      cutoff.setDate(cutoff.getDate() - 1);
+      cutoff.setHours(21, 0, 0, 0);
+
+      if (now >= cutoff) return;
+
+      const list = byDate.get(slot.slot_date) || [];
+      list.push(slot);
+      byDate.set(slot.slot_date, list);
     });
+
+    const nearestTwoDates = Array.from(byDate.keys()).sort().slice(0, 2);
+
+    return nearestTwoDates
+      .flatMap((date) => (byDate.get(date) || []).sort((a, b) => a.sort_order - b.sort_order))
+      .sort((a, b) => {
+        if (a.slot_date !== b.slot_date) return a.slot_date.localeCompare(b.slot_date);
+        return a.sort_order - b.sort_order;
+      });
   }
 
   function getAvailableDeliveryDates() {
@@ -1180,7 +1210,7 @@ if (cart.length === 0) {
 
     getEffectiveSlots(deliveryType).forEach((slot) => {
       if (!unique.has(slot.slot_date)) {
-        const d = new Date(`${slot.slot_date}T12:00:00`);
+        const d = parseLocalDate(slot.slot_date);
         const label = d.toLocaleDateString("ru-RU", {
           day: "2-digit",
           month: "2-digit",
@@ -2885,6 +2915,19 @@ const logoStyle: React.CSSProperties = {
               ) : (
                 <>
                   {!selectedOrderId && adminSection === "orders" && (
+                    <>
+                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                        <button
+                          style={btnGhost}
+                          onClick={() => {
+                            setAdminSection("slots");
+                            loadAdminSlots();
+                          }}
+                        >
+                          Слоты
+                        </button>
+                      </div>
+
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                       {orders.map((o) => {
                         const previewLines = orderPreviewItems(o.items_text, 2);
@@ -2943,6 +2986,7 @@ const logoStyle: React.CSSProperties = {
                         <div style={{ marginTop: 10, opacity: 0.75 }}>📦 Пока нет заказов в системе.</div>
                       )}
                     </div>
+                    </>
                   )}
 
                   {selectedOrderId && (
