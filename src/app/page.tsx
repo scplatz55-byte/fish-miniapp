@@ -308,7 +308,23 @@ export default function Page() {
   const [orderPhone, setOrderPhone] = useState("");
   const [orderAddress, setOrderAddress] = useState("");
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
-  const PICKUP_POINTS = [$1] as const;
+  const PICKUP_POINTS = [
+    {
+      id: "vo",
+      title: "Василеостровский рынок",
+      address: "Санкт-Петербург, Большой просп. Васильевского острова, 16/14Б этаж 1",
+    },
+    {
+      id: "mos",
+      title: "Московский рынок",
+      address: "Санкт-Петербург, ул. Решетникова, 12 этаж 1",
+    },
+    {
+      id: "strelna",
+      title: "Стрельна",
+      address: "посёлок Стрельна, ул. Нижняя Колония, 24",
+    },
+  ] as const;
   const DEFAULT_DELIVERY_INTERVALS = ["10:00–13:00", "13:00–16:00", "16:00–19:00"] as const;
   const DEFAULT_PICKUP_INTERVALS = ["10:00–20:00"] as const;
   const [pickupPointId, setPickupPointId] = useState<(typeof PICKUP_POINTS)[number]["id"]>("vo");
@@ -2868,7 +2884,7 @@ const logoStyle: React.CSSProperties = {
                 </div>
               ) : (
                 <>
-                  {!selectedOrderId && (
+                  {!selectedOrderId && adminSection === "orders" && (
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                       {orders.map((o) => {
                         const previewLines = orderPreviewItems(o.items_text, 2);
