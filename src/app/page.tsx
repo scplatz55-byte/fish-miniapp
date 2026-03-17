@@ -320,6 +320,8 @@ export default function Page() {
   const [orderFloor, setOrderFloor] = useState("");
   const [orderApartment, setOrderApartment] = useState("");
   const [orderIntercom, setOrderIntercom] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [deliverySlot, setDeliverySlot] = useState("");
   const [orderComment, setOrderComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [promoCode, setPromoCode] = useState("");
@@ -715,13 +717,19 @@ export default function Page() {
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
 if (!orderFullName || !orderPhone) {
-  return alert("Заполните ФИО и телефон");
+  return alert("Заполните Имя и телефон");
 }
 if (deliveryType === "delivery" && !orderAddress.trim()) {
   return alert("Введите адрес доставки");
 }
 if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
   return alert("Выберите точку самовывоза");
+}
+if (!deliveryDate) {
+  return alert("Выберите дату");
+}
+if (!deliverySlot) {
+  return alert("Выберите интервал времени");
 }
 if (cart.length === 0) {
   return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
@@ -735,7 +743,7 @@ if (cart.length === 0) {
           customer_name: orderFullName,
           phone: orderPhone,
           address: deliveryType === "pickup" ? getSelectedPickupPoint().address : buildDeliveryAddress(),
-          comment: orderComment,
+          comment: buildOrderComment(),
           payment_method: paymentMethod,
           total_amount: total,
           status: "assembling",
@@ -979,6 +987,57 @@ if (cart.length === 0) {
     }
 
     return parts.filter(Boolean).join(", ");
+  }
+
+  function getAvailableDeliveryDates() {
+    const result: { value: string; label: string }[] = [];
+    const now = new Date();
+    for (let i = 0; i < 21; i++) {
+      const d = new Date(now);
+      d.setDate(now.getDate() + i);
+      const day = d.getDay();
+      if (day === 3 || day === 5) {
+        const value = d.toISOString().slice(0, 10);
+        const label = d.toLocaleDateString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          weekday: "short",
+        });
+        result.push({ value, label });
+      }
+      if (result.length >= 6) break;
+    }
+    return result;
+  }
+
+  const DELIVERY_SLOTS = ["10:00–13:00", "13:00–16:00", "16:00–19:00"];
+
+  function buildOrderComment() {
+    const parts: string[] = [];
+
+    if (deliveryDate) {
+      const dateLabel = new Date(deliveryDate).toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      parts.push(`Дата: ${dateLabel}`);
+    }
+
+    if (deliverySlot) {
+      parts.push(`Интервал: ${deliverySlot}`);
+    }
+
+    if (promoCode.trim()) {
+      parts.push(`Промокод: ${promoCode.trim()}`);
+    }
+
+    if (orderComment.trim()) {
+      parts.push(`Комментарий: ${orderComment.trim()}`);
+    }
+
+    return parts.join("
+");
   }
 
   function openSupport() {
@@ -1843,7 +1902,7 @@ const logoStyle: React.CSSProperties = {
 
                     <input
                       style={inputStyle}
-                      placeholder="ФИО"
+                      placeholder="Имя"
                       value={orderFullName}
                       onChange={(e) => setOrderFullName(e.target.value)}
                     />
@@ -1970,6 +2029,34 @@ const logoStyle: React.CSSProperties = {
                       >
                         QR-код
                       </button>
+                    </div>
+
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {getAvailableDeliveryDates().map((d) => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          style={btnTab(deliveryDate === d.value)}
+                          onClick={() => setDeliveryDate(d.value)}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                      {DELIVERY_SLOTS.map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          style={btnTab(deliverySlot === slot)}
+                          onClick={() => setDeliverySlot(slot)}
+                        >
+                          {slot}
+                        </button>
+                      ))}
                     </div>
 
                     <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
@@ -2113,7 +2200,7 @@ const logoStyle: React.CSSProperties = {
               >
                 <div>
                   <div style={{ fontWeight: 900, fontSize: 17 }}>Мои данные</div>
-                  <div style={{ ...smallMuted, marginTop: 4 }}>ФИО, телефон и адрес доставки</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>Имя, телефон и адрес доставки</div>
                 </div>
                 <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
               </button>
@@ -2350,7 +2437,7 @@ const logoStyle: React.CSSProperties = {
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                       <input
                         style={inputStyle}
-                        placeholder="ФИО"
+                        placeholder="Имя"
                         value={profileFormFullName}
                         onChange={(e) => setProfileFormFullName(e.target.value)}
                       />
