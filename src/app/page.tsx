@@ -1988,7 +1988,13 @@ const logoStyle: React.CSSProperties = {
                         alignItems: "center",
                         justifyContent: "center",
                       }}
-                      onClick={closeProfileScreen}
+                      onClick={() => {
+                        if (selectedMyOrderId) {
+                          setSelectedMyOrderId(null);
+                        } else {
+                          closeProfileScreen();
+                        }
+                      }}
                       title="Назад"
                     >
                       ←
@@ -2072,20 +2078,7 @@ const logoStyle: React.CSSProperties = {
                                 transformOrigin: "bottom center",
                               }}
                             >
-                              <button
-                                style={{
-                                  ...btnGhost,
-                                  width: 48,
-                                  height: 40,
-                                  padding: 0,
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                }}
-                                onClick={() => setSelectedMyOrderId(null)}
-                              >
-                                ←
-                              </button>
+                              
 
                               {selectedMyOrder ? (
                                 <div style={{ marginTop: 12 }}>
