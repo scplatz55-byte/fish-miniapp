@@ -301,12 +301,12 @@ export default function Page() {
     {
       id: "vo",
       title: "Василеостровский рынок",
-      address: "Санкт-Петербург, Большой просп. Васильевского острова, 16/14Б этаж 1",
+      address: "Санкт-Петербург, Большой просп. Васильевского острова, 16/14Б, этаж 1",
     },
     {
       id: "mos",
       title: "Московский рынок",
-      address: "Санкт-Петербург, ул. Решетникова, 12 этаж 1",
+      address: "Санкт-Петербург, ул. Решетникова, 12, этаж 1",
     },
     {
       id: "strelna",
@@ -1824,9 +1824,25 @@ const logoStyle: React.CSSProperties = {
                   </div>
 
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ fontWeight: 900, fontSize: 14 }}>Получатель</div>
-
                     <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ получения</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button
+                        type="button"
+                        style={btnTab(deliveryType === "delivery")}
+                        onClick={() => setDeliveryType("delivery")}
+                      >
+                        Доставка
+                      </button>
+                      <button
+                        type="button"
+                        style={btnTab(deliveryType === "pickup")}
+                        onClick={() => setDeliveryType("pickup")}
+                      >
+                        Самовывоз
+                      </button>
+                    </div>
+
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 10 }}>Получатель</div>
                     <div style={{ display: "flex", gap: 8 }}>
                       <button
                         type="button"
