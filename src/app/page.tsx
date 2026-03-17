@@ -1758,12 +1758,29 @@ const logoStyle: React.CSSProperties = {
                     onChange={(e) => setOrderPhone(e.target.value)}
                   />
 
-                  <input
-                    style={inputStyle}
-                    placeholder="Адрес"
-                    value={orderAddress}
-                    onChange={(e) => setOrderAddress(e.target.value)}
-                  />
+                  {deliveryType === "delivery" ? (
+                    <input
+                      style={inputStyle}
+                      placeholder="Адрес"
+                      value={orderAddress}
+                      onChange={(e) => setOrderAddress(e.target.value)}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        ...inputStyle,
+                        background: "rgba(10,19,23,0.04)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                      }}
+                    >
+                      <div style={{ fontWeight: 900 }}>Самовывоз</div>
+                      <div style={{ fontSize: 13, opacity: 0.8 }}>
+                        Адрес точки самовывоза добавим следующим шагом.
+                      </div>
+                    </div>
+                  )}
 
                   <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
 
