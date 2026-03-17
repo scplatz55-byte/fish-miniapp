@@ -297,6 +297,29 @@ export default function Page() {
   const [orderPhone, setOrderPhone] = useState("");
   const [orderAddress, setOrderAddress] = useState("");
   const [deliveryType, setDeliveryType] = useState<"delivery" | "pickup">("delivery");
+  const PICKUP_POINTS = [
+    {
+      id: "vo",
+      title: "Василеостровский рынок",
+      address: "Санкт-Петербург, Большой просп. Васильевского острова, 16/14Б этаж 1",
+    },
+    {
+      id: "mos",
+      title: "Московский рынок",
+      address: "Санкт-Петербург, ул. Решетникова, 12 этаж 1",
+    },
+    {
+      id: "strelna",
+      title: "Стрельна",
+      address: "посёлок Стрельна, ул. Нижняя Колония, 24",
+    },
+  ] as const;
+  const [pickupPointId, setPickupPointId] = useState<(typeof PICKUP_POINTS)[number]["id"]>("vo");
+  const [isPrivateHouse, setIsPrivateHouse] = useState(false);
+  const [orderEntrance, setOrderEntrance] = useState("");
+  const [orderFloor, setOrderFloor] = useState("");
+  const [orderApartment, setOrderApartment] = useState("");
+  const [orderIntercom, setOrderIntercom] = useState("");
   const [orderComment, setOrderComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [promoCode, setPromoCode] = useState("");
@@ -691,8 +714,14 @@ export default function Page() {
   // Submit order
   async function submitOrder() {
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
-if (!orderFullName || !orderPhone || !orderAddress) {
-  return alert("Заполните ФИО, телефон и адрес");
+if (!orderFullName || !orderPhone) {
+  return alert("Заполните ФИО и телефон");
+}
+if (deliveryType === "delivery" && !orderAddress.trim()) {
+  return alert("Введите адрес доставки");
+}
+if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
+  return alert("Выберите точку самовывоза");
 }
 if (cart.length === 0) {
   return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
@@ -705,7 +734,7 @@ if (cart.length === 0) {
           user_telegram_id: tgUserId,
           customer_name: orderFullName,
           phone: orderPhone,
-          address: orderAddress,
+          address: deliveryType === "pickup" ? getSelectedPickupPoint().address : buildDeliveryAddress(),
           comment: orderComment,
           payment_method: paymentMethod,
           total_amount: total,
@@ -931,6 +960,25 @@ if (cart.length === 0) {
     } finally {
       setChatSending(false);
     }
+  }
+
+  function getSelectedPickupPoint() {
+    return PICKUP_POINTS.find((p) => p.id === pickupPointId) || PICKUP_POINTS[0];
+  }
+
+  function buildDeliveryAddress() {
+    const parts = [orderAddress.trim()];
+
+    if (!isPrivateHouse) {
+      if (orderEntrance.trim()) parts.push(`Подъезд: ${orderEntrance.trim()}`);
+      if (orderFloor.trim()) parts.push(`Этаж: ${orderFloor.trim()}`);
+      if (orderApartment.trim()) parts.push(`Квартира: ${orderApartment.trim()}`);
+      if (orderIntercom.trim()) parts.push(`Домофон: ${orderIntercom.trim()}`);
+    } else {
+      parts.push("Частный дом");
+    }
+
+    return parts.filter(Boolean).join(", ");
   }
 
   function openSupport() {
@@ -1759,26 +1807,80 @@ const logoStyle: React.CSSProperties = {
                   />
 
                   {deliveryType === "delivery" ? (
-                    <input
-                      style={inputStyle}
-                      placeholder="Адрес"
-                      value={orderAddress}
-                      onChange={(e) => setOrderAddress(e.target.value)}
-                    />
+                    <>
+                      <input
+                        style={inputStyle}
+                        placeholder="Адрес доставки"
+                        value={orderAddress}
+                        onChange={(e) => setOrderAddress(e.target.value)}
+                      />
+
+                      <button
+                        type="button"
+                        style={{ ...btnTab(isPrivateHouse), width: "fit-content" }}
+                        onClick={() => setIsPrivateHouse(!isPrivateHouse)}
+                      >
+                        {isPrivateHouse ? "✓ Частный дом" : "Частный дом"}
+                      </button>
+
+                      {!isPrivateHouse && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                          <input
+                            style={inputStyle}
+                            placeholder="Подъезд"
+                            value={orderEntrance}
+                            onChange={(e) => setOrderEntrance(e.target.value)}
+                          />
+                          <input
+                            style={inputStyle}
+                            placeholder="Этаж"
+                            value={orderFloor}
+                            onChange={(e) => setOrderFloor(e.target.value)}
+                          />
+                          <input
+                            style={inputStyle}
+                            placeholder="Квартира"
+                            value={orderApartment}
+                            onChange={(e) => setOrderApartment(e.target.value)}
+                          />
+                          <input
+                            style={inputStyle}
+                            placeholder="Домофон"
+                            value={orderIntercom}
+                            onChange={(e) => setOrderIntercom(e.target.value)}
+                          />
+                        </div>
+                      )}
+                    </>
                   ) : (
-                    <div
-                      style={{
-                        ...inputStyle,
-                        background: "rgba(10,19,23,0.04)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
-                      }}
-                    >
-                      <div style={{ fontWeight: 900 }}>Самовывоз</div>
-                      <div style={{ fontSize: 13, opacity: 0.8 }}>
-                        Адрес точки самовывоза добавим следующим шагом.
-                      </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {PICKUP_POINTS.map((point) => {
+                        const active = pickupPointId === point.id;
+                        return (
+                          <button
+                            key={point.id}
+                            type="button"
+                            style={{
+                              ...card,
+                              padding: 12,
+                              textAlign: "left",
+                              cursor: "pointer",
+                              border: active
+                                ? "1px solid rgba(212,51,20,0.30)"
+                                : "1px solid rgba(10,19,23,0.10)",
+                              background: active ? "rgba(212,51,20,0.08)" : "rgba(255,255,255,0.96)",
+                              boxShadow: active ? "0 10px 24px rgba(212,51,20,0.10)" : "none",
+                            }}
+                            onClick={() => setPickupPointId(point.id)}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                              <div style={{ fontWeight: 900, fontSize: 15 }}>{point.title}</div>
+                              {active && <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>✓</span>}
+                            </div>
+                            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
 
