@@ -2559,7 +2559,7 @@ const logoStyle: React.CSSProperties = {
                                 </div>
                               </>
                             )}
-                          </div>>
+                          </div>
                                   Обновить
                                 </button>
                               </div>
