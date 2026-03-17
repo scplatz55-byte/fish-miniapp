@@ -360,6 +360,12 @@ export default function Page() {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderForUi[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [adminSlots, setAdminSlots] = useState<DeliverySlotRow[]>([]);
+  const [adminSlotsLoading, setAdminSlotsLoading] = useState(false);
+  const [adminSlotsError, setAdminSlotsError] = useState<string | null>(null);
+  const [slotFormDate, setSlotFormDate] = useState("");
+  const [slotFormLabel, setSlotFormLabel] = useState("");
+  const [slotFormType, setSlotFormType] = useState<"delivery" | "pickup">("delivery");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
@@ -929,6 +935,112 @@ if (cart.length === 0) {
       setAdminError(e?.message || "Ошибка сети");
     } finally {
       setAdminLoading(false);
+    }
+  }
+
+  async function loadAdminSlots() {
+    if (!initData) return;
+
+    setAdminSlotsLoading(true);
+    setAdminSlotsError(null);
+
+    try {
+      const res = await fetch("/api/admin/delivery-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, action: { type: "list" } }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setAdminSlotsError(data?.error || `Ошибка загрузки слотов (HTTP ${res.status})`);
+        setAdminSlots([]);
+        return;
+      }
+
+      const list = (data.slots || []) as DeliverySlotRow[];
+      setAdminSlots(list);
+      setDeliverySlots(list.filter((slot) => slot.is_active));
+    } catch (e: any) {
+      setAdminSlotsError(e?.message || "Ошибка сети");
+      setAdminSlots([]);
+    } finally {
+      setAdminSlotsLoading(false);
+    }
+  }
+
+  async function toggleAdminSlot(id: string, is_active: boolean) {
+    if (!initData) return;
+
+    try {
+      const res = await fetch("/api/admin/delivery-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, action: { type: "toggle", id, is_active } }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data?.error || `Не удалось обновить слот (HTTP ${res.status})`);
+        return;
+      }
+      await loadAdminSlots();
+    } catch (e: any) {
+      alert(e?.message || "Ошибка сети");
+    }
+  }
+
+  async function createAdminSlot() {
+    if (!initData) return;
+    if (!slotFormDate || !slotFormLabel.trim()) {
+      alert("Заполните дату и интервал");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/admin/delivery-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          initData,
+          action: {
+            type: "create",
+            slot_date: slotFormDate,
+            slot_label: slotFormLabel.trim(),
+            delivery_type: slotFormType,
+            sort_order: 0,
+          },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data?.error || `Не удалось создать слот (HTTP ${res.status})`);
+        return;
+      }
+      setSlotFormDate("");
+      setSlotFormLabel("");
+      await loadAdminSlots();
+    } catch (e: any) {
+      alert(e?.message || "Ошибка сети");
+    }
+  }
+
+  async function deleteAdminSlot(id: string) {
+    if (!initData) return;
+
+    try {
+      const res = await fetch("/api/admin/delivery-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initData, action: { type: "delete", id } }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        alert(data?.error || `Не удалось удалить слот (HTTP ${res.status})`);
+        return;
+      }
+      await loadAdminSlots();
+    } catch (e: any) {
+      alert(e?.message || "Ошибка сети");
     }
   }
 
@@ -2285,6 +2397,7 @@ const logoStyle: React.CSSProperties = {
                     setView("admin");
                     setProfileScreen("menu");
                     adminLoad();
+                    loadAdminSlots();
                   }}
                 >
                   <div>
@@ -2572,23 +2685,123 @@ const logoStyle: React.CSSProperties = {
                     alignItems: "center",
                     justifyContent: "center",
                   }}
-                  onClick={adminLoad}
+                  onClick={() => {
+                    adminLoad();
+                    loadAdminSlots();
+                  }}
                   title="Обновить список заказов"
                 >
                   ↻
                 </button>
               </div>
 
+              {!selectedOrderId && (
+              <div
+                style={{
+                  ...card,
+                  marginTop: 12,
+                }}
+              >
+                <div style={{ fontWeight: 900, fontSize: 16 }}>Слоты доставки и самовывоза</div>
+
+                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
+                  <input
+                    style={inputStyle}
+                    type="date"
+                    value={slotFormDate}
+                    onChange={(e) => setSlotFormDate(e.target.value)}
+                  />
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
+                    <button
+                      type="button"
+                      style={btnTab(slotFormType === "delivery")}
+                      onClick={() => setSlotFormType("delivery")}
+                    >
+                      Доставка
+                    </button>
+                    <button
+                      type="button"
+                      style={btnTab(slotFormType === "pickup")}
+                      onClick={() => setSlotFormType("pickup")}
+                    >
+                      Самовывоз
+                    </button>
+                  </div>
+
+                  <input
+                    style={inputStyle}
+                    placeholder="Интервал, например 13:00–16:00"
+                    value={slotFormLabel}
+                    onChange={(e) => setSlotFormLabel(e.target.value)}
+                  />
+
+                  <button style={{ ...btnPrimary, width: "100%" }} onClick={createAdminSlot}>
+                    Добавить слот
+                  </button>
+                </div>
+
+                {adminSlotsLoading ? (
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SkeletonBlock height={64} radius={14} />
+                    <SkeletonBlock height={64} radius={14} />
+                  </div>
+                ) : adminSlotsError ? (
+                  <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                    Ошибка: {adminSlotsError}
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                    {adminSlots.map((slot) => (
+                      <div
+                        key={slot.id}
+                        style={{
+                          borderRadius: 14,
+                          border: "1px solid rgba(10,19,23,0.08)",
+                          background: slot.is_active ? "rgba(255,255,255,0.96)" : "rgba(10,19,23,0.04)",
+                          padding: 12,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 10,
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontWeight: 900, fontSize: 14 }}>
+                            {slot.delivery_type === "delivery" ? "Доставка" : "Самовывоз"}
+                          </div>
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.82 }}>
+                            {slot.slot_date} • {slot.slot_label}
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                          <button
+                            style={btnTab(slot.is_active)}
+                            onClick={() => toggleAdminSlot(slot.id, !slot.is_active)}
+                          >
+                            {slot.is_active ? "Вкл" : "Выкл"}
+                          </button>
+                          <button
+                            style={btnGhost}
+                            onClick={() => deleteAdminSlot(slot.id)}
+                            title="Удалить слот"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    {adminSlots.length === 0 && (
+                      <div style={{ fontSize: 13, opacity: 0.72 }}>Слотов пока нет.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
               {adminLoading ? (
-                <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                  <SkeletonBlock height={84} radius={14} />
-                  <SkeletonBlock height={84} radius={14} />
-                </div>
-              ) : adminError ? (
-                <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
-                  Ошибка: {adminError}
-                </div>
-              ) : (
                 <>
                   {!selectedOrderId && (
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
