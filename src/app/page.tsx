@@ -2291,8 +2291,6 @@ const logoStyle: React.CSSProperties = {
                                   {formatDateTime(selectedOrder.created_at)}
                                 </div>
                               </div>
-
-                              {/* убрали кнопку чат сверху */}
                             </div>
 
                             <div
@@ -2330,7 +2328,11 @@ const logoStyle: React.CSSProperties = {
                               <div>📍 {selectedOrder.address}</div>
                               <div>💳 {selectedOrder.payment_method}</div>
                               <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                              {selectedOrder.comment ? <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>💬 {selectedOrder.comment}</div> : null}
+                              {selectedOrder.comment ? (
+                                <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                                  💬 {selectedOrder.comment}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
 
@@ -2503,8 +2505,9 @@ const logoStyle: React.CSSProperties = {
                                         zIndex: 2,
                                       }}
                                       onClick={scrollChatToBottom}
+                                      title="К последним сообщениям"
                                     >
-                                      ↓
+                                      <span style={{ fontSize: 18, lineHeight: 1, color: BRAND_INK }}>↓</span>
                                       {chatUnreadCount > 0 && (
                                         <span
                                           style={{
@@ -2513,6 +2516,7 @@ const logoStyle: React.CSSProperties = {
                                             right: -4,
                                             width: 18,
                                             height: 18,
+                                            padding: 0,
                                             borderRadius: 999,
                                             background: BRAND_ACCENT,
                                             color: "#fff",
@@ -2560,145 +2564,6 @@ const logoStyle: React.CSSProperties = {
                               </>
                             )}
                           </div>
-                                  Обновить
-                                </button>
-                              </div>
-
-                              <div
-                                style={{ position: "relative" }}
-                              >
-                              <div
-                                ref={chatListRef}
-                                onScroll={handleChatScroll}
-                                style={{
-                                  padding: 12,
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 10,
-                                  maxHeight: 320,
-                                  overflowY: "auto",
-                                  WebkitOverflowScrolling: "touch",
-                                }}
-                              >
-                                {chatLoading ? (
-                                  <>
-                                    <SkeletonBlock height={54} radius={14} />
-                                    <SkeletonBlock height={54} radius={14} style={{ width: "82%" }} />
-                                  </>
-                                ) : chatError ? (
-                                  <div style={{ color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
-                                    Ошибка: {chatError}
-                                  </div>
-                                ) : chatMessages.length === 0 ? (
-                                  <div style={{ opacity: 0.72 }}>Сообщений пока нет.</div>
-                                ) : (
-                                  chatMessages.map((msg) => {
-                                    const outgoing = msg.direction === "outgoing";
-                                    return (
-                                      <div
-                                        key={msg.id}
-                                        style={{
-                                          alignSelf: outgoing ? "flex-end" : "flex-start",
-                                          maxWidth: "86%",
-                                          padding: "10px 12px",
-                                          borderRadius: 14,
-                                          background: outgoing
-                                            ? "rgba(212,51,20,0.10)"
-                                            : "rgba(255,255,255,0.90)",
-                                          border: outgoing
-                                            ? "1px solid rgba(212,51,20,0.18)"
-                                            : "1px solid rgba(10,19,23,0.08)",
-                                        }}
-                                      >
-                                        <div style={{ fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>
-                                          {msg.text}
-                                        </div>
-                                        <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>
-                                          {outgoing ? "Вы" : "Клиент"} • {formatDateTime(msg.created_at)}
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                                                )}
-                              </div>
-
-                              {!chatAtBottom && (
-                                <button
-                                  style={{
-                                    position: "absolute",
-                                    right: 14,
-                                    bottom: 14,
-                                    width: 38,
-                                    height: 38,
-                                    borderRadius: 999,
-                                    border: "1px solid rgba(10,19,23,0.10)",
-                                    background: "rgba(255,255,255,0.96)",
-                                    boxShadow: "0 10px 24px rgba(10,19,23,0.12)",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    cursor: "pointer",
-                                    zIndex: 2,
-                                  }}
-                                  onClick={scrollChatToBottom}
-                                  title="К последним сообщениям"
-                                >
-                                  <span style={{ fontSize: 18, lineHeight: 1, color: BRAND_INK }}>↓</span>
-                                  {chatUnreadCount > 0 && (
-                                    <span
-                                      style={{
-                                        position: "absolute",
-                                        top: -4,
-                                        right: -4,
-                                        width: 18,
-                                        height: 18,
-                                        padding: 0,
-                                        borderRadius: 999,
-                                        background: BRAND_ACCENT,
-                                        color: "#fff",
-                                        fontSize: 11,
-                                        fontWeight: 900,
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                      }}
-                                    >
-                                      {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
-                                    </span>
-                                  )}
-                                </button>
-                              )}
-                              </div>
-
-                              <div
-                                style={{
-                                  padding: 12,
-                                  borderTop: "1px solid rgba(10,19,23,0.08)",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 10,
-                                }}
-                              >
-                                <textarea
-                                  style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                                  placeholder="Напишите сообщение клиенту..."
-                                  value={chatText}
-                                  onChange={(e) => setChatText(e.target.value)}
-                                />
-                                <button
-                                  style={{
-                                    ...btnPrimary,
-                                    width: "100%",
-                                    opacity: chatSending ? 0.7 : 1,
-                                  }}
-                                  onClick={() => sendOrderChat(selectedOrder.id)}
-                                  disabled={chatSending}
-                                >
-                                  {chatSending ? "Отправляем..." : "Отправить сообщение"}
-                                </button>
-                              </div>
-                            </div>
-                          )}
 
                           <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
                             <button
