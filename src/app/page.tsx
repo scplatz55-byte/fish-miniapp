@@ -137,35 +137,9 @@ function orderPreviewItems(itemsText?: string, maxLines = 2) {
 function orderItemsList(itemsText?: string) {
   if (!itemsText) return [];
   return itemsText
-    .split("\\n")
+    .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
-}
-
-function parseOrderItemLine(line: string) {
-  const parts = line.split("—").map((s) => s.trim()).filter(Boolean);
-  const left = parts[0] || line;
-  const price = parts.length > 1 ? parts[parts.length - 1] : "";
-
-  const divider = left.includes("×") ? "×" : left.includes("x") ? "x" : "";
-  if (divider) {
-    const splitParts = left.split(divider);
-    const qtyPart = splitParts.pop()?.trim() || "";
-    const titlePart = splitParts.join(divider).trim();
-    if (qtyPart && titlePart) {
-      return {
-        title: titlePart,
-        qty: `${divider} ${qtyPart}`,
-        price,
-      };
-    }
-  }
-
-  return {
-    title: left,
-    qty: "",
-    price,
-  };
 }
 
 /** Иконки (SVG) */
@@ -2424,63 +2398,24 @@ const logoStyle: React.CSSProperties = {
                             </div>
                             <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                               {orderItemsList(selectedOrder.items_text).length > 0 ? (
-                                orderItemsList(selectedOrder.items_text).map((line, index) => {
-                                  const parsed = parseOrderItemLine(line);
-                                  return (
-                                    <div
-                                      key={index}
-                                      style={{
-                                        display: "grid",
-                                        gridTemplateColumns: "10px 1fr auto",
-                                        alignItems: "center",
-                                        gap: 10,
-                                        padding: "12px 12px",
-                                        borderRadius: 12,
-                                        background: "rgba(255,255,255,0.82)",
-                                        border: "1px solid rgba(10,19,23,0.06)",
-                                      }}
-                                    >
-                                      <span
-                                        style={{
-                                          width: 6,
-                                          height: 6,
-                                          borderRadius: 999,
-                                          background: BRAND_ACCENT,
-                                          display: "block",
-                                        }}
-                                      />
-
-                                      <div style={{ minWidth: 0 }}>
-                                        <div
-                                          style={{
-                                            fontSize: 14,
-                                            fontWeight: 800,
-                                            lineHeight: 1.25,
-                                            overflowWrap: "anywhere",
-                                          }}
-                                        >
-                                          {parsed.title}
-                                        </div>
-                                        {parsed.qty ? (
-                                          <div style={{ marginTop: 4, fontSize: 12, opacity: 0.7, fontWeight: 700 }}>
-                                            {parsed.qty}
-                                          </div>
-                                        ) : null}
-                                      </div>
-
-                                      <div
-                                        style={{
-                                          fontSize: 14,
-                                          fontWeight: 900,
-                                          whiteSpace: "nowrap",
-                                          marginLeft: 8,
-                                        }}
-                                      >
-                                        {parsed.price || "—"}
-                                      </div>
-                                    </div>
-                                  );
-                                })
+                                orderItemsList(selectedOrder.items_text).map((line, index) => (
+                                  <div
+                                    key={index}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 8,
+                                      padding: "10px 12px",
+                                      borderRadius: 12,
+                                      background: "rgba(255,255,255,0.82)",
+                                      border: "1px solid rgba(10,19,23,0.06)",
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>•</span>
+                                    <span>{line}</span>
+                                  </div>
+                                ))
                               ) : (
                                 <div style={{ opacity: 0.7 }}>Нет данных</div>
                               )}
