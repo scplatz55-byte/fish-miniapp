@@ -762,10 +762,10 @@ if (deliveryType === "delivery" && !orderAddress.trim()) {
 if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
   return alert("Выберите точку самовывоза");
 }
-if (!deliveryDate) {
+if (deliveryType === "delivery" && !deliveryDate) {
   return alert("Выберите дату");
 }
-if (!getAvailableTimeSlots().includes(deliverySlot)) {
+if (deliveryType === "delivery" && !getAvailableTimeSlots().includes(deliverySlot)) {
   return alert("Выберите доступный интервал времени");
 }
 if (cart.length === 0) {
@@ -1232,8 +1232,8 @@ if (cart.length === 0) {
   function buildOrderComment() {
     const parts: string[] = [];
 
-    if (deliveryDate) {
-      const dateLabel = new Date(deliveryDate).toLocaleDateString("ru-RU", {
+    if (deliveryType === "delivery" && deliveryDate) {
+      const dateLabel = parseLocalDate(deliveryDate).toLocaleDateString("ru-RU", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -1241,7 +1241,7 @@ if (cart.length === 0) {
       parts.push(`Дата: ${dateLabel}`);
     }
 
-    if (deliverySlot) {
+    if (deliveryType === "delivery" && deliverySlot) {
       parts.push(`Интервал: ${deliverySlot}`);
     }
 
@@ -1253,7 +1253,8 @@ if (cart.length === 0) {
       parts.push(`Комментарий: ${orderComment.trim()}`);
     }
 
-    return parts.join("\n");
+    return parts.join("
+");
   }
 
   function openSupport() {
@@ -2072,647 +2073,9 @@ const logoStyle: React.CSSProperties = {
               >
                 <div style={card}>
                   <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "48px 1fr 48px",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <button
-                      style={{
-                        ...btnGhost,
-                        width: 48,
-                        height: 40,
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      onClick={() => setCheckoutOpen(false)}
-                      title="Назад в корзину"
-                    >
-                      ←
-                    </button>
-                    <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>Оформление</div>
-                    <div />
-                  </div>
-
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        style={btnTab(deliveryType === "delivery")}
-                        onClick={() => {
-                          setDeliveryType("delivery");
-                          setDeliveryDate("");
-                          setDeliverySlot("");
-                        }}
-                      >
-                        Доставка
-                      </button>
-                      <button
-                        type="button"
-                        style={btnTab(deliveryType === "pickup")}
-                        onClick={() => {
-                          setDeliveryType("pickup");
-                          setDeliveryDate("");
-                          setDeliverySlot("");
-                        }}
-                      >
-                        Самовывоз
-                      </button>
-                    </div>
-
-                    <input
-                      style={inputStyle}
-                      placeholder="Имя"
-                      value={orderFullName}
-                      onChange={(e) => setOrderFullName(e.target.value)}
-                    />
-
-                    <input
-                      style={inputStyle}
-                      placeholder="Телефон"
-                      value={orderPhone}
-                      onChange={(e) => setOrderPhone(e.target.value)}
-                    />
-
-                    {deliveryType === "delivery" ? (
-                      <>
-                        <input
-                          style={inputStyle}
-                          placeholder="Адрес доставки"
-                          value={orderAddress}
-                          onChange={(e) => setOrderAddress(e.target.value)}
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => setIsPrivateHouse(!isPrivateHouse)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            padding: 0,
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                            width: "100%",
-                          }}
-                        >
-                          <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
-                          <div style={iosSwitchWrap(isPrivateHouse)}>
-                            <div style={iosSwitchKnob(isPrivateHouse)} />
-                          </div>
-                        </button>
-
-                        {!isPrivateHouse && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}>
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Подъезд"
-                              value={orderEntrance}
-                              onChange={(e) => setOrderEntrance(e.target.value)}
-                            />
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Этаж"
-                              value={orderFloor}
-                              onChange={(e) => setOrderFloor(e.target.value)}
-                            />
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Квартира"
-                              value={orderApartment}
-                              onChange={(e) => setOrderApartment(e.target.value)}
-                            />
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Домофон"
-                              value={orderIntercom}
-                              onChange={(e) => setOrderIntercom(e.target.value)}
-                            />
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {PICKUP_POINTS.map((point) => {
-                          const active = pickupPointId === point.id;
-                          return (
-                            <button
-                              key={point.id}
-                              type="button"
-                              style={{
-                                ...card,
-                                padding: 12,
-                                textAlign: "left",
-                                cursor: "pointer",
-                                border: active
-                                  ? "1px solid rgba(212,51,20,0.30)"
-                                  : "1px solid rgba(10,19,23,0.10)",
-                                background: active ? "rgba(212,51,20,0.08)" : "rgba(255,255,255,0.96)",
-                                boxShadow: active ? "0 10px 24px rgba(212,51,20,0.10)" : "none",
-                              }}
-                              onClick={() => setPickupPointId(point.id)}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                                <div style={{ fontWeight: 900, fontSize: 15 }}>{point.title}</div>
-                                {active && <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>✓</span>}
-                              </div>
-                              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                      <button
-                        type="button"
-                        style={btnTab(paymentMethod === "cash")}
-                        onClick={() => setPaymentMethod("cash")}
-                      >
-                        Наличные
-                      </button>
-                      <button
-                        type="button"
-                        style={btnTab(paymentMethod === "transfer")}
-                        onClick={() => setPaymentMethod("transfer")}
-                      >
-                        Перевод
-                      </button>
-                      <button
-                        type="button"
-                        style={btnTab(paymentMethod === "qr")}
-                        onClick={() => setPaymentMethod("qr")}
-                      >
-                        QR-код
-                      </button>
-                    </div>
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
-
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      {getAvailableDeliveryDates().map((d) => (
-                        <button
-                          key={d.value}
-                          type="button"
-                          style={btnTab(deliveryDate === d.value)}
-                          onClick={() => setDeliveryDate(d.value)}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                      {getAvailableTimeSlots().map((slot) => (
-                        <button
-                          key={slot}
-                          type="button"
-                          style={btnTab(deliverySlot === slot)}
-                          onClick={() => setDeliverySlot(slot)}
-                        >
-                          {slot}
-                        </button>
-                      ))}
-                    </div>
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
-                    <input
-                      style={inputStyle}
-                      placeholder="Введите промокод"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                    />
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
-                    <textarea
-                      style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                      placeholder="Комментарий к заказу"
-                      value={orderComment}
-                      onChange={(e) => setOrderComment(e.target.value)}
-                    />
-
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>
-                      Итого: {formatPriceRub(total)}
-                    </div>
-
-                    <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
-                      Подтвердить заказ
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* PROFILE */}
-        {view === "profile" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
-            {profileScreen === "menu" && (
-              <>
-            {/* Верх профиля */}
-            <div style={card}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 14,
-                  alignItems: "center",
-                }}
-              >
-                <div
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: "50%",
-                    overflow: "hidden",
-                    background: "rgba(10,19,23,0.08)",
-                    flexShrink: 0,
-                    border: "1px solid rgba(10,19,23,0.10)",
-                  }}
-                >
-                  {avatarSrc ? (
-                    <img
-                      src={avatarSrc}
-                      alt="avatar"
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        display: "block",
-                      }}
-                    />
-                  ) : (
-                    <div
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontWeight: 900,
-                        fontSize: 22,
-                        opacity: 0.65,
-                      }}
-                    >
-                      {tgDisplayName()?.[0] || "U"}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>
-                    {tgDisplayName() || "Пользователь"}
-                  </div>
-
-                  {tgUser?.username ? (
-                    <div style={{ marginTop: 4, opacity: 0.75 }}>@{tgUser.username}</div>
-                  ) : null}
-
-                  <div style={{ marginTop: 6, ...smallMuted }}>
-                    ID: {tgUserId ?? "—"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <button
-                style={{
-                  ...card,
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  border: "1px solid rgba(10,19,23,0.08)",
-                  color: BRAND_INK,
-                }}
-                onClick={() => {
-                  setSelectedMyOrderId(null);
-                  openProfileScreen("history");
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 17 }}>История заказов</div>
-                  <div style={{ ...smallMuted, marginTop: 4 }}>Все ваши оформленные заказы</div>
-                </div>
-                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
-              </button>
-
-              <button
-                style={{
-                  ...card,
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  border: "1px solid rgba(10,19,23,0.08)",
-                  color: BRAND_INK,
-                }}
-                onClick={() => openProfileScreen("data")}
-              >
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 17 }}>Мои данные</div>
-                  <div style={{ ...smallMuted, marginTop: 4 }}>Имя, телефон и адрес доставки</div>
-                </div>
-                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
-              </button>
-
-              <button
-                style={{
-                  ...card,
-                  width: "100%",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  border: "1px solid rgba(10,19,23,0.08)",
-                  color: BRAND_INK,
-                }}
-                onClick={openSupport}
-              >
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 17 }}>Тех. поддержка</div>
-                  <div style={{ ...smallMuted, marginTop: 4 }}>Связаться с нами в Telegram</div>
-                </div>
-                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
-              </button>
-
-              {isAdmin && (
-                <button
-                  style={{
-                    ...card,
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    border: "1px solid rgba(212,51,20,0.18)",
-                    boxShadow: "0 10px 30px rgba(212,51,20,0.10)",
-                    color: BRAND_INK,
-                  }}
-                  onClick={() => {
-                    setSelectedOrderId(null);
-                    setAdminError(null);
-                    setOrders([]);
-                    setAdminSection("orders");
-                    setView("admin");
-                    setProfileScreen("menu");
-                    adminLoad();
-                    loadAdminSlots();
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 900, fontSize: 17 }}>Админка</div>
-                    <div style={{ ...smallMuted, marginTop: 4 }}>Просмотр и управление заказами</div>
-                  </div>
-                  <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
-                </button>
-              )}
-            </div>
-              </>
-            )}
-
-            {activeProfileOverlayScreen && (
-              <div
-                style={{
-                  position: "fixed",
-                  left: 0,
-                  right: 0,
-                  top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
-                  bottom: 0,
-                  zIndex: 70,
-                  pointerEvents: activeProfileOverlayScreen ? "auto" : "none",
-                  opacity: isProfileOverlayVisible ? 1 : 0,
-                  transform: isProfileOverlayVisible ? "translateY(0)" : "translateY(100%)",
-                  transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
-                  overflowY: "auto",
-                  WebkitOverflowScrolling: "touch",
-                  padding: 16,
-                  paddingBottom: contentBottomPadding,
-                  background: BRAND_BG,
-                }}
-              >
-                <div
-                  style={{
-                    ...card,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "48px 1fr 48px",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <button
-                      style={{
-                        ...btnGhost,
-                        width: 48,
-                        height: 40,
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      onClick={() => {
-                        if (selectedMyOrderId) {
-                          setSelectedMyOrderId(null);
-                        } else {
-                          closeProfileScreen();
-                        }
-                      }}
-                      title="Назад"
-                    >
-                      ←
-                    </button>
-                    <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>
-                      {activeProfileOverlayScreen === "history" ? "История заказов" : "Мои данные"}
-                    </div>
-                    <div />
-                  </div>
-
-                  {activeProfileOverlayScreen === "history" && (
-                    <>
-                      {profileLoading ? (
-                        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                          <SkeletonBlock height={84} radius={14} />
-                          <SkeletonBlock height={84} radius={14} />
-                        </div>
-                      ) : profileError ? (
-                        <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
-                          Ошибка: {profileError}
-                        </div>
-                      ) : (
-                        <>
-                          {!selectedMyOrderId && (
-                            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-                              {myOrders.map((o) => {
-                                const previewLines = orderPreviewItems(o.items_text, 2);
-                                return (
-                                <button
-                                  key={o.id}
-                                  onClick={() => setSelectedMyOrderId(o.id)}
-                                  style={{
-                                    textAlign: "left",
-                                    borderRadius: 16,
-                                    border: "1px solid rgba(10,19,23,0.10)",
-                                    background: "rgba(255,255,255,0.96)",
-                                    padding: 14,
-                                    cursor: "pointer",
-                                    boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
-                                  }}
-                                >
-                                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                                    <div>
-                                      <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
-                                      <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
-                                    </div>
-                                    <StatusBadge status={o.status} />
-                                  </div>
-
-                                  {previewLines.length > 0 && (
-                                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
-                                      {previewLines.map((line, index) => (
-                                        <div key={index} style={{ fontSize: 13, opacity: 0.82 }}>
-                                          • {line}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                                    <div style={{ fontSize: 12, opacity: 0.65 }}>Нажмите, чтобы открыть детали</div>
-                                    <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
-                                  </div>
-                                </button>
-                                );
-                              })}
-
-                              {myOrders.length === 0 && (
-                                <div style={{ marginTop: 10, opacity: 0.75 }}>📦 У вас пока нет заказов.
-
-После оформления они будут появляться здесь.</div>
-                              )}
-                            </div>
-                          )}
-
-                          {selectedMyOrderId && (
-                            <div
-                              style={{
-                                marginTop: 10,
-                                animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)",
-                                transformOrigin: "bottom center",
-                              }}
-                            >
-                              
-
-                              {selectedMyOrder ? (
-                                <div style={{ marginTop: 12 }}>
-                                  <div style={{ fontWeight: 900, fontSize: 16 }}>
-                                    Заказ #{selectedMyOrder.id.slice(0, 8)}
-                                  </div>
-                                  <div style={{ marginTop: 8, opacity: 0.9 }}>
-                                    Статус: <StatusBadge status={selectedMyOrder.status} />
-                                  </div>
-                                  <div style={{ marginTop: 6, fontWeight: 900 }}>
-                                    {formatPriceRub(selectedMyOrder.total_amount)}
-                                  </div>
-                                  <div style={{ marginTop: 6, ...smallMuted }}>
-                                    {formatDateTime(selectedMyOrder.created_at)}
-                                  </div>
-
-                                  <div
-                                    style={{
-                                      marginTop: 12,
-                                      whiteSpace: "pre-wrap",
-                                      fontSize: 13,
-                                      opacity: 0.95,
-                                    }}
-                                  >
-                                    <strong>Состав:</strong>
-                                    {"\n"}
-                                    {selectedMyOrder.items_text || "Нет данных"}
-                                  </div>
-                                </div>
-                              ) : (
-                                <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </>
-                  )}
-
-                  {activeProfileOverlayScreen === "data" && (
-                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <input
-                        style={inputStyle}
-                        placeholder="Имя"
-                        value={profileFormFullName}
-                        onChange={(e) => setProfileFormFullName(e.target.value)}
-                      />
-
-                      <input
-                        style={inputStyle}
-                        placeholder="Телефон"
-                        value={profileFormPhone}
-                        onChange={(e) => setProfileFormPhone(e.target.value)}
-                      />
-
-                      <textarea
-                        style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                        placeholder="Адрес"
-                        value={profileFormAddress}
-                        onChange={(e) => setProfileFormAddress(e.target.value)}
-                      />
-
-                      <div style={smallMuted}>
-                        Эти данные будут автоматически подставляться в оформление заказа.
-                      </div>
-
-                      <button
-                        style={{
-                          ...btnPrimary,
-                          width: "100%",
-                          opacity: profileSaveLoading ? 0.7 : 1,
-                        }}
-                        onClick={saveProfileData}
-                        disabled={profileSaveLoading}
-                      >
-                        {profileSaveLoading ? "Сохраняем..." : "Сохранить данные"}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ADMIN */}
-        {view === "admin" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={card}>
-              <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "48px 1fr 48px",
+                  gridTemplateColumns: "48px 1fr auto",
                   alignItems: "center",
                   gap: 10,
                 }}
@@ -2750,26 +2113,41 @@ const logoStyle: React.CSSProperties = {
                   ←
                 </button>
 
-                <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>{adminSection === "slots" ? "Слоты" : "Админка"}</div>
+                <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>
+                  {adminSection === "slots" ? "Слоты" : "Админка"}
+                </div>
 
-                <button
-                  style={{
-                    ...btnGhost,
-                    width: 48,
-                    height: 40,
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  onClick={() => {
-                    adminLoad();
-                    loadAdminSlots();
-                  }}
-                  title="Обновить список заказов"
-                >
-                  ↻
-                </button>
+                <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                  {!selectedOrderId && (
+                    <button
+                      style={btnGhost}
+                      onClick={() => {
+                        setAdminSection(adminSection === "orders" ? "slots" : "orders");
+                        loadAdminSlots();
+                      }}
+                    >
+                      Слоты
+                    </button>
+                  )}
+                  <button
+                    style={{
+                      ...btnGhost,
+                      width: 48,
+                      height: 40,
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                    onClick={() => {
+                      adminLoad();
+                      loadAdminSlots();
+                    }}
+                    title="Обновить список заказов"
+                  >
+                    ↻
+                  </button>
+                </div>
               </div>
 
               {!selectedOrderId && adminSection === "slots" && (
@@ -2881,20 +2259,7 @@ const logoStyle: React.CSSProperties = {
               {adminLoading ? (
                 <>
                   {!selectedOrderId && adminSection === "orders" && (
-                    <>
-                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                        <button
-                          style={btnGhost}
-                          onClick={() => {
-                            setAdminSection("slots");
-                            loadAdminSlots();
-                          }}
-                        >
-                          Слоты
-                        </button>
-                      </div>
-
-                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                         <SkeletonBlock height={96} radius={16} />
                         <SkeletonBlock height={96} radius={16} />
                       </div>
@@ -2915,19 +2280,6 @@ const logoStyle: React.CSSProperties = {
               ) : (
                 <>
                   {!selectedOrderId && adminSection === "orders" && (
-                    <>
-                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                        <button
-                          style={btnGhost}
-                          onClick={() => {
-                            setAdminSection("slots");
-                            loadAdminSlots();
-                          }}
-                        >
-                          Слоты
-                        </button>
-                      </div>
-
                     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
                       {orders.map((o) => {
                         const previewLines = orderPreviewItems(o.items_text, 2);
@@ -2986,7 +2338,6 @@ const logoStyle: React.CSSProperties = {
                         <div style={{ marginTop: 10, opacity: 0.75 }}>📦 Пока нет заказов в системе.</div>
                       )}
                     </div>
-                    </>
                   )}
 
                   {selectedOrderId && (
