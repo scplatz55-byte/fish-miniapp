@@ -2333,25 +2333,119 @@ const logoStyle: React.CSSProperties = {
               </div>
 
               <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 10 }}>
-                <button style={btnGhost} onClick={() => openProfileScreen("history")}>История заказов</button>
-                <button style={btnGhost} onClick={() => openProfileScreen("data")}>Мои данные</button>
-                <button style={btnGhost} onClick={openSupport}>Тех. поддержка</button>
-                {isAdmin && (
+                <div
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(10,19,23,0.10)",
+                    background: "rgba(255,255,255,0.96)",
+                    boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
+                    overflow: "hidden",
+                  }}
+                >
                   <button
-                    style={{ ...btnGhost, border: "1px solid rgba(212,51,20,0.30)", background: "rgba(212,51,20,0.08)" }}
-                    onClick={() => {
-                      setSelectedOrderId(null);
-                      setAdminError(null);
-                      setOrders([]);
-                      setAdminSection("orders");
-                      setView("admin");
-                      setProfileScreen("menu");
-                      adminLoad();
-                      loadAdminSlots();
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      border: "none",
+                      background: "transparent",
+                      textAlign: "left",
+                      fontWeight: 900,
+                      color: BRAND_INK,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => openProfileScreen("history")}
+                  >
+                    История заказов
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(10,19,23,0.10)",
+                    background: "rgba(255,255,255,0.96)",
+                    boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      border: "none",
+                      background: "transparent",
+                      textAlign: "left",
+                      fontWeight: 900,
+                      color: BRAND_INK,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => openProfileScreen("data")}
+                  >
+                    Мои данные
+                  </button>
+                </div>
+
+                <div
+                  style={{
+                    borderRadius: 16,
+                    border: "1px solid rgba(10,19,23,0.10)",
+                    background: "rgba(255,255,255,0.96)",
+                    boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    style={{
+                      width: "100%",
+                      padding: "14px 16px",
+                      border: "none",
+                      background: "transparent",
+                      textAlign: "left",
+                      fontWeight: 900,
+                      color: BRAND_INK,
+                      cursor: "pointer",
+                    }}
+                    onClick={openSupport}
+                  >
+                    Тех. поддержка
+                  </button>
+                </div>
+
+                {isAdmin && (
+                  <div
+                    style={{
+                      borderRadius: 16,
+                      border: "1px solid rgba(212,51,20,0.30)",
+                      background: "rgba(212,51,20,0.08)",
+                      boxShadow: "0 10px 24px rgba(212,51,20,0.08)",
+                      overflow: "hidden",
                     }}
                   >
-                    Админка
-                  </button>
+                    <button
+                      style={{
+                        width: "100%",
+                        padding: "14px 16px",
+                        border: "none",
+                        background: "transparent",
+                        textAlign: "left",
+                        fontWeight: 900,
+                        color: BRAND_INK,
+                        cursor: "pointer",
+                      }}
+                      onClick={() => {
+                        setSelectedOrderId(null);
+                        setAdminError(null);
+                        setOrders([]);
+                        setAdminSection("orders");
+                        setView("admin");
+                        setProfileScreen("menu");
+                        adminLoad();
+                        loadAdminSlots();
+                      }}
+                    >
+                      Админка
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
