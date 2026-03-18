@@ -762,10 +762,10 @@ if (deliveryType === "delivery" && !orderAddress.trim()) {
 if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
   return alert("Выберите точку самовывоза");
 }
-if (deliveryType === "delivery" && !deliveryDate) {
+if (!deliveryDate) {
   return alert("Выберите дату");
 }
-if (deliveryType === "delivery" && !getAvailableTimeSlots().includes(deliverySlot)) {
+if (!getAvailableTimeSlots().includes(deliverySlot)) {
   return alert("Выберите доступный интервал времени");
 }
 if (cart.length === 0) {
@@ -1232,8 +1232,8 @@ if (cart.length === 0) {
   function buildOrderComment() {
     const parts: string[] = [];
 
-    if (deliveryType === "delivery" && deliveryDate) {
-      const dateLabel = parseLocalDate(deliveryDate).toLocaleDateString("ru-RU", {
+    if (deliveryDate) {
+      const dateLabel = new Date(deliveryDate).toLocaleDateString("ru-RU", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -1241,7 +1241,7 @@ if (cart.length === 0) {
       parts.push(`Дата: ${dateLabel}`);
     }
 
-    if (deliveryType === "delivery" && deliverySlot) {
+    if (deliverySlot) {
       parts.push(`Интервал: ${deliverySlot}`);
     }
 
@@ -2054,7 +2054,7 @@ const logoStyle: React.CSSProperties = {
               )}
             </div>
 
-                                    {checkoutOpen && (
+                        {checkoutOpen && (
               <div
                 style={{
                   position: "fixed",
@@ -2229,61 +2229,58 @@ const logoStyle: React.CSSProperties = {
                       </div>
                     )}
 
-                    {deliveryType === "delivery" ? (
-                      <>
-                        <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {getAvailableDeliveryDates().map((d) => (
-                            <button
-                              key={d.value}
-                              type="button"
-                              style={btnTab(deliveryDate === d.value)}
-                              onClick={() => setDeliveryDate(d.value)}
-                            >
-                              {d.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                          {getAvailableTimeSlots().map((slot) => (
-                            <button
-                              key={slot}
-                              type="button"
-                              style={btnTab(deliverySlot === slot)}
-                              onClick={() => setDeliverySlot(slot)}
-                            >
-                              {slot}
-                            </button>
-                          ))}
-                        </div>
-                        {getAvailableDeliveryDates().length === 0 && (
-                          <div style={{ fontSize: 13, opacity: 0.72 }}>
-                            Нет доступных слотов доставки.
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div
-                        style={{
-                          borderRadius: 14,
-                          border: "1px solid rgba(10,19,23,0.10)",
-                          background: "rgba(10,19,23,0.04)",
-                          padding: 12,
-                          fontSize: 13,
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {pickupPointId === "strelna"
-                          ? "Режим работы магазина: 10:00–21:00 ежедневно."
-                          : "Режим работы магазина: 9:00–21:00 ежедневно."}
-                      </div>
-                    )}
-
                     <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
+
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                      <button type="button" style={btnTab(paymentMethod === "cash")} onClick={() => setPaymentMethod("cash")}>Наличные</button>
-                      <button type="button" style={btnTab(paymentMethod === "transfer")} onClick={() => setPaymentMethod("transfer")}>Перевод</button>
-                      <button type="button" style={btnTab(paymentMethod === "qr")} onClick={() => setPaymentMethod("qr")}>QR-код</button>
+                      <button
+                        type="button"
+                        style={btnTab(paymentMethod === "cash")}
+                        onClick={() => setPaymentMethod("cash")}
+                      >
+                        Наличные
+                      </button>
+                      <button
+                        type="button"
+                        style={btnTab(paymentMethod === "transfer")}
+                        onClick={() => setPaymentMethod("transfer")}
+                      >
+                        Перевод
+                      </button>
+                      <button
+                        type="button"
+                        style={btnTab(paymentMethod === "qr")}
+                        onClick={() => setPaymentMethod("qr")}
+                      >
+                        QR-код
+                      </button>
+                    </div>
+
+                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {getAvailableDeliveryDates().map((d) => (
+                        <button
+                          key={d.value}
+                          type="button"
+                          style={btnTab(deliveryDate === d.value)}
+                          onClick={() => setDeliveryDate(d.value)}
+                        >
+                          {d.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                      {getAvailableTimeSlots().map((slot) => (
+                        <button
+                          key={slot}
+                          type="button"
+                          style={btnTab(deliverySlot === slot)}
+                          onClick={() => setDeliverySlot(slot)}
+                        >
+                          {slot}
+                        </button>
+                      ))}
                     </div>
 
                     <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
@@ -2302,8 +2299,13 @@ const logoStyle: React.CSSProperties = {
                       onChange={(e) => setOrderComment(e.target.value)}
                     />
 
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
-                    <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>Подтвердить заказ</button>
+                    <div style={{ marginTop: 4, fontWeight: 900 }}>
+                      Итого: {formatPriceRub(total)}
+                    </div>
+
+                    <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>
+                      Подтвердить заказ
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2311,95 +2313,177 @@ const logoStyle: React.CSSProperties = {
           </div>
         )}
 
+        {/* PROFILE */}
         {view === "profile" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, position: "relative" }}>
+            {profileScreen === "menu" && (
+              <>
+            {/* Верх профиля */}
             <div style={card}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt="avatar"
-                    style={{ width: 64, height: 64, borderRadius: 999, objectFit: "cover", border: "1px solid rgba(10,19,23,0.10)" }}
-                  />
-                ) : (
-                  <div style={{ width: 64, height: 64, borderRadius: 999, background: "rgba(10,19,23,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>TG</div>
-                )}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 14,
+                  alignItems: "center",
+                }}
+              >
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    background: "rgba(10,19,23,0.08)",
+                    flexShrink: 0,
+                    border: "1px solid rgba(10,19,23,0.10)",
+                  }}
+                >
+                  {avatarSrc ? (
+                    <img
+                      src={avatarSrc}
+                      alt="avatar"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontWeight: 900,
+                        fontSize: 22,
+                        opacity: 0.65,
+                      }}
+                    >
+                      {tgDisplayName()?.[0] || "U"}
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>{profileData?.full_name || tgDisplayName() || "Профиль"}</div>
-                  <div style={{ marginTop: 4, fontSize: 13, opacity: 0.72 }}>
-                    {tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUserId || "—"}`}
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>
+                    {tgDisplayName() || "Пользователь"}
+                  </div>
+
+                  {tgUser?.username ? (
+                    <div style={{ marginTop: 4, opacity: 0.75 }}>@{tgUser.username}</div>
+                  ) : null}
+
+                  <div style={{ marginTop: 6, ...smallMuted }}>
+                    ID: {tgUserId ?? "—"}
                   </div>
                 </div>
               </div>
             </div>
 
-            <button
-              style={{
-                ...card,
-                border: "1px solid rgba(10,19,23,0.10)",
-                textAlign: "left",
-                fontWeight: 900,
-                fontSize: 16,
-                cursor: "pointer",
-              }}
-              onClick={() => openProfileScreen("history")}
-            >
-              История заказов
-            </button>
-
-            <button
-              style={{
-                ...card,
-                border: "1px solid rgba(10,19,23,0.10)",
-                textAlign: "left",
-                fontWeight: 900,
-                fontSize: 16,
-                cursor: "pointer",
-              }}
-              onClick={() => openProfileScreen("data")}
-            >
-              Мои данные
-            </button>
-
-            <button
-              style={{
-                ...card,
-                border: "1px solid rgba(10,19,23,0.10)",
-                textAlign: "left",
-                fontWeight: 900,
-                fontSize: 16,
-                cursor: "pointer",
-              }}
-              onClick={openSupport}
-            >
-              Тех. поддержка
-            </button>
-
-            {isAdmin && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <button
                 style={{
                   ...card,
-                  border: "1px solid rgba(212,51,20,0.30)",
-                  background: "rgba(212,51,20,0.08)",
-                  boxShadow: "0 10px 24px rgba(212,51,20,0.08)",
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                   textAlign: "left",
-                  fontWeight: 900,
-                  fontSize: 16,
                   cursor: "pointer",
+                  border: "1px solid rgba(10,19,23,0.08)",
+                  color: BRAND_INK,
                 }}
                 onClick={() => {
-                  setSelectedOrderId(null);
-                  setAdminError(null);
-                  setOrders([]);
-                  setAdminSection("orders");
-                  setView("admin");
-                  setProfileScreen("menu");
-                  adminLoad();
-                  loadAdminSlots();
+                  setSelectedMyOrderId(null);
+                  openProfileScreen("history");
                 }}
               >
-                Админка
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 17 }}>История заказов</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>Все ваши оформленные заказы</div>
+                </div>
+                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
               </button>
+
+              <button
+                style={{
+                  ...card,
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: "1px solid rgba(10,19,23,0.08)",
+                  color: BRAND_INK,
+                }}
+                onClick={() => openProfileScreen("data")}
+              >
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 17 }}>Мои данные</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>Имя, телефон и адрес доставки</div>
+                </div>
+                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
+              </button>
+
+              <button
+                style={{
+                  ...card,
+                  width: "100%",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  textAlign: "left",
+                  cursor: "pointer",
+                  border: "1px solid rgba(10,19,23,0.08)",
+                  color: BRAND_INK,
+                }}
+                onClick={openSupport}
+              >
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 17 }}>Тех. поддержка</div>
+                  <div style={{ ...smallMuted, marginTop: 4 }}>Связаться с нами в Telegram</div>
+                </div>
+                <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
+              </button>
+
+              {isAdmin && (
+                <button
+                  style={{
+                    ...card,
+                    width: "100%",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    border: "1px solid rgba(212,51,20,0.18)",
+                    boxShadow: "0 10px 30px rgba(212,51,20,0.10)",
+                    color: BRAND_INK,
+                  }}
+                  onClick={() => {
+                    setSelectedOrderId(null);
+                    setAdminError(null);
+                    setOrders([]);
+                    setAdminSection("orders");
+                    setView("admin");
+                    setProfileScreen("menu");
+                    adminLoad();
+                    loadAdminSlots();
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 900, fontSize: 17 }}>Админка</div>
+                    <div style={{ ...smallMuted, marginTop: 4 }}>Просмотр и управление заказами</div>
+                  </div>
+                  <span style={{ opacity: 0.55, fontSize: 22, fontWeight: 900 }}>›</span>
+                </button>
+              )}
+            </div>
+              </>
             )}
 
             {activeProfileOverlayScreen && (
@@ -2411,6 +2495,10 @@ const logoStyle: React.CSSProperties = {
                   top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
                   bottom: 0,
                   zIndex: 70,
+                  pointerEvents: activeProfileOverlayScreen ? "auto" : "none",
+                  opacity: isProfileOverlayVisible ? 1 : 0,
+                  transform: isProfileOverlayVisible ? "translateY(0)" : "translateY(100%)",
+                  transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
                   overflowY: "auto",
                   WebkitOverflowScrolling: "touch",
                   padding: 16,
@@ -2418,10 +2506,29 @@ const logoStyle: React.CSSProperties = {
                   background: BRAND_BG,
                 }}
               >
-                <div style={card}>
-                  <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}>
+                <div
+                  style={{
+                    ...card,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "48px 1fr 48px",
+                      alignItems: "center",
+                      gap: 10,
+                    }}
+                  >
                     <button
-                      style={{ ...btnGhost, width: 48, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                      style={{
+                        ...btnGhost,
+                        width: 48,
+                        height: 40,
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
                       onClick={() => {
                         if (selectedMyOrderId) {
                           setSelectedMyOrderId(null);
@@ -2439,75 +2546,158 @@ const logoStyle: React.CSSProperties = {
                     <div />
                   </div>
 
-                  {activeProfileOverlayScreen === "data" && (
-                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <input style={inputStyle} placeholder="ФИО" value={profileFormFullName} onChange={(e) => setProfileFormFullName(e.target.value)} />
-                      <input style={inputStyle} placeholder="Телефон" value={profileFormPhone} onChange={(e) => setProfileFormPhone(e.target.value)} />
-                      <input style={inputStyle} placeholder="Адрес" value={profileFormAddress} onChange={(e) => setProfileFormAddress(e.target.value)} />
-                      <button style={{ ...btnPrimary, width: "100%", opacity: profileSaveLoading ? 0.7 : 1 }} onClick={saveProfileData} disabled={profileSaveLoading}>
-                        {profileSaveLoading ? "Сохраняем..." : "Сохранить"}
-                      </button>
-                    </div>
-                  )}
-
                   {activeProfileOverlayScreen === "history" && (
                     <>
-                      {!selectedMyOrderId ? (
-                        profileLoading ? (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                            <SkeletonBlock height={96} radius={16} />
-                            <SkeletonBlock height={96} radius={16} />
-                          </div>
-                        ) : profileError ? (
-                          <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {profileError}</div>
-                        ) : myOrders.length === 0 ? (
-                          <div style={{ marginTop: 12, opacity: 0.75 }}>📦 Заказов пока нет.</div>
-                        ) : (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                            {myOrders.map((o) => (
-                              <button
-                                key={o.id}
-                                onClick={() => setSelectedMyOrderId(o.id)}
-                                style={{
-                                  textAlign: "left",
-                                  borderRadius: 16,
-                                  border: "1px solid rgba(10,19,23,0.10)",
-                                  background: "rgba(255,255,255,0.96)",
-                                  padding: 14,
-                                  cursor: "pointer",
-                                  boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
-                                }}
-                              >
-                                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                                  <div>
-                                    <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
-                                    <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
-                                  </div>
-                                  <StatusBadge status={o.status} />
-                                </div>
-                                <div style={{ marginTop: 10, fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
-                              </button>
-                            ))}
-                          </div>
-                        )
-                      ) : selectedMyOrder ? (
-                        <div style={{ marginTop: 12 }}>
-                          <div style={{ fontWeight: 900, fontSize: 16 }}>Заказ #{selectedMyOrder.id.slice(0, 8)}</div>
-                          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                            <StatusBadge status={selectedMyOrder.status} />
-                            <div style={{ ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
-                            <div>📍 {selectedMyOrder.address}</div>
-                            <div>💳 {selectedMyOrder.payment_method}</div>
-                            <div>💰 {formatPriceRub(selectedMyOrder.total_amount)}</div>
-                            {selectedMyOrder.comment ? <div style={{ whiteSpace: "pre-wrap" }}>💬 {selectedMyOrder.comment}</div> : null}
-                            <div style={{ marginTop: 6, fontWeight: 900 }}>Состав заказа</div>
-                            <div style={{ whiteSpace: "pre-wrap", fontSize: 14, opacity: 0.95 }}>{selectedMyOrder.items_text || "Нет данных"}</div>
-                          </div>
+                      {profileLoading ? (
+                        <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                          <SkeletonBlock height={84} radius={14} />
+                          <SkeletonBlock height={84} radius={14} />
+                        </div>
+                      ) : profileError ? (
+                        <div style={{ marginTop: 10, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                          Ошибка: {profileError}
                         </div>
                       ) : (
-                        <div style={{ marginTop: 12, opacity: 0.75 }}>Заказ не найден.</div>
+                        <>
+                          {!selectedMyOrderId && (
+                            <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+                              {myOrders.map((o) => {
+                                const previewLines = orderPreviewItems(o.items_text, 2);
+                                return (
+                                <button
+                                  key={o.id}
+                                  onClick={() => setSelectedMyOrderId(o.id)}
+                                  style={{
+                                    textAlign: "left",
+                                    borderRadius: 16,
+                                    border: "1px solid rgba(10,19,23,0.10)",
+                                    background: "rgba(255,255,255,0.96)",
+                                    padding: 14,
+                                    cursor: "pointer",
+                                    boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
+                                  }}
+                                >
+                                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                                    <div>
+                                      <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
+                                      <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
+                                    </div>
+                                    <StatusBadge status={o.status} />
+                                  </div>
+
+                                  {previewLines.length > 0 && (
+                                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                                      {previewLines.map((line, index) => (
+                                        <div key={index} style={{ fontSize: 13, opacity: 0.82 }}>
+                                          • {line}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                                    <div style={{ fontSize: 12, opacity: 0.65 }}>Нажмите, чтобы открыть детали</div>
+                                    <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
+                                  </div>
+                                </button>
+                                );
+                              })}
+
+                              {myOrders.length === 0 && (
+                                <div style={{ marginTop: 10, opacity: 0.75 }}>📦 У вас пока нет заказов.
+
+После оформления они будут появляться здесь.</div>
+                              )}
+                            </div>
+                          )}
+
+                          {selectedMyOrderId && (
+                            <div
+                              style={{
+                                marginTop: 10,
+                                animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                                transformOrigin: "bottom center",
+                              }}
+                            >
+                              
+
+                              {selectedMyOrder ? (
+                                <div style={{ marginTop: 12 }}>
+                                  <div style={{ fontWeight: 900, fontSize: 16 }}>
+                                    Заказ #{selectedMyOrder.id.slice(0, 8)}
+                                  </div>
+                                  <div style={{ marginTop: 8, opacity: 0.9 }}>
+                                    Статус: <StatusBadge status={selectedMyOrder.status} />
+                                  </div>
+                                  <div style={{ marginTop: 6, fontWeight: 900 }}>
+                                    {formatPriceRub(selectedMyOrder.total_amount)}
+                                  </div>
+                                  <div style={{ marginTop: 6, ...smallMuted }}>
+                                    {formatDateTime(selectedMyOrder.created_at)}
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      marginTop: 12,
+                                      whiteSpace: "pre-wrap",
+                                      fontSize: 13,
+                                      opacity: 0.95,
+                                    }}
+                                  >
+                                    <strong>Состав:</strong>
+                                    {"\n"}
+                                    {selectedMyOrder.items_text || "Нет данных"}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                              )}
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
+                  )}
+
+                  {activeProfileOverlayScreen === "data" && (
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <input
+                        style={inputStyle}
+                        placeholder="Имя"
+                        value={profileFormFullName}
+                        onChange={(e) => setProfileFormFullName(e.target.value)}
+                      />
+
+                      <input
+                        style={inputStyle}
+                        placeholder="Телефон"
+                        value={profileFormPhone}
+                        onChange={(e) => setProfileFormPhone(e.target.value)}
+                      />
+
+                      <textarea
+                        style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                        placeholder="Адрес"
+                        value={profileFormAddress}
+                        onChange={(e) => setProfileFormAddress(e.target.value)}
+                      />
+
+                      <div style={smallMuted}>
+                        Эти данные будут автоматически подставляться в оформление заказа.
+                      </div>
+
+                      <button
+                        style={{
+                          ...btnPrimary,
+                          width: "100%",
+                          opacity: profileSaveLoading ? 0.7 : 1,
+                        }}
+                        onClick={saveProfileData}
+                        disabled={profileSaveLoading}
+                      >
+                        {profileSaveLoading ? "Сохраняем..." : "Сохранить данные"}
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -2515,79 +2705,117 @@ const logoStyle: React.CSSProperties = {
           </div>
         )}
 
+        {/* ADMIN */}
         {view === "admin" && (
-          <div style={card}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "48px 1fr auto",
-                alignItems: "center",
-                gap: 10,
-              }}
-            >
-              <button
-                style={{ ...btnGhost, width: 48, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
-                onClick={() => {
-                  if (selectedOrderId) {
-                    setSelectedOrderId(null);
-                    setChatOpen(false);
-                    setChatMessages([]);
-                    setChatError(null);
-                    setChatText("");
-                    setChatUnreadCount(0);
-                    setChatClosedUnread(0);
-                    setChatAtBottom(true);
-                    lastChatMessageIdRef.current = null;
-                  } else if (adminSection === "slots") {
-                    setAdminSection("orders");
-                  } else {
-                    setView("profile");
-                    setProfileScreen("menu");
-                  }
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={card}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "48px 1fr 48px",
+                  alignItems: "center",
+                  gap: 10,
                 }}
-                title={selectedOrderId ? "Назад к списку" : adminSection === "slots" ? "Назад к заказам" : "В профиль"}
               >
-                ←
-              </button>
-
-              <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>{adminSection === "slots" ? "Слоты" : "Админка"}</div>
-
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                {!selectedOrderId && (
-                  <button
-                    style={btnGhost}
-                    onClick={() => {
-                      setAdminSection(adminSection === "orders" ? "slots" : "orders");
-                      loadAdminSlots();
-                    }}
-                  >
-                    Слоты
-                  </button>
-                )}
                 <button
-                  style={{ ...btnGhost, width: 48, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    ...btnGhost,
+                    width: 48,
+                    height: 40,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onClick={() => {
+                    if (selectedOrderId) {
+                      setSelectedOrderId(null);
+                      setChatOpen(false);
+                      setChatMessages([]);
+                      setChatError(null);
+                      setChatText("");
+                      setChatUnreadCount(0);
+                      setChatClosedUnread(0);
+                      setChatAtBottom(true);
+                      lastChatMessageIdRef.current = null;
+                    } else if (adminSection === "slots") {
+                      setAdminSection("orders");
+                    } else {
+                      setView("profile");
+                      setProfileScreen("menu");
+                    }
+                  }}
+                  title={selectedOrderId ? "Назад к списку" : adminSection === "slots" ? "Назад к заказам" : "В профиль"}
+                >
+                  ←
+                </button>
+
+                <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>{adminSection === "slots" ? "Слоты" : "Админка"}</div>
+
+                <button
+                  style={{
+                    ...btnGhost,
+                    width: 48,
+                    height: 40,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                   onClick={() => {
                     adminLoad();
                     loadAdminSlots();
                   }}
-                  title="Обновить"
+                  title="Обновить список заказов"
                 >
                   ↻
                 </button>
               </div>
-            </div>
 
-            {!selectedOrderId && adminSection === "slots" && (
-              <div style={{ marginTop: 12 }}>
+              {!selectedOrderId && adminSection === "slots" && (
+              <div
+                style={{
+                  ...card,
+                  marginTop: 12,
+                }}
+              >
                 <div style={{ fontWeight: 900, fontSize: 16 }}>Слоты доставки и самовывоза</div>
+
                 <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                  <input style={inputStyle} type="date" value={slotFormDate} onChange={(e) => setSlotFormDate(e.target.value)} />
+                  <input
+                    style={inputStyle}
+                    type="date"
+                    value={slotFormDate}
+                    onChange={(e) => setSlotFormDate(e.target.value)}
+                  />
+
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                    <button type="button" style={btnTab(slotFormType === "delivery")} onClick={() => setSlotFormType("delivery")}>Доставка</button>
-                    <button type="button" style={btnTab(slotFormType === "pickup")} onClick={() => setSlotFormType("pickup")}>Самовывоз</button>
+                    <button
+                      type="button"
+                      style={btnTab(slotFormType === "delivery")}
+                      onClick={() => setSlotFormType("delivery")}
+                    >
+                      Доставка
+                    </button>
+                    <button
+                      type="button"
+                      style={btnTab(slotFormType === "pickup")}
+                      onClick={() => setSlotFormType("pickup")}
+                    >
+                      Самовывоз
+                    </button>
                   </div>
-                  <input style={inputStyle} placeholder="Интервал, например 13:00–16:00" value={slotFormLabel} onChange={(e) => setSlotFormLabel(e.target.value)} />
-                  <button style={{ ...btnPrimary, width: "100%" }} onClick={createAdminSlot}>Добавить слот</button>
+
+                  <input
+                    style={inputStyle}
+                    placeholder="Интервал, например 13:00–16:00"
+                    value={slotFormLabel}
+                    onChange={(e) => setSlotFormLabel(e.target.value)}
+                  />
+
+                  <button style={{ ...btnPrimary, width: "100%" }} onClick={createAdminSlot}>
+                    Добавить слот
+                  </button>
                 </div>
 
                 {adminSlotsLoading ? (
@@ -2596,7 +2824,9 @@ const logoStyle: React.CSSProperties = {
                     <SkeletonBlock height={64} radius={14} />
                   </div>
                 ) : adminSlotsError ? (
-                  <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {adminSlotsError}</div>
+                  <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                    Ошибка: {adminSlotsError}
+                  </div>
                 ) : (
                   <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
                     {adminSlots.map((slot) => (
@@ -2614,246 +2844,521 @@ const logoStyle: React.CSSProperties = {
                         }}
                       >
                         <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 900, fontSize: 14 }}>{slot.delivery_type === "delivery" ? "Доставка" : "Самовывоз"}</div>
-                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.82 }}>{slot.slot_date} • {slot.slot_label}</div>
+                          <div style={{ fontWeight: 900, fontSize: 14 }}>
+                            {slot.delivery_type === "delivery" ? "Доставка" : "Самовывоз"}
+                          </div>
+                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.82 }}>
+                            {slot.slot_date} • {slot.slot_label}
+                          </div>
                         </div>
+
                         <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                          <button style={btnTab(slot.is_active)} onClick={() => toggleAdminSlot(slot.id, !slot.is_active)}>{slot.is_active ? "Вкл" : "Выкл"}</button>
-                          <button style={btnGhost} onClick={() => deleteAdminSlot(slot.id)} title="Удалить слот">✕</button>
+                          <button
+                            style={btnTab(slot.is_active)}
+                            onClick={() => toggleAdminSlot(slot.id, !slot.is_active)}
+                          >
+                            {slot.is_active ? "Вкл" : "Выкл"}
+                          </button>
+                          <button
+                            style={btnGhost}
+                            onClick={() => deleteAdminSlot(slot.id)}
+                            title="Удалить слот"
+                          >
+                            ✕
+                          </button>
                         </div>
                       </div>
                     ))}
-                    {adminSlots.length === 0 && <div style={{ fontSize: 13, opacity: 0.72 }}>Слотов пока нет.</div>}
+
+                    {adminSlots.length === 0 && (
+                      <div style={{ fontSize: 13, opacity: 0.72 }}>Слотов пока нет.</div>
+                    )}
                   </div>
                 )}
               </div>
             )}
 
-            {adminLoading ? (
-              <>
-                {!selectedOrderId && adminSection === "orders" && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={96} radius={16} />
-                    <SkeletonBlock height={96} radius={16} />
-                  </div>
-                )}
-                {selectedOrderId && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={220} radius={16} />
-                    <SkeletonBlock height={180} radius={16} />
-                  </div>
-                )}
-              </>
-            ) : adminError ? (
-              <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {adminError}</div>
-            ) : (
-              <>
-                {!selectedOrderId && adminSection === "orders" && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    {orders.map((o) => {
-                      const previewLines = orderPreviewItems(o.items_text, 2);
-                      return (
+              {adminLoading ? (
+                <>
+                  {!selectedOrderId && adminSection === "orders" && (
+                    <>
+                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
                         <button
-                          key={o.id}
+                          style={btnGhost}
                           onClick={() => {
-                            setSelectedOrderId(o.id);
-                            setChatOpen(false);
-                            setChatMessages([]);
-                            setChatError(null);
-                            setChatText("");
-                            setChatUnreadCount(0);
-                            setChatClosedUnread(0);
-                            setChatAtBottom(true);
-                            lastChatMessageIdRef.current = null;
-                          }}
-                          style={{
-                            textAlign: "left",
-                            borderRadius: 16,
-                            border: "1px solid rgba(10,19,23,0.10)",
-                            background: "rgba(255,255,255,0.96)",
-                            padding: 14,
-                            cursor: "pointer",
-                            boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
+                            setAdminSection("slots");
+                            loadAdminSlots();
                           }}
                         >
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                            <div>
-                              <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
-                              <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
-                            </div>
-                            <StatusBadge status={o.status} />
-                          </div>
-                          <div style={{ marginTop: 10, fontWeight: 900 }}>{o.customer_name}</div>
-                          {previewLines.length > 0 && (
-                            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                              {previewLines.map((line, index) => (
-                                <div key={index} style={{ fontSize: 13, opacity: 0.82 }}>• {line}</div>
-                              ))}
-                            </div>
-                          )}
-                          <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                            <div style={{ fontSize: 12, opacity: 0.65 }}>{o.phone}</div>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
-                          </div>
+                          Слоты
                         </button>
-                      );
-                    })}
-                    {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>📦 Пока нет заказов в системе.</div>}
-                  </div>
-                )}
+                      </div>
 
-                {selectedOrderId && (
-                  <div style={{ marginTop: 12, animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)", transformOrigin: "bottom center" }}>
-                    {selectedOrder ? (
-                      <div style={{ marginTop: 12 }}>
-                        <div style={{ fontWeight: 900, fontSize: 16 }}>Заказ #{selectedOrder.id.slice(0, 8)}</div>
-                        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10, opacity: 0.95 }}>
-                          <div>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>👤 {selectedOrder.customer_name}</div>
-                            <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedOrder.created_at)}</div>
-                          </div>
-                          <div style={{ display: "grid", gap: 8, padding: 12, borderRadius: 14, border: "1px solid rgba(10,19,23,0.08)", background: "rgba(10,19,23,0.03)" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                              <span>📞 {selectedOrder.phone}</span>
-                              <button
-                                style={{ width: 28, height: 28, borderRadius: 999, border: "1px solid rgba(10,19,23,0.10)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flexShrink: 0 }}
-                                onClick={() => copyPhone(selectedOrder.phone)}
-                                title="Скопировать номер"
-                              >
-                                <IconCopy ink={BRAND_INK} />
-                              </button>
+                      <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                        <SkeletonBlock height={96} radius={16} />
+                        <SkeletonBlock height={96} radius={16} />
+                      </div>
+                    </>
+                  )}
+
+                  {selectedOrderId && (
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      <SkeletonBlock height={220} radius={16} />
+                      <SkeletonBlock height={180} radius={16} />
+                    </div>
+                  )}
+                </>
+              ) : adminError ? (
+                <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                  Ошибка: {adminError}
+                </div>
+              ) : (
+                <>
+                  {!selectedOrderId && adminSection === "orders" && (
+                    <>
+                      <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                        <button
+                          style={btnGhost}
+                          onClick={() => {
+                            setAdminSection("slots");
+                            loadAdminSlots();
+                          }}
+                        >
+                          Слоты
+                        </button>
+                      </div>
+
+                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                      {orders.map((o) => {
+                        const previewLines = orderPreviewItems(o.items_text, 2);
+                        return (
+                          <button
+                            key={o.id}
+                            onClick={() => {
+                              setSelectedOrderId(o.id);
+                              setChatOpen(false);
+                              setChatMessages([]);
+                              setChatError(null);
+                              setChatText("");
+                              setChatUnreadCount(0);
+                              setChatClosedUnread(0);
+                              setChatAtBottom(true);
+                              lastChatMessageIdRef.current = null;
+                            }}
+                            style={{
+                              textAlign: "left",
+                              borderRadius: 16,
+                              border: "1px solid rgba(10,19,23,0.10)",
+                              background: "rgba(255,255,255,0.96)",
+                              padding: 14,
+                              cursor: "pointer",
+                              boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
+                            }}
+                          >
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                              <div>
+                                <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
+                                <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
+                              </div>
+                              <StatusBadge status={o.status} />
                             </div>
-                            <div>📍 {selectedOrder.address}</div>
-                            <div>💳 {selectedOrder.payment_method}</div>
-                            <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                            {selectedOrder.comment ? <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>💬 {selectedOrder.comment}</div> : null}
-                          </div>
-                        </div>
 
-                        <div style={{ marginTop: 14, borderRadius: 16, border: "1px solid rgba(10,19,23,0.08)", background: "rgba(10,19,23,0.03)", overflow: "hidden" }}>
-                          <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(10,19,23,0.08)", fontWeight: 900 }}>Состав заказа</div>
-                          <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                            {orderItemsList(selectedOrder.items_text).length > 0 ? (
-                              orderItemsList(selectedOrder.items_text).map((line, index) => (
-                                <div key={index} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(10,19,23,0.06)", fontSize: 14 }}>
-                                  <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>•</span>
-                                  <span>{line}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div style={{ opacity: 0.7 }}>Нет данных</div>
+                            <div style={{ marginTop: 10, fontWeight: 900 }}>{o.customer_name}</div>
+
+                            {previewLines.length > 0 && (
+                              <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
+                                {previewLines.map((line, index) => (
+                                  <div key={index} style={{ fontSize: 13, opacity: 0.82 }}>
+                                    • {line}
+                                  </div>
+                                ))}
+                              </div>
                             )}
-                          </div>
-                        </div>
 
-                        <div style={{ marginTop: 14, borderRadius: 16, border: "1px solid rgba(10,19,23,0.08)", background: "rgba(10,19,23,0.03)", overflow: "hidden" }}>
-                          <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(10,19,23,0.08)", fontWeight: 900, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-                            <span>Чат по заказу</span>
-                            <div style={{ display: "flex", gap: 8 }}>
-                              <button
-                                style={{ ...btnGhost, position: "relative" }}
-                                onClick={() => {
-                                  if (!chatOpen) {
-                                    setChatMessages([]);
-                                    setChatError(null);
-                                    setChatUnreadCount(0);
-                                    setChatClosedUnread(0);
-                                    setChatAtBottom(true);
-                                    lastChatMessageIdRef.current = null;
-                                    loadOrderChat(selectedOrder.id);
-                                  } else {
-                                    setChatClosedUnread(0);
-                                  }
-                                  setChatOpen(!chatOpen);
-                                }}
-                              >
-                                {chatOpen ? "Скрыть" : "Открыть"}
-                                {!chatOpen && chatClosedUnread > 0 && (
-                                  <span style={{ position: "absolute", top: -6, right: -6, width: 18, height: 18, borderRadius: 999, background: BRAND_ACCENT, color: "#fff", fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                    {chatClosedUnread > 9 ? "9+" : chatClosedUnread}
-                                  </span>
-                                )}
-                              </button>
-                              <button style={{ ...btnGhost, width: 40, display: "flex", justifyContent: "center" }} onClick={() => loadOrderChat(selectedOrder.id)} title="Обновить">↻</button>
+                            <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                              <div style={{ fontSize: 12, opacity: 0.65 }}>{o.phone}</div>
+                              <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      {orders.length === 0 && (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>📦 Пока нет заказов в системе.</div>
+                      )}
+                    </div>
+                    </>
+                  )}
+
+                  {selectedOrderId && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                        transformOrigin: "bottom center",
+                      }}
+                    >
+                      {selectedOrder ? (
+                        <div style={{ marginTop: 12 }}>
+                          <div style={{ fontWeight: 900, fontSize: 16 }}>
+                            Заказ #{selectedOrder.id.slice(0, 8)}
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 10,
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 10,
+                              opacity: 0.95,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                gap: 10,
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontWeight: 900, fontSize: 16 }}>👤 {selectedOrder.customer_name}</div>
+                                <div style={{ marginTop: 6, ...smallMuted }}>
+                                  {formatDateTime(selectedOrder.created_at)}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div
+                              style={{
+                                display: "grid",
+                                gap: 8,
+                                padding: 12,
+                                borderRadius: 14,
+                                border: "1px solid rgba(10,19,23,0.08)",
+                                background: "rgba(10,19,23,0.03)",
+                              }}
+                            >
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                <span>📞 {selectedOrder.phone}</span>
+                                <button
+                                  style={{
+                                    width: 28,
+                                    height: 28,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(10,19,23,0.10)",
+                                    background: "#fff",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    cursor: "pointer",
+                                    padding: 0,
+                                    flexShrink: 0,
+                                  }}
+                                  onClick={() => copyPhone(selectedOrder.phone)}
+                                  title="Скопировать номер"
+                                >
+                                  <IconCopy ink={BRAND_INK} />
+                                </button>
+                              </div>
+                              <div>📍 {selectedOrder.address}</div>
+                              <div>💳 {selectedOrder.payment_method}</div>
+                              <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
+                              {selectedOrder.comment ? (
+                                <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>
+                                  💬 {selectedOrder.comment}
+                                </div>
+                              ) : null}
                             </div>
                           </div>
 
-                          {chatOpen && (
-                            <>
-                              <div style={{ position: "relative" }}>
-                                <div ref={chatListRef} onScroll={handleChatScroll} style={{ padding: 12, display: "flex", flexDirection: "column", gap: 10, maxHeight: 320, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
-                                  {chatLoading ? (
-                                    <>
-                                      <SkeletonBlock height={54} radius={14} />
-                                      <SkeletonBlock height={54} radius={14} style={{ width: "82%" }} />
-                                    </>
-                                  ) : chatError ? (
-                                    <div style={{ color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {chatError}</div>
-                                  ) : chatMessages.length === 0 ? (
-                                    <div style={{ opacity: 0.72 }}>Сообщений пока нет.</div>
-                                  ) : (
-                                    chatMessages.map((msg) => {
-                                      const outgoing = msg.direction === "outgoing";
-                                      return (
-                                        <div
-                                          key={msg.id}
+                          <div
+                            style={{
+                              marginTop: 14,
+                              borderRadius: 16,
+                              border: "1px solid rgba(10,19,23,0.08)",
+                              background: "rgba(10,19,23,0.03)",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                padding: "12px 14px",
+                                borderBottom: "1px solid rgba(10,19,23,0.08)",
+                                fontWeight: 900,
+                              }}
+                            >
+                              Состав заказа
+                            </div>
+                            <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
+                              {orderItemsList(selectedOrder.items_text).length > 0 ? (
+                                orderItemsList(selectedOrder.items_text).map((line, index) => (
+                                  <div
+                                    key={index}
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 8,
+                                      padding: "10px 12px",
+                                      borderRadius: 12,
+                                      background: "rgba(255,255,255,0.82)",
+                                      border: "1px solid rgba(10,19,23,0.06)",
+                                      fontSize: 14,
+                                    }}
+                                  >
+                                    <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>•</span>
+                                    <span>{line}</span>
+                                  </div>
+                                ))
+                              ) : (
+                                <div style={{ opacity: 0.7 }}>Нет данных</div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              marginTop: 14,
+                              borderRadius: 16,
+                              border: "1px solid rgba(10,19,23,0.08)",
+                              background: "rgba(10,19,23,0.03)",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                padding: "12px 14px",
+                                borderBottom: "1px solid rgba(10,19,23,0.08)",
+                                fontWeight: 900,
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 10,
+                              }}
+                            >
+                              <span>Чат по заказу</span>
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button
+                                  style={{ ...btnGhost, position: "relative" }}
+                                  onClick={() => {
+                                    if (!chatOpen) {
+                                      setChatMessages([]);
+                                      setChatError(null);
+                                      setChatUnreadCount(0);
+                                      setChatClosedUnread(0);
+                                      setChatAtBottom(true);
+                                      lastChatMessageIdRef.current = null;
+                                      loadOrderChat(selectedOrder.id);
+                                    } else {
+                                      setChatClosedUnread(0);
+                                    }
+                                    setChatOpen(!chatOpen);
+                                  }}
+                                >
+                                  {chatOpen ? "Скрыть" : "Открыть"}
+                                  {!chatOpen && chatClosedUnread > 0 && (
+                                    <span
+                                      style={{
+                                        position: "absolute",
+                                        top: -6,
+                                        right: -6,
+                                        width: 18,
+                                        height: 18,
+                                        borderRadius: 999,
+                                        background: BRAND_ACCENT,
+                                        color: "#fff",
+                                        fontSize: 11,
+                                        fontWeight: 900,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                      }}
+                                    >
+                                      {chatClosedUnread > 9 ? "9+" : chatClosedUnread}
+                                    </span>
+                                  )}
+                                </button>
+                                <button
+                                  style={{ ...btnGhost, width: 40, display: "flex", justifyContent: "center" }}
+                                  onClick={() => loadOrderChat(selectedOrder.id)}
+                                  title="Обновить"
+                                >
+                                  ↻
+                                </button>
+                              </div>
+                            </div>
+
+                            {chatOpen && (
+                              <>
+                                <div style={{ position: "relative" }}>
+                                  <div
+                                    ref={chatListRef}
+                                    onScroll={handleChatScroll}
+                                    style={{
+                                      padding: 12,
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 10,
+                                      maxHeight: 320,
+                                      overflowY: "auto",
+                                      WebkitOverflowScrolling: "touch",
+                                    }}
+                                  >
+                                    {chatLoading ? (
+                                      <>
+                                        <SkeletonBlock height={54} radius={14} />
+                                        <SkeletonBlock height={54} radius={14} style={{ width: "82%" }} />
+                                      </>
+                                    ) : chatError ? (
+                                      <div style={{ color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                                        Ошибка: {chatError}
+                                      </div>
+                                    ) : chatMessages.length === 0 ? (
+                                      <div style={{ opacity: 0.72 }}>Сообщений пока нет.</div>
+                                    ) : (
+                                      chatMessages.map((msg) => {
+                                        const outgoing = msg.direction === "outgoing";
+                                        return (
+                                          <div
+                                            key={msg.id}
+                                            style={{
+                                              alignSelf: outgoing ? "flex-end" : "flex-start",
+                                              maxWidth: "86%",
+                                              padding: "10px 12px",
+                                              borderRadius: 14,
+                                              background: outgoing
+                                                ? "rgba(212,51,20,0.10)"
+                                                : "rgba(255,255,255,0.90)",
+                                              border: outgoing
+                                                ? "1px solid rgba(212,51,20,0.18)"
+                                                : "1px solid rgba(10,19,23,0.08)",
+                                            }}
+                                          >
+                                            <div style={{ fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>
+                                              {msg.text}
+                                            </div>
+                                            <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>
+                                              {outgoing ? "Вы" : "Клиент"} • {formatDateTime(msg.created_at)}
+                                            </div>
+                                          </div>
+                                        );
+                                      })
+                                    )}
+                                  </div>
+
+                                  {!chatAtBottom && (
+                                    <button
+                                      style={{
+                                        position: "absolute",
+                                        right: 14,
+                                        bottom: 14,
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: 999,
+                                        border: "1px solid rgba(10,19,23,0.10)",
+                                        background: "rgba(255,255,255,0.96)",
+                                        boxShadow: "0 10px 24px rgba(10,19,23,0.12)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        cursor: "pointer",
+                                        zIndex: 2,
+                                      }}
+                                      onClick={scrollChatToBottom}
+                                      title="К последним сообщениям"
+                                    >
+                                      <span style={{ fontSize: 18, lineHeight: 1, color: BRAND_INK }}>↓</span>
+                                      {chatUnreadCount > 0 && (
+                                        <span
                                           style={{
-                                            alignSelf: outgoing ? "flex-end" : "flex-start",
-                                            maxWidth: "86%",
-                                            padding: "10px 12px",
-                                            borderRadius: 14,
-                                            background: outgoing ? "rgba(212,51,20,0.10)" : "rgba(255,255,255,0.90)",
-                                            border: outgoing ? "1px solid rgba(212,51,20,0.18)" : "1px solid rgba(10,19,23,0.08)",
+                                            position: "absolute",
+                                            top: -4,
+                                            right: -4,
+                                            width: 18,
+                                            height: 18,
+                                            padding: 0,
+                                            borderRadius: 999,
+                                            background: BRAND_ACCENT,
+                                            color: "#fff",
+                                            fontSize: 11,
+                                            fontWeight: 900,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
                                           }}
                                         >
-                                          <div style={{ fontSize: 13, lineHeight: 1.4, whiteSpace: "pre-wrap" }}>{msg.text}</div>
-                                          <div style={{ marginTop: 6, fontSize: 11, opacity: 0.6 }}>{outgoing ? "Вы" : "Клиент"} • {formatDateTime(msg.created_at)}</div>
-                                        </div>
-                                      );
-                                    })
+                                          {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
+                                        </span>
+                                      )}
+                                    </button>
                                   )}
                                 </div>
 
-                                {!chatAtBottom && (
+                                <div
+                                  style={{
+                                    padding: 12,
+                                    borderTop: "1px solid rgba(10,19,23,0.08)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 10,
+                                  }}
+                                >
+                                  <textarea
+                                    style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+                                    placeholder="Напишите сообщение клиенту..."
+                                    value={chatText}
+                                    onChange={(e) => setChatText(e.target.value)}
+                                  />
                                   <button
-                                    style={{ position: "absolute", right: 14, bottom: 14, width: 38, height: 38, borderRadius: 999, border: "1px solid rgba(10,19,23,0.10)", background: "rgba(255,255,255,0.96)", boxShadow: "0 10px 24px rgba(10,19,23,0.12)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", zIndex: 2 }}
-                                    onClick={scrollChatToBottom}
-                                    title="К последним сообщениям"
+                                    style={{
+                                      ...btnPrimary,
+                                      width: "100%",
+                                      opacity: chatSending ? 0.7 : 1,
+                                    }}
+                                    onClick={() => sendOrderChat(selectedOrder.id)}
+                                    disabled={chatSending}
                                   >
-                                    <span style={{ fontSize: 18, lineHeight: 1, color: BRAND_INK }}>↓</span>
-                                    {chatUnreadCount > 0 && (
-                                      <span style={{ position: "absolute", top: -4, right: -4, width: 18, height: 18, padding: 0, borderRadius: 999, background: BRAND_ACCENT, color: "#fff", fontSize: 11, fontWeight: 900, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                        {chatUnreadCount > 9 ? "9+" : chatUnreadCount}
-                                      </span>
-                                    )}
+                                    {chatSending ? "Отправляем..." : "Отправить сообщение"}
                                   </button>
-                                )}
-                              </div>
+                                </div>
+                              </>
+                            )}
+                          </div>
 
-                              <div style={{ padding: 12, borderTop: "1px solid rgba(10,19,23,0.08)", display: "flex", flexDirection: "column", gap: 10 }}>
-                                <textarea style={{ ...inputStyle, minHeight: 90, resize: "vertical" }} placeholder="Напишите сообщение клиенту..." value={chatText} onChange={(e) => setChatText(e.target.value)} />
-                                <button style={{ ...btnPrimary, width: "100%", opacity: chatSending ? 0.7 : 1 }} onClick={() => sendOrderChat(selectedOrder.id)} disabled={chatSending}>
-                                  {chatSending ? "Отправляем..." : "Отправить сообщение"}
-                                </button>
-                              </div>
-                            </>
-                          )}
+                          <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <button
+                              style={statusActionBtn("assembling", selectedOrder.status === "assembling")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "assembling")}
+                            >
+                              Собирается
+                            </button>
+                            <button
+                              style={statusActionBtn("on_the_way", selectedOrder.status === "on_the_way")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}
+                            >
+                              В пути
+                            </button>
+                            <button
+                              style={statusActionBtn("delivered", selectedOrder.status === "delivered")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "delivered")}
+                            >
+                              Доставлен
+                            </button>
+                            <button
+                              style={statusActionBtn("canceled", selectedOrder.status === "canceled")}
+                              onClick={() => setOrderStatus(selectedOrder.id, "canceled")}
+                            >
+                              Отменён
+                            </button>
+                          </div>
                         </div>
-
-                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button style={statusActionBtn("assembling", selectedOrder.status === "assembling")} onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>Собирается</button>
-                          <button style={statusActionBtn("on_the_way", selectedOrder.status === "on_the_way")} onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>В пути</button>
-                          <button style={statusActionBtn("delivered", selectedOrder.status === "delivered")} onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>Доставлен</button>
-                          <button style={statusActionBtn("canceled", selectedOrder.status === "canceled")} onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>Отменён</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
+                      ) : (
+                        <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>
