@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import ProfileMenuCard from "@/components/profile/ProfileMenuCard";
 
 type Category = {
   id: string;
@@ -2332,79 +2333,28 @@ const logoStyle: React.CSSProperties = {
                 </div>
               </div>
             </div>
-
-            <button
-              style={{
-                ...card,
-                border: "1px solid rgba(10,19,23,0.10)",
-                textAlign: "left",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
+            <ProfileMenuCard
+              title="История заказов"
+              description="Все ваши оформленные заказы"
               onClick={() => openProfileScreen("history")}
-            >
-              <div>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>История заказов</div>
-                <div style={{ marginTop: 6, fontSize: 13, opacity: 0.68 }}>Все ваши оформленные заказы</div>
-              </div>
-              <div style={{ fontSize: 28, lineHeight: 1, opacity: 0.42, fontWeight: 900 }}>›</div>
-            </button>
+            />
 
-            <button
-              style={{
-                ...card,
-                border: "1px solid rgba(10,19,23,0.10)",
-                textAlign: "left",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
+            <ProfileMenuCard
+              title="Мои данные"
+              description="Имя, телефон и адрес доставки"
               onClick={() => openProfileScreen("data")}
-            >
-              <div>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>Мои данные</div>
-                <div style={{ marginTop: 6, fontSize: 13, opacity: 0.68 }}>Имя, телефон и адрес доставки</div>
-              </div>
-              <div style={{ fontSize: 28, lineHeight: 1, opacity: 0.42, fontWeight: 900 }}>›</div>
-            </button>
+            />
 
-            <button
-              style={{
-                ...card,
-                border: "1px solid rgba(10,19,23,0.10)",
-                textAlign: "left",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-              }}
+            <ProfileMenuCard
+              title="Тех. поддержка"
+              description="Связаться с нами в Telegram"
               onClick={openSupport}
-            >
-              <div>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>Тех. поддержка</div>
-                <div style={{ marginTop: 6, fontSize: 13, opacity: 0.68 }}>Связаться с нами в Telegram</div>
-              </div>
-              <div style={{ fontSize: 28, lineHeight: 1, opacity: 0.42, fontWeight: 900 }}>›</div>
-            </button>
+            />
 
             {isAdmin && (
-              <button
-                style={{
-                  ...card,
-                  border: "1px solid rgba(10,19,23,0.10)",
-                  textAlign: "left",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                }}
+              <ProfileMenuCard
+                title="Админка"
+                description="Просмотр и управление заказами"
                 onClick={() => {
                   setSelectedOrderId(null);
                   setAdminError(null);
@@ -2415,13 +2365,7 @@ const logoStyle: React.CSSProperties = {
                   adminLoad();
                   loadAdminSlots();
                 }}
-              >
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>Админка</div>
-                  <div style={{ marginTop: 6, fontSize: 13, opacity: 0.68 }}>Просмотр и управление заказами</div>
-                </div>
-                <div style={{ fontSize: 28, lineHeight: 1, opacity: 0.42, fontWeight: 900 }}>›</div>
-              </button>
+              />
             )}
 
             {activeProfileOverlayScreen && (
