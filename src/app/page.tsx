@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import ProfileMenuCard from "@/components/profile/ProfileMenuCard";
+import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
 
 type Category = {
   id: string;
@@ -2314,59 +2315,28 @@ const logoStyle: React.CSSProperties = {
 
         {view === "profile" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div style={card}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt="avatar"
-                    style={{ width: 64, height: 64, borderRadius: 999, objectFit: "cover", border: "1px solid rgba(10,19,23,0.10)" }}
-                  />
-                ) : (
-                  <div style={{ width: 64, height: 64, borderRadius: 999, background: "rgba(10,19,23,0.08)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>TG</div>
-                )}
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 18 }}>{profileData?.full_name || tgDisplayName() || "Профиль"}</div>
-                  <div style={{ marginTop: 4, fontSize: 13, opacity: 0.72 }}>
-                    {tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUserId || "—"}`}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <ProfileMenuCard
-              title="История заказов"
-              description="Все ваши оформленные заказы"
-              onClick={() => openProfileScreen("history")}
+            <ProfileMainScreen
+              cardStyle={card}
+              avatarSrc={avatarSrc}
+              profileData={profileData}
+              tgUser={tgUser}
+              tgUserId={tgUserId}
+              tgDisplayName={tgDisplayName}
+              isAdmin={isAdmin}
+              onOpenHistory={() => openProfileScreen("history")}
+              onOpenData={() => openProfileScreen("data")}
+              onOpenSupport={openSupport}
+              onOpenAdmin={() => {
+                setSelectedOrderId(null);
+                setAdminError(null);
+                setOrders([]);
+                setAdminSection("orders");
+                setView("admin");
+                setProfileScreen("menu");
+                adminLoad();
+                loadAdminSlots();
+              }}
             />
-
-            <ProfileMenuCard
-              title="Мои данные"
-              description="Имя, телефон и адрес доставки"
-              onClick={() => openProfileScreen("data")}
-            />
-
-            <ProfileMenuCard
-              title="Тех. поддержка"
-              description="Связаться с нами в Telegram"
-              onClick={openSupport}
-            />
-
-            {isAdmin && (
-              <ProfileMenuCard
-                title="Админка"
-                description="Просмотр и управление заказами"
-                onClick={() => {
-                  setSelectedOrderId(null);
-                  setAdminError(null);
-                  setOrders([]);
-                  setAdminSection("orders");
-                  setView("admin");
-                  setProfileScreen("menu");
-                  adminLoad();
-                  loadAdminSlots();
-                }}
-              />
-            )}
 
             {activeProfileOverlayScreen && (
               <div
