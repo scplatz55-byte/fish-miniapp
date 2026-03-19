@@ -7,6 +7,7 @@ import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
 import ProfileDataScreen from "@/components/profile/ProfileDataScreen";
 import ProfileOrdersList from "@/components/profile/ProfileOrdersList";
 import ProfileOrderDetails from "@/components/profile/ProfileOrderDetails";
+import ProfileOverlay from "@/components/profile/ProfileOverlay";
 
 type Category = {
   id: string;
@@ -2342,83 +2343,42 @@ const logoStyle: React.CSSProperties = {
             />
 
             {activeProfileOverlayScreen && (
-              <div
-                style={{
-                  position: "fixed",
-                  left: 0,
-                  right: 0,
-                  top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
-                  bottom: 0,
-                  zIndex: 70,
-                  overflowY: "auto",
-                  WebkitOverflowScrolling: "touch",
-                  padding: 16,
-                  paddingBottom: contentBottomPadding,
-                  background: BRAND_BG,
+              <ProfileOverlay
+                isVisible={isProfileOverlayVisible || Boolean(closingProfileScreen)}
+                activeScreen={activeProfileOverlayScreen}
+                headerOffsetTop={`calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`}
+                bottomPadding={contentBottomPadding}
+                backgroundColor={BRAND_BG}
+                cardStyle={card}
+                ghostButtonStyle={btnGhost}
+                inputStyle={inputStyle}
+                primaryButtonStyle={btnPrimary}
+                smallMutedStyle={smallMuted}
+                selectedMyOrderId={selectedMyOrderId}
+                selectedMyOrder={selectedMyOrder}
+                profileLoading={profileLoading}
+                profileError={profileError}
+                myOrders={myOrders}
+                profileFormFullName={profileFormFullName}
+                profileFormPhone={profileFormPhone}
+                profileFormAddress={profileFormAddress}
+                profileSaveLoading={profileSaveLoading}
+                onBack={() => {
+                  if (selectedMyOrderId) {
+                    setSelectedMyOrderId(null);
+                  } else {
+                    closeProfileScreen();
+                  }
                 }}
-              >
-                <div style={card}>
-                  <div style={{ display: "grid", gridTemplateColumns: "48px 1fr 48px", alignItems: "center", gap: 10 }}>
-                    <button
-                      style={{ ...btnGhost, width: 48, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
-                      onClick={() => {
-                        if (selectedMyOrderId) {
-                          setSelectedMyOrderId(null);
-                        } else {
-                          closeProfileScreen();
-                        }
-                      }}
-                      title="Назад"
-                    >
-                      ←
-                    </button>
-                    <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>
-                      {activeProfileOverlayScreen === "history" ? "История заказов" : "Мои данные"}
-                    </div>
-                    <div />
-                  </div>
-
-                  {activeProfileOverlayScreen === "data" && (
-                    <ProfileDataScreen
-                      inputStyle={inputStyle}
-                      fullName={profileFormFullName}
-                      phone={profileFormPhone}
-                      address={profileFormAddress}
-                      onChangeFullName={setProfileFormFullName}
-                      onChangePhone={setProfileFormPhone}
-                      onChangeAddress={setProfileFormAddress}
-                      onSave={saveProfileData}
-                      saveLoading={profileSaveLoading}
-                      primaryButtonStyle={btnPrimary}
-                    />
-                  )}
-
-                  {activeProfileOverlayScreen === "history" && (
-                    <>
-                      {!selectedMyOrderId ? (
-                        <ProfileOrdersList
-                          profileLoading={profileLoading}
-                          profileError={profileError}
-                          orders={myOrders}
-                          onSelectOrder={setSelectedMyOrderId}
-                          formatDateTime={formatDateTime}
-                          formatPriceRub={formatPriceRub}
-                          smallMutedStyle={smallMuted}
-                          renderStatusBadge={(status) => <StatusBadge status={status} />}
-                        />
-                      ) : (
-                        <ProfileOrderDetails
-                          order={selectedMyOrder}
-                          formatDateTime={formatDateTime}
-                          formatPriceRub={formatPriceRub}
-                          smallMutedStyle={smallMuted}
-                          renderStatusBadge={(status) => <StatusBadge status={status} />}
-                        />
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+                onChangeFullName={setProfileFormFullName}
+                onChangePhone={setProfileFormPhone}
+                onChangeAddress={setProfileFormAddress}
+                onSaveProfile={saveProfileData}
+                onSelectOrder={setSelectedMyOrderId}
+                formatDateTime={formatDateTime}
+                formatPriceRub={formatPriceRub}
+                renderStatusBadge={(status) => <StatusBadge status={status} />}
+              />
             )}
           </div>
         )}
