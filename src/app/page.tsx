@@ -2064,8 +2064,7 @@ const logoStyle: React.CSSProperties = {
                 </>
               )}
             </div>
-
-                                    <CheckoutOverlay
+            <CheckoutOverlay
               isOpen={checkoutOpen}
               headerOffsetTop={`calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`}
               bottomPadding={contentBottomPadding}
@@ -2119,118 +2118,6 @@ const logoStyle: React.CSSProperties = {
               onChangeOrderComment={setOrderComment}
               onSubmit={submitOrder}
             />
-                      </>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {PICKUP_POINTS.map((point) => {
-                          const active = pickupPointId === point.id;
-                          return (
-                            <button
-                              key={point.id}
-                              type="button"
-                              style={{
-                                ...card,
-                                padding: 12,
-                                textAlign: "left",
-                                cursor: "pointer",
-                                border: active
-                                  ? "1px solid rgba(212,51,20,0.30)"
-                                  : "1px solid rgba(10,19,23,0.10)",
-                                background: active ? "rgba(212,51,20,0.08)" : "rgba(255,255,255,0.96)",
-                                boxShadow: active ? "0 10px 24px rgba(212,51,20,0.10)" : "none",
-                              }}
-                              onClick={() => setPickupPointId(point.id)}
-                            >
-                              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                                <div style={{ fontWeight: 900, fontSize: 15 }}>{point.title}</div>
-                                {active && <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>✓</span>}
-                              </div>
-                              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {deliveryType === "delivery" ? (
-                      <>
-                        <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {getAvailableDeliveryDates().map((d) => (
-                            <button
-                              key={d.value}
-                              type="button"
-                              style={btnTab(deliveryDate === d.value)}
-                              onClick={() => setDeliveryDate(d.value)}
-                            >
-                              {d.label}
-                            </button>
-                          ))}
-                        </div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                          {getAvailableTimeSlots().map((slot) => (
-                            <button
-                              key={slot}
-                              type="button"
-                              style={btnTab(deliverySlot === slot)}
-                              onClick={() => setDeliverySlot(slot)}
-                            >
-                              {slot}
-                            </button>
-                          ))}
-                        </div>
-                        {getAvailableDeliveryDates().length === 0 && (
-                          <div style={{ fontSize: 13, opacity: 0.72 }}>
-                            Нет доступных слотов доставки.
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div
-                        style={{
-                          borderRadius: 14,
-                          border: "1px solid rgba(10,19,23,0.10)",
-                          background: "rgba(10,19,23,0.04)",
-                          padding: 12,
-                          fontSize: 13,
-                          lineHeight: 1.45,
-                        }}
-                      >
-                        {pickupPointId === "strelna"
-                          ? "Режим работы магазина: 10:00–21:00 ежедневно."
-                          : "Режим работы магазина: 9:00–21:00 ежедневно."}
-                      </div>
-                    )}
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                      <button type="button" style={btnTab(paymentMethod === "cash")} onClick={() => setPaymentMethod("cash")}>Наличные</button>
-                      <button type="button" style={btnTab(paymentMethod === "transfer")} onClick={() => setPaymentMethod("transfer")}>Перевод</button>
-                      <button type="button" style={btnTab(paymentMethod === "qr")} onClick={() => setPaymentMethod("qr")}>QR-код</button>
-                    </div>
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
-                    <input
-                      style={inputStyle}
-                      placeholder="Введите промокод"
-                      value={promoCode}
-                      onChange={(e) => setPromoCode(e.target.value)}
-                    />
-
-                    <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
-                    <textarea
-                      style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
-                      placeholder="Комментарий к заказу"
-                      value={orderComment}
-                      onChange={(e) => setOrderComment(e.target.value)}
-                    />
-
-                    <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {formatPriceRub(total)}</div>
-                    <button style={{ ...btnPrimary, width: "100%" }} onClick={submitOrder}>Подтвердить заказ</button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
