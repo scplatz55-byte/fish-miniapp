@@ -12,6 +12,7 @@ import OrderChatBlock from "@/components/admin/OrderChatBlock";
 import AdminOrderDetails from "@/components/admin/AdminOrderDetails";
 import AdminOrdersList from "@/components/admin/AdminOrdersList";
 import AdminSlotsPanel from "@/components/admin/AdminSlotsPanel";
+import CheckoutOverlay from "@/components/checkout/CheckoutOverlay";
 
 type Category = {
   id: string;
@@ -2064,148 +2065,60 @@ const logoStyle: React.CSSProperties = {
               )}
             </div>
 
-                                    {checkoutOpen && (
-              <div
-                style={{
-                  position: "fixed",
-                  left: 0,
-                  right: 0,
-                  top: `calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`,
-                  bottom: 0,
-                  zIndex: 70,
-                  overflowY: "auto",
-                  WebkitOverflowScrolling: "touch",
-                  padding: 16,
-                  paddingBottom: contentBottomPadding,
-                  background: BRAND_BG,
-                }}
-              >
-                <div style={card}>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "48px 1fr 48px",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <button
-                      style={{
-                        ...btnGhost,
-                        width: 48,
-                        height: 40,
-                        padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                      onClick={() => setCheckoutOpen(false)}
-                      title="Назад в корзину"
-                    >
-                      ←
-                    </button>
-                    <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>Оформление</div>
-                    <div />
-                  </div>
-
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        style={btnTab(deliveryType === "delivery")}
-                        onClick={() => {
-                          setDeliveryType("delivery");
-                          setDeliveryDate("");
-                          setDeliverySlot("");
-                        }}
-                      >
-                        Доставка
-                      </button>
-                      <button
-                        type="button"
-                        style={btnTab(deliveryType === "pickup")}
-                        onClick={() => {
-                          setDeliveryType("pickup");
-                          setDeliveryDate("");
-                          setDeliverySlot("");
-                        }}
-                      >
-                        Самовывоз
-                      </button>
-                    </div>
-
-                    <input
-                      style={inputStyle}
-                      placeholder="Имя"
-                      value={orderFullName}
-                      onChange={(e) => setOrderFullName(e.target.value)}
-                    />
-
-                    <input
-                      style={inputStyle}
-                      placeholder="Телефон"
-                      value={orderPhone}
-                      onChange={(e) => setOrderPhone(e.target.value)}
-                    />
-
-                    {deliveryType === "delivery" ? (
-                      <>
-                        <input
-                          style={inputStyle}
-                          placeholder="Адрес доставки"
-                          value={orderAddress}
-                          onChange={(e) => setOrderAddress(e.target.value)}
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() => setIsPrivateHouse(!isPrivateHouse)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            padding: 0,
-                            border: "none",
-                            background: "transparent",
-                            cursor: "pointer",
-                            width: "100%",
-                          }}
-                        >
-                          <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
-                          <div style={iosSwitchWrap(isPrivateHouse)}>
-                            <div style={iosSwitchKnob(isPrivateHouse)} />
-                          </div>
-                        </button>
-
-                        {!isPrivateHouse && (
-                          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, width: "100%" }}>
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Подъезд"
-                              value={orderEntrance}
-                              onChange={(e) => setOrderEntrance(e.target.value)}
-                            />
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Этаж"
-                              value={orderFloor}
-                              onChange={(e) => setOrderFloor(e.target.value)}
-                            />
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Квартира"
-                              value={orderApartment}
-                              onChange={(e) => setOrderApartment(e.target.value)}
-                            />
-                            <input
-                              style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                              placeholder="Домофон"
-                              value={orderIntercom}
-                              onChange={(e) => setOrderIntercom(e.target.value)}
-                            />
-                          </div>
-                        )}
+                                    <CheckoutOverlay
+              isOpen={checkoutOpen}
+              headerOffsetTop={`calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`}
+              bottomPadding={contentBottomPadding}
+              backgroundColor={BRAND_BG}
+              cardStyle={card}
+              ghostButtonStyle={btnGhost}
+              primaryButtonStyle={btnPrimary}
+              tabButtonStyle={btnTab}
+              inputStyle={inputStyle}
+              iosSwitchWrap={iosSwitchWrap}
+              iosSwitchKnob={iosSwitchKnob}
+              brandAccent={BRAND_ACCENT}
+              deliveryType={deliveryType}
+              pickupPoints={PICKUP_POINTS}
+              pickupPointId={pickupPointId}
+              isPrivateHouse={isPrivateHouse}
+              orderFullName={orderFullName}
+              orderPhone={orderPhone}
+              orderAddress={orderAddress}
+              orderEntrance={orderEntrance}
+              orderFloor={orderFloor}
+              orderApartment={orderApartment}
+              orderIntercom={orderIntercom}
+              deliveryDate={deliveryDate}
+              deliverySlot={deliverySlot}
+              paymentMethod={paymentMethod}
+              promoCode={promoCode}
+              orderComment={orderComment}
+              totalLabel={formatPriceRub(total)}
+              availableDates={getAvailableDeliveryDates()}
+              availableTimeSlots={getAvailableTimeSlots()}
+              onBack={() => setCheckoutOpen(false)}
+              onChangeDeliveryType={(value) => {
+                setDeliveryType(value);
+                setDeliveryDate("");
+                setDeliverySlot("");
+              }}
+              onChangePickupPointId={setPickupPointId}
+              onTogglePrivateHouse={() => setIsPrivateHouse(!isPrivateHouse)}
+              onChangeFullName={setOrderFullName}
+              onChangePhone={setOrderPhone}
+              onChangeAddress={setOrderAddress}
+              onChangeEntrance={setOrderEntrance}
+              onChangeFloor={setOrderFloor}
+              onChangeApartment={setOrderApartment}
+              onChangeIntercom={setOrderIntercom}
+              onChangeDeliveryDate={setDeliveryDate}
+              onChangeDeliverySlot={setDeliverySlot}
+              onChangePaymentMethod={setPaymentMethod}
+              onChangePromoCode={setPromoCode}
+              onChangeOrderComment={setOrderComment}
+              onSubmit={submitOrder}
+            />
                       </>
                     ) : (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
