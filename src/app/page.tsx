@@ -2102,7 +2102,7 @@ const logoStyle: React.CSSProperties = {
                 setDeliveryDate("");
                 setDeliverySlot("");
               }}
-              onChangePickupPointId={setPickupPointId}
+              onChangePickupPointId={(value) => setPickupPointId(value as (typeof PICKUP_POINTS)[number]["id"])}
               onTogglePrivateHouse={() => setIsPrivateHouse(!isPrivateHouse)}
               onChangeFullName={setOrderFullName}
               onChangePhone={setOrderPhone}
