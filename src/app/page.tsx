@@ -13,6 +13,7 @@ import AdminOrderDetails from "@/components/admin/AdminOrderDetails";
 import AdminOrdersList from "@/components/admin/AdminOrdersList";
 import AdminSlotsPanel from "@/components/admin/AdminSlotsPanel";
 import CheckoutOverlay from "@/components/checkout/CheckoutOverlay";
+import AdminHeader from "@/components/admin/AdminHeader";
 
 type Category = {
   id: string;
@@ -2189,83 +2190,37 @@ const logoStyle: React.CSSProperties = {
 
         {view === "admin" && (
           <div style={card}>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "48px 1fr auto",
-                alignItems: "center",
-                gap: 10,
+            <AdminHeader
+              selectedOrderId={selectedOrderId}
+              adminSection={adminSection}
+              ghostButtonStyle={btnGhost}
+              onBack={() => {
+                if (selectedOrderId) {
+                  setSelectedOrderId(null);
+                  setChatOpen(false);
+                  setChatMessages([]);
+                  setChatError(null);
+                  setChatText("");
+                  setChatUnreadCount(0);
+                  setChatClosedUnread(0);
+                  setChatAtBottom(true);
+                  lastChatMessageIdRef.current = null;
+                } else if (adminSection === "slots") {
+                  setAdminSection("orders");
+                } else {
+                  setView("profile");
+                  setProfileScreen("menu");
+                }
               }}
-            >
-              <button
-                style={{
-                  ...btnGhost,
-                  width: 48,
-                  height: 40,
-                  padding: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onClick={() => {
-                  if (selectedOrderId) {
-                    setSelectedOrderId(null);
-                    setChatOpen(false);
-                    setChatMessages([]);
-                    setChatError(null);
-                    setChatText("");
-                    setChatUnreadCount(0);
-                    setChatClosedUnread(0);
-                    setChatAtBottom(true);
-                    lastChatMessageIdRef.current = null;
-                  } else if (adminSection === "slots") {
-                    setAdminSection("orders");
-                  } else {
-                    setView("profile");
-                    setProfileScreen("menu");
-                  }
-                }}
-                title={selectedOrderId ? "Назад к списку" : adminSection === "slots" ? "Назад к заказам" : "В профиль"}
-              >
-                ←
-              </button>
-
-              <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>
-                {adminSection === "slots" ? "Слоты" : "Админка"}
-              </div>
-
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                {!selectedOrderId && (
-                  <button
-                    style={btnGhost}
-                    onClick={() => {
-                      setAdminSection(adminSection === "orders" ? "slots" : "orders");
-                      loadAdminSlots();
-                    }}
-                  >
-                    Слоты
-                  </button>
-                )}
-                <button
-                  style={{
-                    ...btnGhost,
-                    width: 48,
-                    height: 40,
-                    padding: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                  onClick={() => {
-                    adminLoad();
-                    loadAdminSlots();
-                  }}
-                  title="Обновить"
-                >
-                  ↻
-                </button>
-              </div>
-            </div>
+              onToggleSection={() => {
+                setAdminSection(adminSection === "orders" ? "slots" : "orders");
+                loadAdminSlots();
+              }}
+              onRefresh={() => {
+                adminLoad();
+                loadAdminSlots();
+              }}
+            />
 
             {!selectedOrderId && adminSection === "slots" && (
               <AdminSlotsPanel
