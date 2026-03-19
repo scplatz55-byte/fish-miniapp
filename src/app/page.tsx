@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import ProfileMenuCard from "@/components/profile/ProfileMenuCard";
 import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
+import ProfileDataScreen from "@/components/profile/ProfileDataScreen";
 
 type Category = {
   id: string;
@@ -2376,14 +2377,18 @@ const logoStyle: React.CSSProperties = {
                   </div>
 
                   {activeProfileOverlayScreen === "data" && (
-                    <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                      <input style={inputStyle} placeholder="ФИО" value={profileFormFullName} onChange={(e) => setProfileFormFullName(e.target.value)} />
-                      <input style={inputStyle} placeholder="Телефон" value={profileFormPhone} onChange={(e) => setProfileFormPhone(e.target.value)} />
-                      <input style={inputStyle} placeholder="Адрес" value={profileFormAddress} onChange={(e) => setProfileFormAddress(e.target.value)} />
-                      <button style={{ ...btnPrimary, width: "100%", opacity: profileSaveLoading ? 0.7 : 1 }} onClick={saveProfileData} disabled={profileSaveLoading}>
-                        {profileSaveLoading ? "Сохраняем..." : "Сохранить"}
-                      </button>
-                    </div>
+                    <ProfileDataScreen
+                      inputStyle={inputStyle}
+                      fullName={profileFormFullName}
+                      phone={profileFormPhone}
+                      address={profileFormAddress}
+                      onChangeFullName={setProfileFormFullName}
+                      onChangePhone={setProfileFormPhone}
+                      onChangeAddress={setProfileFormAddress}
+                      onSave={saveProfileData}
+                      saveLoading={profileSaveLoading}
+                      primaryButtonStyle={btnPrimary}
+                    />
                   )}
 
                   {activeProfileOverlayScreen === "history" && (
