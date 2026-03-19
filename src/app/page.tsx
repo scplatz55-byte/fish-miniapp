@@ -2398,7 +2398,15 @@ const logoStyle: React.CSSProperties = {
               }}
             >
               <button
-                style={{ ...btnGhost, width: 48, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                style={{
+                  ...btnGhost,
+                  width: 48,
+                  height: 40,
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
                 onClick={() => {
                   if (selectedOrderId) {
                     setSelectedOrderId(null);
@@ -2422,7 +2430,9 @@ const logoStyle: React.CSSProperties = {
                 ←
               </button>
 
-              <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>{adminSection === "slots" ? "Слоты" : "Админка"}</div>
+              <div style={{ fontWeight: 900, fontSize: 18, textAlign: "center" }}>
+                {adminSection === "slots" ? "Слоты" : "Админка"}
+              </div>
 
               <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
                 {!selectedOrderId && (
@@ -2437,7 +2447,15 @@ const logoStyle: React.CSSProperties = {
                   </button>
                 )}
                 <button
-                  style={{ ...btnGhost, width: 48, height: 40, padding: 0, display: "flex", alignItems: "center", justifyContent: "center" }}
+                  style={{
+                    ...btnGhost,
+                    width: 48,
+                    height: 40,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
                   onClick={() => {
                     adminLoad();
                     loadAdminSlots();
@@ -2471,99 +2489,28 @@ const logoStyle: React.CSSProperties = {
                 renderSkeleton={(key) => <SkeletonBlock key={key} height={64} radius={14} />}
               />
             )}
-              </div>
-            )}
 
             {adminLoading ? (
               <>
                 {!selectedOrderId && adminSection === "orders" && (
-                  <AdminOrdersList
-                    orders={orders}
-                    smallMutedStyle={smallMuted}
-                    formatDateTime={formatDateTime}
-                    formatPriceRub={formatPriceRub}
-                    orderPreviewItems={orderPreviewItems}
-                    renderStatusBadge={(status) => <StatusBadge status={status} />}
-                    onBeforeOpenOrder={() => {
-                      setChatOpen(false);
-                      setChatMessages([]);
-                      setChatError(null);
-                      setChatText("");
-                      setChatUnreadCount(0);
-                      setChatClosedUnread(0);
-                      setChatAtBottom(true);
-                      lastChatMessageIdRef.current = null;
-                    }}
-                    onSelectOrder={setSelectedOrderId}
-                  />
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SkeletonBlock height={116} radius={16} />
+                    <SkeletonBlock height={116} radius={16} />
+                    <SkeletonBlock height={116} radius={16} />
+                  </div>
                 )}
                 {selectedOrderId && (
-                  <AdminOrderDetails
-                    order={selectedOrder}
-                    smallMutedStyle={smallMuted}
-                    brandAccent={BRAND_ACCENT}
-                    formatDateTime={formatDateTime}
-                    formatPriceRub={formatPriceRub}
-                    orderItemsList={orderItemsList}
-                    statusActionBtn={statusActionBtn}
-                    onCopyPhone={copyPhone}
-                    onSetStatus={setOrderStatus}
-                    renderCopyIcon={() => <IconCopy ink={BRAND_INK} />}
-                    chatBlock={
-                      <OrderChatBlock
-                        title="Чат по заказу"
-                        chatOpen={chatOpen}
-                        chatClosedUnread={chatClosedUnread}
-                        chatLoading={chatLoading}
-                        chatError={chatError}
-                        chatMessages={chatMessages}
-                        chatAtBottom={chatAtBottom}
-                        chatUnreadCount={chatUnreadCount}
-                        chatText={chatText}
-                        chatSending={chatSending}
-                        inputStyle={inputStyle}
-                        primaryButtonStyle={btnPrimary}
-                        ghostButtonStyle={btnGhost}
-                        brandAccent={BRAND_ACCENT}
-                        brandInk={BRAND_INK}
-                        chatListRef={chatListRef}
-                        onToggleOpen={() => {
-                          if (!chatOpen) {
-                            setChatMessages([]);
-                            setChatError(null);
-                            setChatUnreadCount(0);
-                            setChatClosedUnread(0);
-                            setChatAtBottom(true);
-                            lastChatMessageIdRef.current = null;
-                            if (!selectedOrder) return;
-                            loadOrderChat(selectedOrder.id);
-                          } else {
-                            setChatClosedUnread(0);
-                          }
-                          setChatOpen(!chatOpen);
-                        }}
-                        onRefresh={() => {
-                          if (!selectedOrder) return;
-                          loadOrderChat(selectedOrder.id);
-                        }}
-                        onScroll={handleChatScroll}
-                        onScrollToBottom={scrollChatToBottom}
-                        onChangeText={setChatText}
-                        onSend={() => {
-                          if (!selectedOrder) return;
-                          sendOrderChat(selectedOrder.id);
-                        }}
-                        formatDateTime={formatDateTime}
-                        renderSkeleton={(key, width) => (
-                          <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
-                        )}
-                      />
-                    }
-                  />
+                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <SkeletonBlock height={140} radius={16} />
+                    <SkeletonBlock height={180} radius={16} />
+                    <SkeletonBlock height={220} radius={16} />
+                  </div>
                 )}
               </>
             ) : adminError ? (
-              <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {adminError}</div>
+              <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>
+                Ошибка: {adminError}
+              </div>
             ) : (
               <>
                 {!selectedOrderId && adminSection === "orders" && (
@@ -2587,16 +2534,6 @@ const logoStyle: React.CSSProperties = {
                     onSelectOrder={setSelectedOrderId}
                   />
                 )}
-                          <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                            <div style={{ fontSize: 12, opacity: 0.65 }}>{o.phone}</div>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
-                          </div>
-                        </button>
-                      );
-                    })}
-                    {orders.length === 0 && <div style={{ marginTop: 10, opacity: 0.75 }}>📦 Пока нет заказов в системе.</div>}
-                  </div>
-                )}
 
                 {selectedOrderId && (
                   <AdminOrderDetails
@@ -2656,7 +2593,12 @@ const logoStyle: React.CSSProperties = {
                         }}
                         formatDateTime={formatDateTime}
                         renderSkeleton={(key, width) => (
-                          <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
+                          <SkeletonBlock
+                            key={key}
+                            height={54}
+                            radius={14}
+                            style={width ? { width } : {}}
+                          />
                         )}
                       />
                     }
