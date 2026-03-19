@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import ProfileMenuCard from "@/components/profile/ProfileMenuCard";
 import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
 import ProfileDataScreen from "@/components/profile/ProfileDataScreen";
+import ProfileOrdersList from "@/components/profile/ProfileOrdersList";
 
 type Category = {
   id: string;
@@ -2394,43 +2395,16 @@ const logoStyle: React.CSSProperties = {
                   {activeProfileOverlayScreen === "history" && (
                     <>
                       {!selectedMyOrderId ? (
-                        profileLoading ? (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                            <SkeletonBlock height={96} radius={16} />
-                            <SkeletonBlock height={96} radius={16} />
-                          </div>
-                        ) : profileError ? (
-                          <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {profileError}</div>
-                        ) : myOrders.length === 0 ? (
-                          <div style={{ marginTop: 12, opacity: 0.75 }}>📦 Заказов пока нет.</div>
-                        ) : (
-                          <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                            {myOrders.map((o) => (
-                              <button
-                                key={o.id}
-                                onClick={() => setSelectedMyOrderId(o.id)}
-                                style={{
-                                  textAlign: "left",
-                                  borderRadius: 16,
-                                  border: "1px solid rgba(10,19,23,0.10)",
-                                  background: "rgba(255,255,255,0.96)",
-                                  padding: 14,
-                                  cursor: "pointer",
-                                  boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
-                                }}
-                              >
-                                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                                  <div>
-                                    <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
-                                    <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
-                                  </div>
-                                  <StatusBadge status={o.status} />
-                                </div>
-                                <div style={{ marginTop: 10, fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
-                              </button>
-                            ))}
-                          </div>
-                        )
+                        <ProfileOrdersList
+                          profileLoading={profileLoading}
+                          profileError={profileError}
+                          orders={myOrders}
+                          onSelectOrder={setSelectedMyOrderId}
+                          formatDateTime={formatDateTime}
+                          formatPriceRub={formatPriceRub}
+                          smallMutedStyle={smallMuted}
+                          renderStatusBadge={(status) => <StatusBadge status={status} />}
+                        />
                       ) : selectedMyOrder ? (
                         <div style={{ marginTop: 12 }}>
                           <div style={{ fontWeight: 900, fontSize: 16 }}>Заказ #{selectedMyOrder.id.slice(0, 8)}</div>
