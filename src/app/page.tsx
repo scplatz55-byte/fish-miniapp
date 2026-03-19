@@ -10,6 +10,7 @@ import ProfileOrderDetails from "@/components/profile/ProfileOrderDetails";
 import ProfileOverlay from "@/components/profile/ProfileOverlay";
 import OrderChatBlock from "@/components/admin/OrderChatBlock";
 import AdminOrderDetails from "@/components/admin/AdminOrderDetails";
+import AdminOrdersList from "@/components/admin/AdminOrdersList";
 
 type Category = {
   id: string;
@@ -2502,10 +2503,25 @@ const logoStyle: React.CSSProperties = {
             {adminLoading ? (
               <>
                 {!selectedOrderId && adminSection === "orders" && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={96} radius={16} />
-                    <SkeletonBlock height={96} radius={16} />
-                  </div>
+                  <AdminOrdersList
+                    orders={orders}
+                    smallMutedStyle={smallMuted}
+                    formatDateTime={formatDateTime}
+                    formatPriceRub={formatPriceRub}
+                    orderPreviewItems={orderPreviewItems}
+                    renderStatusBadge={(status) => <StatusBadge status={status} />}
+                    onBeforeOpenOrder={() => {
+                      setChatOpen(false);
+                      setChatMessages([]);
+                      setChatError(null);
+                      setChatText("");
+                      setChatUnreadCount(0);
+                      setChatClosedUnread(0);
+                      setChatAtBottom(true);
+                      lastChatMessageIdRef.current = null;
+                    }}
+                    onSelectOrder={setSelectedOrderId}
+                  />
                 )}
                 {selectedOrderId && (
                   <AdminOrderDetails
@@ -2631,108 +2647,68 @@ const logoStyle: React.CSSProperties = {
                 )}
 
                 {selectedOrderId && (
-                  <div style={{ marginTop: 12, animation: "orderSheetIn 220ms cubic-bezier(0.22, 1, 0.36, 1)", transformOrigin: "bottom center" }}>
-                    {selectedOrder ? (
-                      <div style={{ marginTop: 12 }}>
-                        <div style={{ fontWeight: 900, fontSize: 16 }}>Заказ #{selectedOrder.id.slice(0, 8)}</div>
-                        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10, opacity: 0.95 }}>
-                          <div>
-                            <div style={{ fontWeight: 900, fontSize: 16 }}>👤 {selectedOrder.customer_name}</div>
-                            <div style={{ marginTop: 6, ...smallMuted }}>{formatDateTime(selectedOrder.created_at)}</div>
-                          </div>
-                          <div style={{ display: "grid", gap: 8, padding: 12, borderRadius: 14, border: "1px solid rgba(10,19,23,0.08)", background: "rgba(10,19,23,0.03)" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                              <span>📞 {selectedOrder.phone}</span>
-                              <button
-                                style={{ width: 28, height: 28, borderRadius: 999, border: "1px solid rgba(10,19,23,0.10)", background: "#fff", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, flexShrink: 0 }}
-                                onClick={() => copyPhone(selectedOrder.phone)}
-                                title="Скопировать номер"
-                              >
-                                <IconCopy ink={BRAND_INK} />
-                              </button>
-                            </div>
-                            <div>📍 {selectedOrder.address}</div>
-                            <div>💳 {selectedOrder.payment_method}</div>
-                            <div>💰 {formatPriceRub(selectedOrder.total_amount)}</div>
-                            {selectedOrder.comment ? <div style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere", wordBreak: "break-word" }}>💬 {selectedOrder.comment}</div> : null}
-                          </div>
-                        </div>
-
-                        <div style={{ marginTop: 14, borderRadius: 16, border: "1px solid rgba(10,19,23,0.08)", background: "rgba(10,19,23,0.03)", overflow: "hidden" }}>
-                          <div style={{ padding: "12px 14px", borderBottom: "1px solid rgba(10,19,23,0.08)", fontWeight: 900 }}>Состав заказа</div>
-                          <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                            {orderItemsList(selectedOrder.items_text).length > 0 ? (
-                              orderItemsList(selectedOrder.items_text).map((line, index) => (
-                                <div key={index} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 12, background: "rgba(255,255,255,0.82)", border: "1px solid rgba(10,19,23,0.06)", fontSize: 14 }}>
-                                  <span style={{ color: BRAND_ACCENT, fontWeight: 900 }}>•</span>
-                                  <span>{line}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div style={{ opacity: 0.7 }}>Нет данных</div>
-                            )}
-                          </div>
-                        </div>
-                        <OrderChatBlock
-                          title="Чат по заказу"
-                          chatOpen={chatOpen}
-                          chatClosedUnread={chatClosedUnread}
-                          chatLoading={chatLoading}
-                          chatError={chatError}
-                          chatMessages={chatMessages}
-                          chatAtBottom={chatAtBottom}
-                          chatUnreadCount={chatUnreadCount}
-                          chatText={chatText}
-                          chatSending={chatSending}
-                          inputStyle={inputStyle}
-                          primaryButtonStyle={btnPrimary}
-                          ghostButtonStyle={btnGhost}
-                          brandAccent={BRAND_ACCENT}
-                          brandInk={BRAND_INK}
-                          chatListRef={chatListRef}
-                          onToggleOpen={() => {
-                            if (!chatOpen) {
-                              setChatMessages([]);
-                              setChatError(null);
-                              setChatUnreadCount(0);
-                              setChatClosedUnread(0);
-                              setChatAtBottom(true);
-                              lastChatMessageIdRef.current = null;
-                              if (!selectedOrder) return;
+                  <AdminOrderDetails
+                    order={selectedOrder}
+                    smallMutedStyle={smallMuted}
+                    brandAccent={BRAND_ACCENT}
+                    formatDateTime={formatDateTime}
+                    formatPriceRub={formatPriceRub}
+                    orderItemsList={orderItemsList}
+                    statusActionBtn={statusActionBtn}
+                    onCopyPhone={copyPhone}
+                    onSetStatus={setOrderStatus}
+                    renderCopyIcon={() => <IconCopy ink={BRAND_INK} />}
+                    chatBlock={
+                      <OrderChatBlock
+                        title="Чат по заказу"
+                        chatOpen={chatOpen}
+                        chatClosedUnread={chatClosedUnread}
+                        chatLoading={chatLoading}
+                        chatError={chatError}
+                        chatMessages={chatMessages}
+                        chatAtBottom={chatAtBottom}
+                        chatUnreadCount={chatUnreadCount}
+                        chatText={chatText}
+                        chatSending={chatSending}
+                        inputStyle={inputStyle}
+                        primaryButtonStyle={btnPrimary}
+                        ghostButtonStyle={btnGhost}
+                        brandAccent={BRAND_ACCENT}
+                        brandInk={BRAND_INK}
+                        chatListRef={chatListRef}
+                        onToggleOpen={() => {
+                          if (!chatOpen) {
+                            setChatMessages([]);
+                            setChatError(null);
+                            setChatUnreadCount(0);
+                            setChatClosedUnread(0);
+                            setChatAtBottom(true);
+                            lastChatMessageIdRef.current = null;
+                            if (!selectedOrder) return;
                             loadOrderChat(selectedOrder.id);
-                            } else {
-                              setChatClosedUnread(0);
-                            }
-                            setChatOpen(!chatOpen);
-                          }}
-                          onRefresh={() => {
+                          } else {
+                            setChatClosedUnread(0);
+                          }
+                          setChatOpen(!chatOpen);
+                        }}
+                        onRefresh={() => {
                           if (!selectedOrder) return;
                           loadOrderChat(selectedOrder.id);
                         }}
-                          onScroll={handleChatScroll}
-                          onScrollToBottom={scrollChatToBottom}
-                          onChangeText={setChatText}
-                          onSend={() => {
+                        onScroll={handleChatScroll}
+                        onScrollToBottom={scrollChatToBottom}
+                        onChangeText={setChatText}
+                        onSend={() => {
                           if (!selectedOrder) return;
                           sendOrderChat(selectedOrder.id);
                         }}
-                          formatDateTime={formatDateTime}
-                          renderSkeleton={(key, width) => (
-                            <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
-                          )}
-                        />
-
-                        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <button style={statusActionBtn("assembling", selectedOrder.status === "assembling")} onClick={() => setOrderStatus(selectedOrder.id, "assembling")}>Собирается</button>
-                          <button style={statusActionBtn("on_the_way", selectedOrder.status === "on_the_way")} onClick={() => setOrderStatus(selectedOrder.id, "on_the_way")}>В пути</button>
-                          <button style={statusActionBtn("delivered", selectedOrder.status === "delivered")} onClick={() => setOrderStatus(selectedOrder.id, "delivered")}>Доставлен</button>
-                          <button style={statusActionBtn("canceled", selectedOrder.status === "canceled")} onClick={() => setOrderStatus(selectedOrder.id, "canceled")}>Отменён</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{ marginTop: 10, opacity: 0.75 }}>Заказ не найден.</div>
-                    )}
-                  </div>
+                        formatDateTime={formatDateTime}
+                        renderSkeleton={(key, width) => (
+                          <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
+                        )}
+                      />
+                    }
+                  />
                 )}
               </>
             )}
