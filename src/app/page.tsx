@@ -14,6 +14,11 @@ import AdminOrdersList from "@/components/admin/AdminOrdersList";
 import AdminSlotsPanel from "@/components/admin/AdminSlotsPanel";
 import CheckoutOverlay from "@/components/checkout/CheckoutOverlay";
 import AdminHeader from "@/components/admin/AdminHeader";
+import {
+  getAvailableDeliveryDatesForType,
+  getAvailableTimeSlotsForType,
+  parseLocalDate as parseLocalDateHelper,
+} from "@/lib/domain/deliverySlots";
 
 type Category = {
   id: string;
@@ -1144,108 +1149,32 @@ if (cart.length === 0) {
     return parts.filter(Boolean).join(", ");
   }
 
-  function formatLocalDate(date: Date) {
-    const y = date.getFullYear();
-    const m = String(date.getMonth() + 1).padStart(2, "0");
-    const d = String(date.getDate()).padStart(2, "0");
-    return `${y}-${m}-${d}`;
-  }
-
-  function parseLocalDate(dateStr: string) {
-    const [y, m, d] = dateStr.split("-").map(Number);
-    return new Date(y, (m || 1) - 1, d || 1, 12, 0, 0, 0);
-  }
-
-  function getDefaultGeneratedSlots(type: "delivery" | "pickup") {
-    const result: DeliverySlotRow[] = [];
-    const now = new Date();
-    const labels = type === "delivery" ? DEFAULT_DELIVERY_INTERVALS : DEFAULT_PICKUP_INTERVALS;
-
-    for (let i = 0; i < 35; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 12, 0, 0, 0);
-      const day = d.getDay();
-      if (day !== 3 && day !== 5) continue;
-
-      const slotDate = formatLocalDate(d);
-      labels.forEach((label, idx) => {
-        result.push({
-          id: `generated-${type}-${slotDate}-${label}`,
-          slot_date: slotDate,
-          slot_label: label,
-          delivery_type: type,
-          is_active: true,
-          sort_order: idx,
-        });
-      });
-    }
-
-    return result;
-  }
-
-  function getEffectiveSlots(type: "delivery" | "pickup") {
-    const defaults = getDefaultGeneratedSlots(type);
-    const overrides = deliverySlots.filter((slot) => slot.delivery_type === type);
-    const overrideDates = new Set(overrides.map((slot) => slot.slot_date));
-
-    const merged = [
-      ...defaults.filter((slot) => !overrideDates.has(slot.slot_date)),
-      ...overrides.filter((slot) => slot.is_active),
-    ];
-
-    const now = new Date();
-    const byDate = new Map<string, DeliverySlotRow[]>();
-
-    merged.forEach((slot) => {
-      const cutoff = parseLocalDate(slot.slot_date);
-      cutoff.setDate(cutoff.getDate() - 1);
-      cutoff.setHours(21, 0, 0, 0);
-
-      if (now >= cutoff) return;
-
-      const list = byDate.get(slot.slot_date) || [];
-      list.push(slot);
-      byDate.set(slot.slot_date, list);
-    });
-
-    const nearestTwoDates = Array.from(byDate.keys()).sort().slice(0, 2);
-
-    return nearestTwoDates
-      .flatMap((date) => (byDate.get(date) || []).sort((a, b) => a.sort_order - b.sort_order))
-      .sort((a, b) => {
-        if (a.slot_date !== b.slot_date) return a.slot_date.localeCompare(b.slot_date);
-        return a.sort_order - b.sort_order;
-      });
-  }
+  // slot helpers moved to src/lib/domain/deliverySlots.ts
 
   function getAvailableDeliveryDates() {
-    const unique = new Map<string, string>();
-
-    getEffectiveSlots(deliveryType).forEach((slot) => {
-      if (!unique.has(slot.slot_date)) {
-        const d = parseLocalDate(slot.slot_date);
-        const label = d.toLocaleDateString("ru-RU", {
-          day: "2-digit",
-          month: "2-digit",
-          weekday: "short",
-        });
-        unique.set(slot.slot_date, label);
-      }
-    });
-
-    return Array.from(unique.entries()).map(([value, label]) => ({ value, label }));
+    return getAvailableDeliveryDatesForType(
+      deliveryType,
+      deliverySlots,
+      DEFAULT_DELIVERY_INTERVALS,
+      DEFAULT_PICKUP_INTERVALS
+    );
   }
 
   function getAvailableTimeSlots() {
-    return getEffectiveSlots(deliveryType)
-      .filter((slot) => slot.slot_date === deliveryDate)
-      .map((slot) => slot.slot_label);
+    return getAvailableTimeSlotsForType(
+      deliveryType,
+      deliveryDate,
+      deliverySlots,
+      DEFAULT_DELIVERY_INTERVALS,
+      DEFAULT_PICKUP_INTERVALS
+    );
   }
 
   function buildOrderComment() {
     const parts: string[] = [];
 
     if (deliveryType === "delivery" && deliveryDate) {
-      const dateLabel = parseLocalDate(deliveryDate).toLocaleDateString("ru-RU", {
+      const dateLabel = parseLocalDateHelper(deliveryDate).toLocaleDateString("ru-RU", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
