@@ -2545,17 +2545,24 @@ const logoStyle: React.CSSProperties = {
                             setChatClosedUnread(0);
                             setChatAtBottom(true);
                             lastChatMessageIdRef.current = null;
+                            if (!selectedOrder) return;
                             loadOrderChat(selectedOrder.id);
                           } else {
                             setChatClosedUnread(0);
                           }
                           setChatOpen(!chatOpen);
                         }}
-                        onRefresh={() => loadOrderChat(selectedOrder.id)}
+                        onRefresh={() => {
+                          if (!selectedOrder) return;
+                          loadOrderChat(selectedOrder.id);
+                        }}
                         onScroll={handleChatScroll}
                         onScrollToBottom={scrollChatToBottom}
                         onChangeText={setChatText}
-                        onSend={() => sendOrderChat(selectedOrder.id)}
+                        onSend={() => {
+                          if (!selectedOrder) return;
+                          sendOrderChat(selectedOrder.id);
+                        }}
                         formatDateTime={formatDateTime}
                         renderSkeleton={(key, width) => (
                           <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
@@ -2691,17 +2698,24 @@ const logoStyle: React.CSSProperties = {
                               setChatClosedUnread(0);
                               setChatAtBottom(true);
                               lastChatMessageIdRef.current = null;
-                              loadOrderChat(selectedOrder.id);
+                              if (!selectedOrder) return;
+                            loadOrderChat(selectedOrder.id);
                             } else {
                               setChatClosedUnread(0);
                             }
                             setChatOpen(!chatOpen);
                           }}
-                          onRefresh={() => loadOrderChat(selectedOrder.id)}
+                          onRefresh={() => {
+                          if (!selectedOrder) return;
+                          loadOrderChat(selectedOrder.id);
+                        }}
                           onScroll={handleChatScroll}
                           onScrollToBottom={scrollChatToBottom}
                           onChangeText={setChatText}
-                          onSend={() => sendOrderChat(selectedOrder.id)}
+                          onSend={() => {
+                          if (!selectedOrder) return;
+                          sendOrderChat(selectedOrder.id);
+                        }}
                           formatDateTime={formatDateTime}
                           renderSkeleton={(key, width) => (
                             <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
