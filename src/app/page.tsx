@@ -11,6 +11,7 @@ import ProfileOverlay from "@/components/profile/ProfileOverlay";
 import OrderChatBlock from "@/components/admin/OrderChatBlock";
 import AdminOrderDetails from "@/components/admin/AdminOrderDetails";
 import AdminOrdersList from "@/components/admin/AdminOrdersList";
+import AdminSlotsPanel from "@/components/admin/AdminSlotsPanel";
 
 type Category = {
   id: string;
@@ -2449,54 +2450,27 @@ const logoStyle: React.CSSProperties = {
             </div>
 
             {!selectedOrderId && adminSection === "slots" && (
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontWeight: 900, fontSize: 16 }}>Слоты доставки и самовывоза</div>
-                <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
-                  <input style={inputStyle} type="date" value={slotFormDate} onChange={(e) => setSlotFormDate(e.target.value)} />
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
-                    <button type="button" style={btnTab(slotFormType === "delivery")} onClick={() => setSlotFormType("delivery")}>Доставка</button>
-                    <button type="button" style={btnTab(slotFormType === "pickup")} onClick={() => setSlotFormType("pickup")}>Самовывоз</button>
-                  </div>
-                  <input style={inputStyle} placeholder="Интервал, например 13:00–16:00" value={slotFormLabel} onChange={(e) => setSlotFormLabel(e.target.value)} />
-                  <button style={{ ...btnPrimary, width: "100%" }} onClick={createAdminSlot}>Добавить слот</button>
-                </div>
-
-                {adminSlotsLoading ? (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={64} radius={14} />
-                    <SkeletonBlock height={64} radius={14} />
-                  </div>
-                ) : adminSlotsError ? (
-                  <div style={{ marginTop: 12, color: BRAND_ACCENT, whiteSpace: "pre-wrap" }}>Ошибка: {adminSlotsError}</div>
-                ) : (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-                    {adminSlots.map((slot) => (
-                      <div
-                        key={slot.id}
-                        style={{
-                          borderRadius: 14,
-                          border: "1px solid rgba(10,19,23,0.08)",
-                          background: slot.is_active ? "rgba(255,255,255,0.96)" : "rgba(10,19,23,0.04)",
-                          padding: 12,
-                          display: "flex",
-                          justifyContent: "space-between",
-                          gap: 10,
-                          alignItems: "center",
-                        }}
-                      >
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 900, fontSize: 14 }}>{slot.delivery_type === "delivery" ? "Доставка" : "Самовывоз"}</div>
-                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.82 }}>{slot.slot_date} • {slot.slot_label}</div>
-                        </div>
-                        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                          <button style={btnTab(slot.is_active)} onClick={() => toggleAdminSlot(slot.id, !slot.is_active)}>{slot.is_active ? "Вкл" : "Выкл"}</button>
-                          <button style={btnGhost} onClick={() => deleteAdminSlot(slot.id)} title="Удалить слот">✕</button>
-                        </div>
-                      </div>
-                    ))}
-                    {adminSlots.length === 0 && <div style={{ fontSize: 13, opacity: 0.72 }}>Слотов пока нет.</div>}
-                  </div>
-                )}
+              <AdminSlotsPanel
+                inputStyle={inputStyle}
+                primaryButtonStyle={btnPrimary}
+                ghostButtonStyle={btnGhost}
+                tabButtonStyle={btnTab}
+                brandAccent={BRAND_ACCENT}
+                slotFormDate={slotFormDate}
+                slotFormLabel={slotFormLabel}
+                slotFormType={slotFormType}
+                adminSlots={adminSlots}
+                adminSlotsLoading={adminSlotsLoading}
+                adminSlotsError={adminSlotsError}
+                onChangeDate={setSlotFormDate}
+                onChangeLabel={setSlotFormLabel}
+                onChangeType={setSlotFormType}
+                onCreateSlot={createAdminSlot}
+                onToggleSlot={toggleAdminSlot}
+                onDeleteSlot={deleteAdminSlot}
+                renderSkeleton={(key) => <SkeletonBlock key={key} height={64} radius={14} />}
+              />
+            )}
               </div>
             )}
 
@@ -2593,48 +2567,26 @@ const logoStyle: React.CSSProperties = {
             ) : (
               <>
                 {!selectedOrderId && adminSection === "orders" && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    {orders.map((o) => {
-                      const previewLines = orderPreviewItems(o.items_text, 2);
-                      return (
-                        <button
-                          key={o.id}
-                          onClick={() => {
-                            setSelectedOrderId(o.id);
-                            setChatOpen(false);
-                            setChatMessages([]);
-                            setChatError(null);
-                            setChatText("");
-                            setChatUnreadCount(0);
-                            setChatClosedUnread(0);
-                            setChatAtBottom(true);
-                            lastChatMessageIdRef.current = null;
-                          }}
-                          style={{
-                            textAlign: "left",
-                            borderRadius: 16,
-                            border: "1px solid rgba(10,19,23,0.10)",
-                            background: "rgba(255,255,255,0.96)",
-                            padding: 14,
-                            cursor: "pointer",
-                            boxShadow: "0 10px 24px rgba(10,19,23,0.05)",
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
-                            <div>
-                              <div style={{ fontWeight: 900, fontSize: 14 }}>Заказ #{o.id.slice(0, 8)}</div>
-                              <div style={{ ...smallMuted, marginTop: 4 }}>{formatDateTime(o.created_at)}</div>
-                            </div>
-                            <StatusBadge status={o.status} />
-                          </div>
-                          <div style={{ marginTop: 10, fontWeight: 900 }}>{o.customer_name}</div>
-                          {previewLines.length > 0 && (
-                            <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 4 }}>
-                              {previewLines.map((line, index) => (
-                                <div key={index} style={{ fontSize: 13, opacity: 0.82 }}>• {line}</div>
-                              ))}
-                            </div>
-                          )}
+                  <AdminOrdersList
+                    orders={orders}
+                    smallMutedStyle={smallMuted}
+                    formatDateTime={formatDateTime}
+                    formatPriceRub={formatPriceRub}
+                    orderPreviewItems={orderPreviewItems}
+                    renderStatusBadge={(status) => <StatusBadge status={status} />}
+                    onBeforeOpenOrder={() => {
+                      setChatOpen(false);
+                      setChatMessages([]);
+                      setChatError(null);
+                      setChatText("");
+                      setChatUnreadCount(0);
+                      setChatClosedUnread(0);
+                      setChatAtBottom(true);
+                      lastChatMessageIdRef.current = null;
+                    }}
+                    onSelectOrder={setSelectedOrderId}
+                  />
+                )}
                           <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
                             <div style={{ fontSize: 12, opacity: 0.65 }}>{o.phone}</div>
                             <div style={{ fontWeight: 900, fontSize: 16 }}>{formatPriceRub(o.total_amount)}</div>
