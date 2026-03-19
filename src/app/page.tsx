@@ -6,6 +6,7 @@ import ProfileMenuCard from "@/components/profile/ProfileMenuCard";
 import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
 import ProfileDataScreen from "@/components/profile/ProfileDataScreen";
 import ProfileOrdersList from "@/components/profile/ProfileOrdersList";
+import ProfileOrderDetails from "@/components/profile/ProfileOrderDetails";
 
 type Category = {
   id: string;
@@ -2405,22 +2406,14 @@ const logoStyle: React.CSSProperties = {
                           smallMutedStyle={smallMuted}
                           renderStatusBadge={(status) => <StatusBadge status={status} />}
                         />
-                      ) : selectedMyOrder ? (
-                        <div style={{ marginTop: 12 }}>
-                          <div style={{ fontWeight: 900, fontSize: 16 }}>Заказ #{selectedMyOrder.id.slice(0, 8)}</div>
-                          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
-                            <StatusBadge status={selectedMyOrder.status} />
-                            <div style={{ ...smallMuted }}>{formatDateTime(selectedMyOrder.created_at)}</div>
-                            <div>📍 {selectedMyOrder.address}</div>
-                            <div>💳 {selectedMyOrder.payment_method}</div>
-                            <div>💰 {formatPriceRub(selectedMyOrder.total_amount)}</div>
-                            {selectedMyOrder.comment ? <div style={{ whiteSpace: "pre-wrap" }}>💬 {selectedMyOrder.comment}</div> : null}
-                            <div style={{ marginTop: 6, fontWeight: 900 }}>Состав заказа</div>
-                            <div style={{ whiteSpace: "pre-wrap", fontSize: 14, opacity: 0.95 }}>{selectedMyOrder.items_text || "Нет данных"}</div>
-                          </div>
-                        </div>
                       ) : (
-                        <div style={{ marginTop: 12, opacity: 0.75 }}>Заказ не найден.</div>
+                        <ProfileOrderDetails
+                          order={selectedMyOrder}
+                          formatDateTime={formatDateTime}
+                          formatPriceRub={formatPriceRub}
+                          smallMutedStyle={smallMuted}
+                          renderStatusBadge={(status) => <StatusBadge status={status} />}
+                        />
                       )}
                     </>
                   )}
