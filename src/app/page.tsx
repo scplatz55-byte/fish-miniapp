@@ -9,6 +9,7 @@ import ProfileOrdersList from "@/components/profile/ProfileOrdersList";
 import ProfileOrderDetails from "@/components/profile/ProfileOrderDetails";
 import ProfileOverlay from "@/components/profile/ProfileOverlay";
 import OrderChatBlock from "@/components/admin/OrderChatBlock";
+import AdminOrderDetails from "@/components/admin/AdminOrderDetails";
 
 type Category = {
   id: string;
@@ -2507,10 +2508,61 @@ const logoStyle: React.CSSProperties = {
                   </div>
                 )}
                 {selectedOrderId && (
-                  <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <SkeletonBlock height={220} radius={16} />
-                    <SkeletonBlock height={180} radius={16} />
-                  </div>
+                  <AdminOrderDetails
+                    order={selectedOrder}
+                    smallMutedStyle={smallMuted}
+                    brandAccent={BRAND_ACCENT}
+                    formatDateTime={formatDateTime}
+                    formatPriceRub={formatPriceRub}
+                    orderItemsList={orderItemsList}
+                    statusActionBtn={statusActionBtn}
+                    onCopyPhone={copyPhone}
+                    onSetStatus={setOrderStatus}
+                    renderCopyIcon={() => <IconCopy ink={BRAND_INK} />}
+                    chatBlock={
+                      <OrderChatBlock
+                        title="Чат по заказу"
+                        chatOpen={chatOpen}
+                        chatClosedUnread={chatClosedUnread}
+                        chatLoading={chatLoading}
+                        chatError={chatError}
+                        chatMessages={chatMessages}
+                        chatAtBottom={chatAtBottom}
+                        chatUnreadCount={chatUnreadCount}
+                        chatText={chatText}
+                        chatSending={chatSending}
+                        inputStyle={inputStyle}
+                        primaryButtonStyle={btnPrimary}
+                        ghostButtonStyle={btnGhost}
+                        brandAccent={BRAND_ACCENT}
+                        brandInk={BRAND_INK}
+                        chatListRef={chatListRef}
+                        onToggleOpen={() => {
+                          if (!chatOpen) {
+                            setChatMessages([]);
+                            setChatError(null);
+                            setChatUnreadCount(0);
+                            setChatClosedUnread(0);
+                            setChatAtBottom(true);
+                            lastChatMessageIdRef.current = null;
+                            loadOrderChat(selectedOrder.id);
+                          } else {
+                            setChatClosedUnread(0);
+                          }
+                          setChatOpen(!chatOpen);
+                        }}
+                        onRefresh={() => loadOrderChat(selectedOrder.id)}
+                        onScroll={handleChatScroll}
+                        onScrollToBottom={scrollChatToBottom}
+                        onChangeText={setChatText}
+                        onSend={() => sendOrderChat(selectedOrder.id)}
+                        formatDateTime={formatDateTime}
+                        renderSkeleton={(key, width) => (
+                          <SkeletonBlock key={key} height={54} radius={14} style={width ? { width } : {}} />
+                        )}
+                      />
+                    }
+                  />
                 )}
               </>
             ) : adminError ? (
