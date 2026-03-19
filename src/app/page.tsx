@@ -2,11 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import ProfileMenuCard from "@/components/profile/ProfileMenuCard";
 import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
-import ProfileDataScreen from "@/components/profile/ProfileDataScreen";
-import ProfileOrdersList from "@/components/profile/ProfileOrdersList";
-import ProfileOrderDetails from "@/components/profile/ProfileOrderDetails";
 import ProfileOverlay from "@/components/profile/ProfileOverlay";
 import OrderChatBlock from "@/components/admin/OrderChatBlock";
 import AdminOrderDetails from "@/components/admin/AdminOrderDetails";
