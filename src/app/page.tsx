@@ -722,36 +722,36 @@ export default function Page() {
     loadDeliverySlots();
   }, []);
 
-  useEffect(() => {
-    async function loadWeeklyDeliverySchedule() {
-      setDeliveryScheduleLoading(true);
-      setDeliveryScheduleError(null);
+  async function loadWeeklyDeliverySchedule() {
+    setDeliveryScheduleLoading(true);
+    setDeliveryScheduleError(null);
 
-      try {
-        const res = await fetch("/api/admin/delivery-schedule", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
-        });
+    try {
+      const res = await fetch("/api/admin/delivery-schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
 
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          setDeliveryScheduleError(data?.error || `Ошибка загрузки расписания (HTTP ${res.status})`);
-          return;
-        }
-
-        setWeekdayRules((data.weekdayRules || []) as WeekdayRule[]);
-        setWeekdayIntervals((data.weekdayIntervals || []) as WeekdayInterval[]);
-        setDateOverrides((data.overrides || []) as DateOverride[]);
-        setOverrideIntervals((data.overrideIntervals || []) as OverrideInterval[]);
-        setPickupSettings((data.pickupSettings || []) as PickupSetting[]);
-      } catch (e: any) {
-        setDeliveryScheduleError(e?.message || "Ошибка сети");
-      } finally {
-        setDeliveryScheduleLoading(false);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setDeliveryScheduleError(data?.error || `Ошибка загрузки расписания (HTTP ${res.status})`);
+        return;
       }
-    }
 
+      setWeekdayRules((data.weekdayRules || []) as WeekdayRule[]);
+      setWeekdayIntervals((data.weekdayIntervals || []) as WeekdayInterval[]);
+      setDateOverrides((data.overrides || []) as DateOverride[]);
+      setOverrideIntervals((data.overrideIntervals || []) as OverrideInterval[]);
+      setPickupSettings((data.pickupSettings || []) as PickupSetting[]);
+    } catch (e: any) {
+      setDeliveryScheduleError(e?.message || "Ошибка сети");
+    } finally {
+      setDeliveryScheduleLoading(false);
+    }
+  }
+
+  useEffect(() => {
     loadWeeklyDeliverySchedule();
   }, []);
 
