@@ -185,7 +185,7 @@ export default function AdminSlotsPanel({
               .map((rule) => {
                 const intervals = intervalsByRuleId.get(rule.id) || [];
                 const isSelectedDay = newIntervalDay === rule.day_of_week;
-                const isCollapsed = !rule.is_enabled && intervals.length === 0;
+                const isCollapsed = !rule.is_enabled;
 
                 return (
                   <div
@@ -212,9 +212,7 @@ export default function AdminSlotsPanel({
                         <div style={{ marginTop: 4, fontSize: 13, opacity: 0.76 }}>
                           {rule.is_enabled
                             ? "День участвует в автоматическом расписании"
-                            : intervals.length > 0
-                              ? "День выключен, но интервалы сохранены"
-                              : "День выключен"}
+                            : "День выключен"}
                         </div>
                       </div>
 
