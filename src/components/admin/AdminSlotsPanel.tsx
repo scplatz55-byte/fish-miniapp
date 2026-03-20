@@ -287,7 +287,13 @@ export default function AdminSlotsPanel({
                             <input
                               style={{
                                 ...inputStyle,
-                                borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
+                                minHeight: 44,
+                                background: "#fff",
+                                border: isSelectedDay
+                                  ? "1px solid rgba(212,51,20,0.30)"
+                                  : "1px solid rgba(10,19,23,0.12)",
+                                boxSizing: "border-box",
+                                width: "100%",
                               }}
                               type="time"
                               value={isSelectedDay ? newIntervalFrom : ""}
@@ -303,7 +309,13 @@ export default function AdminSlotsPanel({
                             <input
                               style={{
                                 ...inputStyle,
-                                borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
+                                minHeight: 44,
+                                background: "#fff",
+                                border: isSelectedDay
+                                  ? "1px solid rgba(212,51,20,0.30)"
+                                  : "1px solid rgba(10,19,23,0.12)",
+                                boxSizing: "border-box",
+                                width: "100%",
                               }}
                               type="time"
                               value={isSelectedDay ? newIntervalTo : ""}
@@ -316,7 +328,7 @@ export default function AdminSlotsPanel({
                           </div>
                           <button
                             type="button"
-                            style={{ ...primaryButtonStyle, alignSelf: "end" }}
+                            style={{ ...primaryButtonStyle, alignSelf: "end", minHeight: 44 }}
                             onClick={() => {
                               onChangeNewIntervalDay(rule.day_of_week);
                               onAddWeekdayInterval();
@@ -348,7 +360,14 @@ export default function AdminSlotsPanel({
 
             <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
               <input
-                style={inputStyle}
+                style={{
+                  ...inputStyle,
+                  minHeight: 44,
+                  background: "#fff",
+                  border: "1px solid rgba(10,19,23,0.12)",
+                  boxSizing: "border-box",
+                  width: "100%",
+                }}
                 type="date"
                 value={selectedOverrideDate}
                 onChange={(e) => onChangeSelectedOverrideDate(e.target.value)}
@@ -377,21 +396,41 @@ export default function AdminSlotsPanel({
                   gap: 8,
                 }}
               >
-                <input
-                  style={inputStyle}
-                  type="time"
-                  value={newOverrideFrom}
-                  onChange={(e) => onChangeNewOverrideFrom(e.target.value)}
-                />
-                <input
-                  style={inputStyle}
-                  type="time"
-                  value={newOverrideTo}
-                  onChange={(e) => onChangeNewOverrideTo(e.target.value)}
-                />
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ fontSize: 12, opacity: 0.68, paddingLeft: 2 }}>От</div>
+                  <input
+                    style={{
+                      ...inputStyle,
+                      minHeight: 44,
+                      background: "#fff",
+                      border: "1px solid rgba(10,19,23,0.12)",
+                      boxSizing: "border-box",
+                      width: "100%",
+                    }}
+                    type="time"
+                    value={newOverrideFrom}
+                    onChange={(e) => onChangeNewOverrideFrom(e.target.value)}
+                  />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  <div style={{ fontSize: 12, opacity: 0.68, paddingLeft: 2 }}>До</div>
+                  <input
+                    style={{
+                      ...inputStyle,
+                      minHeight: 44,
+                      background: "#fff",
+                      border: "1px solid rgba(10,19,23,0.12)",
+                      boxSizing: "border-box",
+                      width: "100%",
+                    }}
+                    type="time"
+                    value={newOverrideTo}
+                    onChange={(e) => onChangeNewOverrideTo(e.target.value)}
+                  />
+                </div>
                 <button
                   type="button"
-                  style={primaryButtonStyle}
+                  style={{ ...primaryButtonStyle, minHeight: 44, alignSelf: "end" }}
                   onClick={onAddOverrideInterval}
                   disabled={!selectedOverrideDate}
                 >
