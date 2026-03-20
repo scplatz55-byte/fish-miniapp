@@ -414,12 +414,14 @@ export default function Page() {
   const [newOverrideFrom, setNewOverrideFrom] = useState("");
   const [newOverrideTo, setNewOverrideTo] = useState("");
   const [pickupSavingId, setPickupSavingId] = useState<string | null>(null);
+  const [deliveryScheduleActionPending, setDeliveryScheduleActionPending] = useState(false);
   const [adminSection, setAdminSection] = useState<AdminSection>("orders");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const chatListRef = useRef<HTMLDivElement | null>(null);
   const lastChatMessageIdRef = useRef<string | null>(null);
+  const contentRef = useRef<HTMLDivElement | null>(null);
   const [chatAtBottom, setChatAtBottom] = useState(true);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [chatClosedUnread, setChatClosedUnread] = useState(0);
@@ -1393,8 +1395,9 @@ if (cart.length === 0) {
   }
 
   async function runDeliveryScheduleAction(action: Record<string, any>) {
-    setDeliveryScheduleLoading(true);
     setDeliveryScheduleError(null);
+    setDeliveryScheduleActionPending(true);
+    const scrollTop = contentRef.current?.scrollTop ?? 0;
 
     try {
       const res = await fetch("/api/admin/delivery-schedule", {
@@ -1412,6 +1415,11 @@ if (cart.length === 0) {
       }
 
       applyDeliverySchedulePayload(data);
+      requestAnimationFrame(() => {
+        if (contentRef.current) {
+          contentRef.current.scrollTop = scrollTop;
+        }
+      });
       return true;
     } catch (e: any) {
       const message = e?.message || "Ошибка сети";
@@ -1419,24 +1427,42 @@ if (cart.length === 0) {
       alert(message);
       return false;
     } finally {
-      setDeliveryScheduleLoading(false);
+      setDeliveryScheduleActionPending(false);
     }
   }
 
   async function toggleWeekdayRule(ruleId: string, nextEnabled: boolean) {
-    await runDeliveryScheduleAction({
+    setWeekdayRules((prev) =>
+      prev.map((rule) => (rule.id === ruleId ? { ...rule, is_enabled: nextEnabled } : rule))
+    );
+
+    const ok = await runDeliveryScheduleAction({
       type: "toggleWeekday",
       ruleId,
       is_enabled: nextEnabled,
     });
+
+    if (!ok) {
+      await loadWeeklyDeliverySchedule();
+    }
   }
 
   async function toggleWeekdayInterval(intervalId: string, nextEnabled: boolean) {
-    await runDeliveryScheduleAction({
+    setWeekdayIntervals((prev) =>
+      prev.map((interval) =>
+        interval.id === intervalId ? { ...interval, is_enabled: nextEnabled } : interval
+      )
+    );
+
+    const ok = await runDeliveryScheduleAction({
       type: "toggleWeekdayInterval",
       intervalId,
       is_enabled: nextEnabled,
     });
+
+    if (!ok) {
+      await loadWeeklyDeliverySchedule();
+    }
   }
 
   async function addWeekdayInterval() {
@@ -1477,10 +1503,24 @@ if (cart.length === 0) {
       return;
     }
 
-    await runDeliveryScheduleAction({
+    setDateOverrides((prev) => {
+      const existing = prev.find((item) => item.date === selectedOverrideDate);
+      if (!existing) {
+        return [...prev, { id: "temp-override", date: selectedOverrideDate, is_disabled: true }];
+      }
+      return prev.map((item) =>
+        item.date === selectedOverrideDate ? { ...item, is_disabled: !Boolean(item.is_disabled) } : item
+      );
+    });
+
+    const ok = await runDeliveryScheduleAction({
       type: "toggleOverrideDayDisabled",
       date: selectedOverrideDate,
     });
+
+    if (!ok) {
+      await loadWeeklyDeliverySchedule();
+    }
   }
 
   async function addOverrideInterval() {
@@ -1503,11 +1543,21 @@ if (cart.length === 0) {
   }
 
   async function toggleOverrideInterval(intervalId: string, nextEnabled: boolean) {
-    await runDeliveryScheduleAction({
+    setOverrideIntervals((prev) =>
+      prev.map((interval) =>
+        interval.id === intervalId ? { ...interval, is_enabled: nextEnabled } : interval
+      )
+    );
+
+    const ok = await runDeliveryScheduleAction({
       type: "toggleOverrideInterval",
       intervalId,
       is_enabled: nextEnabled,
     });
+
+    if (!ok) {
+      await loadWeeklyDeliverySchedule();
+    }
   }
 
   async function deleteOverrideInterval(intervalId: string) {
@@ -1745,8 +1795,8 @@ const logoStyle: React.CSSProperties = {
 
   const iosSwitchKnob = (active: boolean): React.CSSProperties => ({
     position: "absolute",
-    top: 2,
-    left: active ? 22 : 2,
+    top: 3,
+    left: active ? 23 : 3,
     width: 24,
     height: 24,
     borderRadius: 999,
@@ -1964,7 +2014,7 @@ const logoStyle: React.CSSProperties = {
         />
       </div>
 
-      <div style={content}>
+      <div ref={contentRef} style={content}>
         {/* CATALOG */}
         {view === "catalog" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
