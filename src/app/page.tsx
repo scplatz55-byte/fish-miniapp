@@ -413,6 +413,7 @@ export default function Page() {
   const [newIntervalTo, setNewIntervalTo] = useState("");
   const [newOverrideFrom, setNewOverrideFrom] = useState("");
   const [newOverrideTo, setNewOverrideTo] = useState("");
+  const [pickupSavingId, setPickupSavingId] = useState<string | null>(null);
   const [adminSection, setAdminSection] = useState<AdminSection>("orders");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
@@ -1516,6 +1517,20 @@ if (cart.length === 0) {
     });
   }
 
+  async function updatePickupWorktime(pickupId: string, worktimeText: string) {
+    setPickupSavingId(pickupId);
+
+    try {
+      await runDeliveryScheduleAction({
+        type: "updatePickupWorktime",
+        pickupId,
+        worktime_text: worktimeText,
+      });
+    } finally {
+      setPickupSavingId(null);
+    }
+  }
+
   function openProfileScreen(screen: Exclude<ProfileScreen, "menu">) {
     setClosingProfileScreen(null);
     setProfileScreen(screen);
@@ -2462,6 +2477,8 @@ const logoStyle: React.CSSProperties = {
                 onAddOverrideInterval={addOverrideInterval}
                 onToggleOverrideInterval={toggleOverrideInterval}
                 onDeleteOverrideInterval={deleteOverrideInterval}
+                pickupSavingId={pickupSavingId}
+                onUpdatePickupWorktime={updatePickupWorktime}
                 renderSkeleton={(key) => <SkeletonBlock key={key} height={64} radius={14} />}
               />
             )}
@@ -2659,5 +2676,6 @@ const logoStyle: React.CSSProperties = {
     </div>
   );
 }
+
 
 

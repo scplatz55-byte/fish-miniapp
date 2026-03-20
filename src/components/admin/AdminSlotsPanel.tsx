@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 type WeekdayRule = {
   id: string;
   day_of_week: number;
@@ -54,6 +56,7 @@ type AdminSlotsPanelProps = {
   newIntervalTo: string;
   newOverrideFrom: string;
   newOverrideTo: string;
+  pickupSavingId?: string | null;
   onChangeSelectedOverrideDate: (value: string) => void;
   onChangeNewIntervalDay: (day: number | null) => void;
   onChangeNewIntervalFrom: (value: string) => void;
@@ -68,6 +71,7 @@ type AdminSlotsPanelProps = {
   onAddOverrideInterval: () => void;
   onToggleOverrideInterval: (intervalId: string, nextEnabled: boolean) => void;
   onDeleteOverrideInterval: (intervalId: string) => void;
+  onUpdatePickupWorktime: (pickupId: string, worktimeText: string) => void | Promise<void>;
   renderSkeleton: (key: string) => React.ReactNode;
 };
 
@@ -104,6 +108,7 @@ export default function AdminSlotsPanel({
   newIntervalTo,
   newOverrideFrom,
   newOverrideTo,
+  pickupSavingId = null,
   onChangeSelectedOverrideDate,
   onChangeNewIntervalDay,
   onChangeNewIntervalFrom,
@@ -118,8 +123,19 @@ export default function AdminSlotsPanel({
   onAddOverrideInterval,
   onToggleOverrideInterval,
   onDeleteOverrideInterval,
+  onUpdatePickupWorktime,
   renderSkeleton,
 }: AdminSlotsPanelProps) {
+  const [pickupDrafts, setPickupDrafts] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const nextDrafts: Record<string, string> = {};
+    pickupSettings.forEach((point) => {
+      nextDrafts[point.id] = point.worktime_text || "";
+    });
+    setPickupDrafts(nextDrafts);
+  }, [pickupSettings]);
+
   const intervalsByRuleId = new Map<string, WeekdayInterval[]>();
   weekdayIntervals.forEach((interval) => {
     const list = intervalsByRuleId.get(interval.weekday_rule_id) || [];
@@ -438,27 +454,62 @@ export default function AdminSlotsPanel({
           >
             <div style={{ fontWeight: 900, fontSize: 15 }}>Самовывоз</div>
             <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
-              Здесь только тексты и информация по точкам. Слоты самовывоза больше не настраиваются.
+              Здесь можно редактировать текст режима работы для каждой точки.
             </div>
 
             <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-              {pickupSettings.map((point) => (
-                <div
-                  key={point.id}
-                  style={{
-                    borderRadius: 12,
-                    border: "1px solid rgba(10,19,23,0.08)",
-                    background: "rgba(10,19,23,0.03)",
-                    padding: 10,
-                  }}
-                >
-                  <div style={{ fontWeight: 900, fontSize: 14 }}>{point.title}</div>
-                  <div style={{ marginTop: 4, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
-                  <div style={{ marginTop: 6, fontSize: 13, opacity: 0.82 }}>
-                    {point.worktime_text || "Текст режима работы пока не задан."}
+              {pickupSettings.map((point) => {
+                const draft = pickupDrafts[point.id] ?? point.worktime_text ?? "";
+                const saving = pickupSavingId === point.id;
+
+                return (
+                  <div
+                    key={point.id}
+                    style={{
+                      borderRadius: 12,
+                      border: "1px solid rgba(10,19,23,0.08)",
+                      background: "rgba(10,19,23,0.03)",
+                      padding: 10,
+                    }}
+                  >
+                    <div style={{ fontWeight: 900, fontSize: 14 }}>{point.title}</div>
+                    <div style={{ marginTop: 4, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
+
+                    <textarea
+                      style={{
+                        ...inputStyle,
+                        width: "100%",
+                        boxSizing: "border-box",
+                        minHeight: 84,
+                        marginTop: 10,
+                        resize: "vertical",
+                      }}
+                      placeholder="Например: Режим работы магазина: 9:00–21:00 ежедневно."
+                      value={draft}
+                      onChange={(e) =>
+                        setPickupDrafts((prev) => ({
+                          ...prev,
+                          [point.id]: e.target.value,
+                        }))
+                      }
+                    />
+
+                    <div style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}>
+                      <button
+                        type="button"
+                        style={{
+                          ...primaryButtonStyle,
+                          opacity: saving ? 0.7 : 1,
+                        }}
+                        onClick={() => onUpdatePickupWorktime(point.id, draft)}
+                        disabled={saving}
+                      >
+                        {saving ? "Сохраняем..." : "Сохранить текст"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {pickupSettings.length === 0 && (
                 <div style={{ fontSize: 13, opacity: 0.72 }}>Точки самовывоза не найдены.</div>
