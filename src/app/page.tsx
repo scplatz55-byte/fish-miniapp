@@ -407,6 +407,12 @@ export default function Page() {
   const [slotFormDate, setSlotFormDate] = useState("");
   const [slotFormLabel, setSlotFormLabel] = useState("");
   const [slotFormType, setSlotFormType] = useState<"delivery" | "pickup">("delivery");
+  const [selectedOverrideDate, setSelectedOverrideDate] = useState("");
+  const [newIntervalDay, setNewIntervalDay] = useState<number | null>(null);
+  const [newIntervalFrom, setNewIntervalFrom] = useState("");
+  const [newIntervalTo, setNewIntervalTo] = useState("");
+  const [newOverrideFrom, setNewOverrideFrom] = useState("");
+  const [newOverrideTo, setNewOverrideTo] = useState("");
   const [adminSection, setAdminSection] = useState<AdminSection>("orders");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
@@ -1107,7 +1113,7 @@ if (cart.length === 0) {
         alert(data?.error || `Не удалось обновить слот (HTTP ${res.status})`);
         return;
       }
-      await loadAdminSlots();
+      await loadWeeklyDeliverySchedule();
     } catch (e: any) {
       alert(e?.message || "Ошибка сети");
     }
@@ -1142,7 +1148,7 @@ if (cart.length === 0) {
       }
       setSlotFormDate("");
       setSlotFormLabel("");
-      await loadAdminSlots();
+      await loadWeeklyDeliverySchedule();
     } catch (e: any) {
       alert(e?.message || "Ошибка сети");
     }
@@ -1162,7 +1168,7 @@ if (cart.length === 0) {
         alert(data?.error || `Не удалось удалить слот (HTTP ${res.status})`);
         return;
       }
-      await loadAdminSlots();
+      await loadWeeklyDeliverySchedule();
     } catch (e: any) {
       alert(e?.message || "Ошибка сети");
     }
@@ -1375,6 +1381,121 @@ if (cart.length === 0) {
     }
 
     alert("Не найден Telegram username или ID пользователя");
+  }
+
+  function makeTempId(prefix: string) {
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function toggleWeekdayRule(ruleId: string, nextEnabled: boolean) {
+    setWeekdayRules((prev) => prev.map((rule) => (rule.id === ruleId ? { ...rule, is_enabled: nextEnabled } : rule)));
+  }
+
+  function toggleWeekdayInterval(intervalId: string, nextEnabled: boolean) {
+    setWeekdayIntervals((prev) =>
+      prev.map((interval) =>
+        interval.id === intervalId ? { ...interval, is_enabled: nextEnabled } : interval
+      )
+    );
+  }
+
+  function addWeekdayInterval() {
+    if (newIntervalDay === null || !newIntervalFrom || !newIntervalTo) {
+      alert("Выбери день недели и заполни время начала и конца интервала");
+      return;
+    }
+
+    const rule = weekdayRules.find((item) => item.day_of_week === newIntervalDay);
+    if (!rule) {
+      alert("Не найдено правило для выбранного дня недели");
+      return;
+    }
+
+    const sortOrder = weekdayIntervals.filter((item) => item.weekday_rule_id === rule.id).length;
+
+    setWeekdayIntervals((prev) => [
+      ...prev,
+      {
+        id: makeTempId("weekday-interval"),
+        weekday_rule_id: rule.id,
+        time_from: newIntervalFrom,
+        time_to: newIntervalTo,
+        is_enabled: true,
+        sort_order: sortOrder,
+      },
+    ]);
+
+    setNewIntervalFrom("");
+    setNewIntervalTo("");
+  }
+
+  function deleteWeekdayInterval(intervalId: string) {
+    setWeekdayIntervals((prev) => prev.filter((interval) => interval.id !== intervalId));
+  }
+
+  function toggleOverrideDayDisabled() {
+    if (!selectedOverrideDate) {
+      alert("Сначала выбери дату");
+      return;
+    }
+
+    setDateOverrides((prev) => {
+      const existing = prev.find((item) => item.date === selectedOverrideDate);
+      if (!existing) {
+        return [
+          ...prev,
+          { id: makeTempId("override-day"), date: selectedOverrideDate, is_disabled: true },
+        ];
+      }
+      return prev.map((item) =>
+        item.date === selectedOverrideDate
+          ? { ...item, is_disabled: !Boolean(item.is_disabled) }
+          : item
+      );
+    });
+  }
+
+  function addOverrideInterval() {
+    if (!selectedOverrideDate || !newOverrideFrom || !newOverrideTo) {
+      alert("Выбери дату и задай время начала и конца интервала");
+      return;
+    }
+
+    const existingOverride = dateOverrides.find((item) => item.date === selectedOverrideDate);
+    const overrideId = existingOverride?.id || makeTempId("override-day");
+
+    if (!existingOverride) {
+      setDateOverrides((prev) => [
+        ...prev,
+        { id: overrideId, date: selectedOverrideDate, is_disabled: false },
+      ]);
+    }
+
+    setOverrideIntervals((prev) => [
+      ...prev,
+      {
+        id: makeTempId("override-interval"),
+        override_id: overrideId,
+        time_from: newOverrideFrom,
+        time_to: newOverrideTo,
+        is_enabled: true,
+      },
+    ]);
+
+    setNewOverrideFrom("");
+    setNewOverrideTo("");
+  }
+
+  function toggleOverrideInterval(intervalId: string, nextEnabled: boolean) {
+    setOverrideIntervals((prev) =>
+      prev.map((interval) =>
+        interval.id === intervalId ? { ...interval, is_enabled: nextEnabled } : interval
+      )
+    );
+  }
+
+  function deleteOverrideInterval(intervalId: string) {
+    setOverrideIntervals((prev) => prev.filter((interval) => interval.id !== intervalId));
   }
 
   function openProfileScreen(screen: Exclude<ProfileScreen, "menu">) {
@@ -2210,7 +2331,7 @@ const logoStyle: React.CSSProperties = {
                 setView("admin");
                 setProfileScreen("menu");
                 adminLoad();
-                loadAdminSlots();
+                loadWeeklyDeliverySchedule();
               }}
             />
 
@@ -2281,11 +2402,11 @@ const logoStyle: React.CSSProperties = {
               }}
               onToggleSection={() => {
                 setAdminSection(adminSection === "orders" ? "slots" : "orders");
-                loadAdminSlots();
+                loadWeeklyDeliverySchedule();
               }}
               onRefresh={() => {
                 adminLoad();
-                loadAdminSlots();
+                loadWeeklyDeliverySchedule();
               }}
             />
 
@@ -2296,19 +2417,33 @@ const logoStyle: React.CSSProperties = {
                 ghostButtonStyle={btnGhost}
                 tabButtonStyle={btnTab}
                 brandAccent={BRAND_ACCENT}
-                slotFormDate={slotFormDate}
-                slotFormLabel={slotFormLabel}
-                slotFormType={slotFormType}
-                adminSlots={adminSlots}
-                adminSlotsLoading={adminSlotsLoading}
-                adminSlotsError={adminSlotsError}
-                effectivePreviews={effectiveSlotPreviews}
-                onChangeDate={setSlotFormDate}
-                onChangeLabel={setSlotFormLabel}
-                onChangeType={setSlotFormType}
-                onCreateSlot={createAdminSlot}
-                onToggleSlot={toggleAdminSlot}
-                onDeleteSlot={deleteAdminSlot}
+                weekdayRules={weekdayRules}
+                weekdayIntervals={weekdayIntervals}
+                overrides={dateOverrides}
+                overrideIntervals={overrideIntervals}
+                pickupSettings={pickupSettings}
+                adminSlotsLoading={deliveryScheduleLoading}
+                adminSlotsError={deliveryScheduleError}
+                selectedOverrideDate={selectedOverrideDate}
+                newIntervalDay={newIntervalDay}
+                newIntervalFrom={newIntervalFrom}
+                newIntervalTo={newIntervalTo}
+                newOverrideFrom={newOverrideFrom}
+                newOverrideTo={newOverrideTo}
+                onChangeSelectedOverrideDate={setSelectedOverrideDate}
+                onChangeNewIntervalDay={setNewIntervalDay}
+                onChangeNewIntervalFrom={setNewIntervalFrom}
+                onChangeNewIntervalTo={setNewIntervalTo}
+                onChangeNewOverrideFrom={setNewOverrideFrom}
+                onChangeNewOverrideTo={setNewOverrideTo}
+                onToggleWeekday={toggleWeekdayRule}
+                onToggleWeekdayInterval={toggleWeekdayInterval}
+                onAddWeekdayInterval={addWeekdayInterval}
+                onDeleteWeekdayInterval={deleteWeekdayInterval}
+                onToggleOverrideDayDisabled={toggleOverrideDayDisabled}
+                onAddOverrideInterval={addOverrideInterval}
+                onToggleOverrideInterval={toggleOverrideInterval}
+                onDeleteOverrideInterval={deleteOverrideInterval}
                 renderSkeleton={(key) => <SkeletonBlock key={key} height={64} radius={14} />}
               />
             )}
@@ -2506,3 +2641,4 @@ const logoStyle: React.CSSProperties = {
     </div>
   );
 }
+
