@@ -2,6 +2,7 @@ type PickupPoint = {
   id: string;
   title: string;
   address: string;
+  worktime_text?: string | null;
 };
 
 type CheckoutOverlayProps = {
@@ -323,9 +324,10 @@ export default function CheckoutOverlay({
                 lineHeight: 1.45,
               }}
             >
-              {pickupPointId === "strelna"
-                ? "Режим работы магазина: 10:00–21:00 ежедневно."
-                : "Режим работы магазина: 9:00–21:00 ежедневно."}
+              {pickupPoints.find((point) => point.id === pickupPointId)?.worktime_text ||
+                (pickupPointId === "strelna"
+                  ? "Режим работы магазина: 10:00–21:00 ежедневно."
+                  : "Режим работы магазина: 9:00–21:00 ежедневно.")}
             </div>
           )}
 

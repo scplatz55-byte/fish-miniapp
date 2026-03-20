@@ -181,6 +181,7 @@ export default function AdminSlotsPanel({
               .map((rule) => {
                 const intervals = intervalsByRuleId.get(rule.id) || [];
                 const isSelectedDay = newIntervalDay === rule.day_of_week;
+                const isCollapsed = !rule.is_enabled && intervals.length === 0;
 
                 return (
                   <div
@@ -189,7 +190,7 @@ export default function AdminSlotsPanel({
                       borderRadius: 16,
                       border: "1px solid rgba(10,19,23,0.08)",
                       background: "rgba(255,255,255,0.96)",
-                      padding: 12,
+                      padding: isCollapsed ? 10 : 12,
                     }}
                   >
                     <div
@@ -207,7 +208,9 @@ export default function AdminSlotsPanel({
                         <div style={{ marginTop: 4, fontSize: 13, opacity: 0.76 }}>
                           {rule.is_enabled
                             ? "День участвует в автоматическом расписании"
-                            : "День выключен"}
+                            : intervals.length > 0
+                              ? "День выключен, но интервалы сохранены"
+                              : "День выключен"}
                         </div>
                       </div>
 
@@ -220,103 +223,113 @@ export default function AdminSlotsPanel({
                       </button>
                     </div>
 
-                    <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
-                      {intervals.length > 0 ? (
-                        intervals.map((interval) => (
-                          <div
-                            key={interval.id}
-                            style={{
-                              borderRadius: 12,
-                              border: "1px solid rgba(10,19,23,0.08)",
-                              background: interval.is_enabled
-                                ? "rgba(10,19,23,0.03)"
-                                : "rgba(10,19,23,0.02)",
-                              padding: 10,
-                              display: "flex",
-                              justifyContent: "space-between",
-                              gap: 10,
-                              alignItems: "center",
+                    {!isCollapsed && (
+                      <>
+                        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                          {intervals.length > 0 ? (
+                            intervals.map((interval) => (
+                              <div
+                                key={interval.id}
+                                style={{
+                                  borderRadius: 12,
+                                  border: "1px solid rgba(10,19,23,0.08)",
+                                  background: interval.is_enabled
+                                    ? "rgba(10,19,23,0.03)"
+                                    : "rgba(10,19,23,0.02)",
+                                  padding: 10,
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  gap: 10,
+                                  alignItems: "center",
+                                }}
+                              >
+                                <div style={{ fontWeight: 900, fontSize: 14 }}>
+                                  {makeIntervalLabel(interval.time_from, interval.time_to)}
+                                </div>
+
+                                <div style={{ display: "flex", gap: 8 }}>
+                                  <button
+                                    type="button"
+                                    style={tabButtonStyle(interval.is_enabled)}
+                                    onClick={() =>
+                                      onToggleWeekdayInterval(interval.id, !interval.is_enabled)
+                                    }
+                                  >
+                                    {interval.is_enabled ? "Вкл" : "Выкл"}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    style={ghostButtonStyle}
+                                    onClick={() => onDeleteWeekdayInterval(interval.id)}
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ fontSize: 13, opacity: 0.72 }}>
+                              Для этого дня интервалы пока не добавлены.
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          style={{
+                            marginTop: 10,
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) auto",
+                            gap: 8,
+                          }}
+                        >
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div style={{ fontSize: 12, opacity: 0.68, paddingLeft: 2 }}>От</div>
+                            <input
+                              style={{
+                                ...inputStyle,
+                                borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
+                              }}
+                              type="time"
+                              value={isSelectedDay ? newIntervalFrom : ""}
+                              onFocus={() => onChangeNewIntervalDay(rule.day_of_week)}
+                              onChange={(e) => {
+                                onChangeNewIntervalDay(rule.day_of_week);
+                                onChangeNewIntervalFrom(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div style={{ fontSize: 12, opacity: 0.68, paddingLeft: 2 }}>До</div>
+                            <input
+                              style={{
+                                ...inputStyle,
+                                borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
+                              }}
+                              type="time"
+                              value={isSelectedDay ? newIntervalTo : ""}
+                              onFocus={() => onChangeNewIntervalDay(rule.day_of_week)}
+                              onChange={(e) => {
+                                onChangeNewIntervalDay(rule.day_of_week);
+                                onChangeNewIntervalTo(e.target.value);
+                              }}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            style={{ ...primaryButtonStyle, alignSelf: "end" }}
+                            onClick={() => {
+                              onChangeNewIntervalDay(rule.day_of_week);
+                              onAddWeekdayInterval();
                             }}
                           >
-                            <div style={{ fontWeight: 900, fontSize: 14 }}>
-                              {makeIntervalLabel(interval.time_from, interval.time_to)}
-                            </div>
-
-                            <div style={{ display: "flex", gap: 8 }}>
-                              <button
-                                type="button"
-                                style={tabButtonStyle(interval.is_enabled)}
-                                onClick={() =>
-                                  onToggleWeekdayInterval(interval.id, !interval.is_enabled)
-                                }
-                              >
-                                {interval.is_enabled ? "Вкл" : "Выкл"}
-                              </button>
-                              <button
-                                type="button"
-                                style={ghostButtonStyle}
-                                onClick={() => onDeleteWeekdayInterval(interval.id)}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div style={{ fontSize: 13, opacity: 0.72 }}>
-                          Для этого дня интервалы пока не добавлены.
+                            Добавить
+                          </button>
                         </div>
-                      )}
-                    </div>
-
-                    <div
-                      style={{
-                        marginTop: 10,
-                        display: "grid",
-                        gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr) auto",
-                        gap: 8,
-                      }}
-                    >
-                      <input
-                        style={{
-                          ...inputStyle,
-                          borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
-                        }}
-                        type="time"
-                        value={isSelectedDay ? newIntervalFrom : ""}
-                        onFocus={() => onChangeNewIntervalDay(rule.day_of_week)}
-                        onChange={(e) => {
-                          onChangeNewIntervalDay(rule.day_of_week);
-                          onChangeNewIntervalFrom(e.target.value);
-                        }}
-                      />
-                      <input
-                        style={{
-                          ...inputStyle,
-                          borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
-                        }}
-                        type="time"
-                        value={isSelectedDay ? newIntervalTo : ""}
-                        onFocus={() => onChangeNewIntervalDay(rule.day_of_week)}
-                        onChange={(e) => {
-                          onChangeNewIntervalDay(rule.day_of_week);
-                          onChangeNewIntervalTo(e.target.value);
-                        }}
-                      />
-                      <button
-                        type="button"
-                        style={primaryButtonStyle}
-                        onClick={() => {
-                          onChangeNewIntervalDay(rule.day_of_week);
-                          onAddWeekdayInterval();
-                        }}
-                      >
-                        Добавить
-                      </button>
-                    </div>
+                      </>
+                    )}
                   </div>
                 );
-              })}
+              })
           </div>
 
           <div

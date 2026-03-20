@@ -2299,6 +2299,7 @@ const logoStyle: React.CSSProperties = {
                 return {
                   ...point,
                   address: setting?.address || point.address,
+                  worktime_text: setting?.worktime_text || null,
                 };
               })}
               pickupPointId={pickupPointId}
