@@ -16,6 +16,15 @@ import {
   getEffectiveSlots,
   parseLocalDate as parseLocalDateHelper,
 } from "@/lib/domain/deliverySlots";
+import {
+  buildWeeklyScheduleSlots,
+  getAvailableDeliveryDates as getWeeklyAvailableDeliveryDates,
+  getAvailableTimeSlots as getWeeklyAvailableTimeSlots,
+  type DateOverride,
+  type OverrideInterval,
+  type WeekdayInterval,
+  type WeekdayRule,
+} from "@/lib/domain/deliverySchedule";
 
 type Category = {
   id: string;
@@ -97,6 +106,14 @@ type DeliverySlotRow = {
   delivery_type: "delivery" | "pickup";
   is_active: boolean;
   sort_order: number;
+};
+
+type PickupSetting = {
+  id: string;
+  title: string;
+  address: string;
+  worktime_text: string | null;
+  is_active: boolean | null;
 };
 
 function formatPriceRub(value: string | number) {
@@ -306,6 +323,13 @@ export default function Page() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [deliverySlots, setDeliverySlots] = useState<DeliverySlotRow[]>([]);
+  const [weekdayRules, setWeekdayRules] = useState<WeekdayRule[]>([]);
+  const [weekdayIntervals, setWeekdayIntervals] = useState<WeekdayInterval[]>([]);
+  const [dateOverrides, setDateOverrides] = useState<DateOverride[]>([]);
+  const [overrideIntervals, setOverrideIntervals] = useState<OverrideInterval[]>([]);
+  const [pickupSettings, setPickupSettings] = useState<PickupSetting[]>([]);
+  const [deliveryScheduleLoading, setDeliveryScheduleLoading] = useState(false);
+  const [deliveryScheduleError, setDeliveryScheduleError] = useState<string | null>(null);
 
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -438,6 +462,17 @@ export default function Page() {
       { title: "Самовывоз", dates: groupByDate(effectiveAdminPickupSlots) },
     ];
   }, [effectiveAdminDeliverySlots, effectiveAdminPickupSlots]);
+
+  const weeklyScheduleSlots = useMemo(
+    () =>
+      buildWeeklyScheduleSlots({
+        weekdayRules,
+        weekdayIntervals,
+        overrides: dateOverrides,
+        overrideIntervals,
+      }),
+    [weekdayRules, weekdayIntervals, dateOverrides, overrideIntervals]
+  );
 
   // ===== Spring indicator animation =====
   const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
@@ -679,6 +714,39 @@ export default function Page() {
     }
 
     loadDeliverySlots();
+  }, []);
+
+  useEffect(() => {
+    async function loadWeeklyDeliverySchedule() {
+      setDeliveryScheduleLoading(true);
+      setDeliveryScheduleError(null);
+
+      try {
+        const res = await fetch("/api/admin/delivery-schedule", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          setDeliveryScheduleError(data?.error || `Ошибка загрузки расписания (HTTP ${res.status})`);
+          return;
+        }
+
+        setWeekdayRules((data.weekdayRules || []) as WeekdayRule[]);
+        setWeekdayIntervals((data.weekdayIntervals || []) as WeekdayInterval[]);
+        setDateOverrides((data.overrides || []) as DateOverride[]);
+        setOverrideIntervals((data.overrideIntervals || []) as OverrideInterval[]);
+        setPickupSettings((data.pickupSettings || []) as PickupSetting[]);
+      } catch (e: any) {
+        setDeliveryScheduleError(e?.message || "Ошибка сети");
+      } finally {
+        setDeliveryScheduleLoading(false);
+      }
+    }
+
+    loadWeeklyDeliverySchedule();
   }, []);
 
   // Boot loading ends when basic data is there
@@ -1167,7 +1235,25 @@ if (cart.length === 0) {
   }
 
   function getSelectedPickupPoint() {
-    return PICKUP_POINTS.find((p) => p.id === pickupPointId) || PICKUP_POINTS[0];
+    const mapped = pickupSettings
+      .filter((p) => p.is_active !== false)
+      .map((p) => {
+        const existing = PICKUP_POINTS.find((point) => point.title === p.title || point.address === p.address);
+        return {
+          id: existing?.id || "vo",
+          title: p.title,
+          address: p.address,
+          worktime_text: p.worktime_text,
+        };
+      });
+
+    const found = mapped.find((p) => p.id === pickupPointId);
+    if (found) return found;
+
+    return {
+      ...PICKUP_POINTS[0],
+      worktime_text: null,
+    };
   }
 
   function buildDeliveryAddress() {
@@ -1188,6 +1274,10 @@ if (cart.length === 0) {
   // slot helpers moved to src/lib/domain/deliverySlots.ts
 
   function getAvailableDeliveryDates() {
+    if (deliveryType === "delivery" && weeklyScheduleSlots.length > 0) {
+      return getWeeklyAvailableDeliveryDates(weeklyScheduleSlots);
+    }
+
     return getAvailableDeliveryDatesForType(
       deliveryType,
       deliverySlots,
@@ -1197,6 +1287,10 @@ if (cart.length === 0) {
   }
 
   function getAvailableTimeSlots() {
+    if (deliveryType === "delivery" && weeklyScheduleSlots.length > 0) {
+      return getWeeklyAvailableTimeSlots(weeklyScheduleSlots, deliveryDate);
+    }
+
     return getAvailableTimeSlotsForType(
       deliveryType,
       deliveryDate,
@@ -2044,7 +2138,15 @@ const logoStyle: React.CSSProperties = {
               iosSwitchKnob={iosSwitchKnob}
               brandAccent={BRAND_ACCENT}
               deliveryType={deliveryType}
-              pickupPoints={PICKUP_POINTS}
+              pickupPoints={PICKUP_POINTS.map((point) => {
+                const setting = pickupSettings.find(
+                  (p) => p.title === point.title || p.address === point.address
+                );
+                return {
+                  ...point,
+                  address: setting?.address || point.address,
+                };
+              })}
               pickupPointId={pickupPointId}
               isPrivateHouse={isPrivateHouse}
               orderFullName={orderFullName}
