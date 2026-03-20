@@ -1277,18 +1277,6 @@ if (cart.length === 0) {
 
     return parts.filter(Boolean).join(", ");
   }
-  
-  function formatIsoDateToUi(value: string) {
-  const parts = String(value || "").split("-");
-  if (parts.length !== 3) return value || "";
-  return parts[2] + "-" + parts[1] + "-" + parts[0];
-}
-
-function parseUiDateToIso(value: string) {
-  const parts = String(value || "").split("-");
-  if (parts.length !== 3) return value || "";
-  return parts[2] + "-" + parts[1] + "-" + parts[0];
-}
 
   // slot helpers moved to src/lib/domain/deliverySlots.ts
 
@@ -1491,7 +1479,7 @@ function parseUiDateToIso(value: string) {
 
     await runDeliveryScheduleAction({
       type: "toggleOverrideDayDisabled",
-      date: parseUiDateToIso(selectedOverrideDate),
+      date: selectedOverrideDate,
     });
   }
 
@@ -1503,7 +1491,7 @@ function parseUiDateToIso(value: string) {
 
     const ok = await runDeliveryScheduleAction({
       type: "createOverrideInterval",
-      date: parseUiDateToIso(selectedOverrideDate),
+      date: selectedOverrideDate,
       time_from: newOverrideFrom,
       time_to: newOverrideTo,
     });
@@ -1743,25 +1731,26 @@ const logoStyle: React.CSSProperties = {
   });
 
   const iosSwitchWrap = (active: boolean): React.CSSProperties => ({
-    width: 52,
-    height: 32,
+    width: 50,
+    height: 30,
     borderRadius: 999,
-    border: active ? "1px solid rgba(212,51,20,0.28)" : "1px solid rgba(10,19,23,0.10)",
-    background: active ? "rgba(212,51,20,0.18)" : "rgba(10,19,23,0.08)",
+    border: active ? "1px solid rgba(107, 214, 95, 0.55)" : "1px solid rgba(10,19,23,0.12)",
+    background: active ? "#6BD65F" : "rgba(10,19,23,0.08)",
     position: "relative",
     transition: "all 160ms ease",
     cursor: "pointer",
     flexShrink: 0,
+    boxShadow: active ? "inset 0 0 0 1px rgba(255,255,255,0.18)" : "inset 0 0 0 1px rgba(255,255,255,0.3)",
   });
 
   const iosSwitchKnob = (active: boolean): React.CSSProperties => ({
     position: "absolute",
-    top: 3,
-    left: active ? 23 : 3,
+    top: 2,
+    left: active ? 22 : 2,
     width: 24,
     height: 24,
     borderRadius: 999,
-    background: active ? BRAND_ACCENT : "#fff",
+    background: "#fff",
     boxShadow: "0 4px 10px rgba(0,0,0,0.18)",
     transition: "all 160ms ease",
   });
@@ -2458,6 +2447,8 @@ const logoStyle: React.CSSProperties = {
 
             {!selectedOrderId && adminSection === "slots" && (
               <AdminSlotsPanel
+                iosSwitchWrap={iosSwitchWrap}
+                iosSwitchKnob={iosSwitchKnob}
                 inputStyle={inputStyle}
                 primaryButtonStyle={btnPrimary}
                 ghostButtonStyle={btnGhost}
@@ -2465,7 +2456,7 @@ const logoStyle: React.CSSProperties = {
                 brandAccent={BRAND_ACCENT}
                 weekdayRules={weekdayRules}
                 weekdayIntervals={weekdayIntervals}
-                overrides={dateOverrides.map((o) => ({ ...o, date: formatIsoDateToUi(o.date) }))}
+                overrides={dateOverrides}
                 overrideIntervals={overrideIntervals}
                 pickupSettings={pickupSettings}
                 adminSlotsLoading={deliveryScheduleLoading}

@@ -38,6 +38,8 @@ type PickupSetting = {
 };
 
 type AdminSlotsPanelProps = {
+  iosSwitchWrap: (active: boolean) => React.CSSProperties;
+  iosSwitchKnob: (active: boolean) => React.CSSProperties;
   inputStyle: React.CSSProperties;
   primaryButtonStyle: React.CSSProperties;
   ghostButtonStyle: React.CSSProperties;
@@ -90,6 +92,8 @@ function makeIntervalLabel(timeFrom: string, timeTo: string) {
 }
 
 export default function AdminSlotsPanel({
+  iosSwitchWrap,
+  iosSwitchKnob,
   inputStyle,
   primaryButtonStyle,
   ghostButtonStyle,
@@ -216,10 +220,21 @@ export default function AdminSlotsPanel({
 
                       <button
                         type="button"
-                        style={tabButtonStyle(rule.is_enabled)}
                         onClick={() => onToggleWeekday(rule.id, !rule.is_enabled)}
+                        style={{
+                          border: "none",
+                          background: "transparent",
+                          padding: 0,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                        aria-label={rule.is_enabled ? "Выключить день" : "Включить день"}
                       >
-                        {rule.is_enabled ? "Вкл" : "Выкл"}
+                        <div style={iosSwitchWrap(rule.is_enabled)}>
+                          <div style={iosSwitchKnob(rule.is_enabled)} />
+                        </div>
                       </button>
                     </div>
 
@@ -250,12 +265,23 @@ export default function AdminSlotsPanel({
                                 <div style={{ display: "flex", gap: 8 }}>
                                   <button
                                     type="button"
-                                    style={tabButtonStyle(interval.is_enabled)}
                                     onClick={() =>
                                       onToggleWeekdayInterval(interval.id, !interval.is_enabled)
                                     }
+                                    style={{
+                                      border: "none",
+                                      background: "transparent",
+                                      padding: 0,
+                                      cursor: "pointer",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                    }}
+                                    aria-label={interval.is_enabled ? "Выключить интервал" : "Включить интервал"}
                                   >
-                                    {interval.is_enabled ? "Вкл" : "Выкл"}
+                                    <div style={iosSwitchWrap(interval.is_enabled)}>
+                                      <div style={iosSwitchKnob(interval.is_enabled)} />
+                                    </div>
                                   </button>
                                   <button
                                     type="button"
@@ -410,15 +436,27 @@ export default function AdminSlotsPanel({
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
                 <button
                   type="button"
-                  style={tabButtonStyle(Boolean(selectedOverride?.is_disabled))}
                   onClick={onToggleOverrideDayDisabled}
                   disabled={!selectedOverrideDate}
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    padding: 0,
+                    cursor: !selectedOverrideDate ? "default" : "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: !selectedOverrideDate ? 0.55 : 1,
+                  }}
+                  aria-label={Boolean(selectedOverride?.is_disabled) ? "Включить дату" : "Отключить дату"}
                 >
-                  {selectedOverride?.is_disabled ? "День отключён" : "Отключить день"}
+                  <div style={iosSwitchWrap(Boolean(selectedOverride?.is_disabled))}>
+                    <div style={iosSwitchKnob(Boolean(selectedOverride?.is_disabled))} />
+                  </div>
                 </button>
                 {selectedOverride && (
                   <div style={{ fontSize: 13, opacity: 0.76 }}>
-                    Override уже создан для {selectedOverride.date}
+                    Дата отключена / настроена: {selectedOverride.date}
                   </div>
                 )}
               </div>
@@ -521,12 +559,23 @@ export default function AdminSlotsPanel({
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           type="button"
-                          style={tabButtonStyle(interval.is_enabled)}
                           onClick={() =>
                             onToggleOverrideInterval(interval.id, !interval.is_enabled)
                           }
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            padding: 0,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          aria-label={interval.is_enabled ? "Выключить override интервал" : "Включить override интервал"}
                         >
-                          {interval.is_enabled ? "Вкл" : "Выкл"}
+                          <div style={iosSwitchWrap(interval.is_enabled)}>
+                            <div style={iosSwitchKnob(interval.is_enabled)} />
+                          </div>
                         </button>
                         <button
                           type="button"
