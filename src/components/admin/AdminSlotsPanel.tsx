@@ -329,7 +329,7 @@ export default function AdminSlotsPanel({
                     )}
                   </div>
                 );
-              })
+              })}
           </div>
 
           <div
