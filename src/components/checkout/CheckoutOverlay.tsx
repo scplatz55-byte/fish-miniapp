@@ -186,68 +186,51 @@ export default function CheckoutOverlay({
 
           {deliveryType === "delivery" ? (
             <>
-              <input
-                style={inputStyle}
-                placeholder="Адрес доставки"
-                value={orderAddress}
-                onChange={(e) => onChangeAddress(e.target.value)}
-              />
-
-              <button
-                type="button"
-                onClick={onTogglePrivateHouse}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 12,
-                  padding: 0,
-                  border: "none",
-                  background: "transparent",
-                  cursor: "pointer",
-                  width: "100%",
-                }}
-              >
-                <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
-                <div style={iosSwitchWrap(isPrivateHouse)}>
-                  <div style={iosSwitchKnob(isPrivateHouse)} />
-                </div>
-              </button>
-
-              {!isPrivateHouse && (
+              <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
+              {availableDates.length === 0 ? (
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                    gap: 10,
-                    width: "100%",
+                    borderRadius: 14,
+                    border: "1px solid rgba(212,51,20,0.32)",
+                    background: "rgba(212,51,20,0.08)",
+                    padding: 12,
+                    fontSize: 13,
+                    lineHeight: 1.45,
+                    color: "#7A1E0D",
                   }}
                 >
-                  <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                    placeholder="Подъезд"
-                    value={orderEntrance}
-                    onChange={(e) => onChangeEntrance(e.target.value)}
-                  />
-                  <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                    placeholder="Этаж"
-                    value={orderFloor}
-                    onChange={(e) => onChangeFloor(e.target.value)}
-                  />
-                  <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                    placeholder="Квартира"
-                    value={orderApartment}
-                    onChange={(e) => onChangeApartment(e.target.value)}
-                  />
-                  <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
-                    placeholder="Домофон"
-                    value={orderIntercom}
-                    onChange={(e) => onChangeIntercom(e.target.value)}
-                  />
+                  <div style={{ fontWeight: 900, marginBottom: 4 }}>Доставка сейчас недоступна</div>
+                  <div>
+                    Мы пока не принимаем заказы на доставку. Попробуйте позже или выберите самовывоз.
+                  </div>
                 </div>
+              ) : (
+                <>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {availableDates.map((d) => (
+                      <button
+                        key={d.value}
+                        type="button"
+                        style={tabButtonStyle(deliveryDate === d.value)}
+                        onClick={() => onChangeDeliveryDate(d.value)}
+                      >
+                        {d.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                    {availableTimeSlots.map((slot) => (
+                      <button
+                        key={slot}
+                        type="button"
+                        style={tabButtonStyle(deliverySlot === slot)}
+                        onClick={() => onChangeDeliverySlot(slot)}
+                      >
+                        {slot}
+                      </button>
+                    ))}
+                  </div>
+                </>
               )}
             </>
           ) : (
@@ -282,38 +265,7 @@ export default function CheckoutOverlay({
             </div>
           )}
 
-          {deliveryType === "delivery" ? (
-            <>
-              <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {availableDates.map((d) => (
-                  <button
-                    key={d.value}
-                    type="button"
-                    style={tabButtonStyle(deliveryDate === d.value)}
-                    onClick={() => onChangeDeliveryDate(d.value)}
-                  >
-                    {d.label}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
-                {availableTimeSlots.map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    style={tabButtonStyle(deliverySlot === slot)}
-                    onClick={() => onChangeDeliverySlot(slot)}
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
-              {availableDates.length === 0 && (
-                <div style={{ fontSize: 13, opacity: 0.72 }}>Нет доступных слотов доставки.</div>
-              )}
-            </>
-          ) : (
+          {deliveryType === "pickup" && (
             <div
               style={{
                 borderRadius: 14,
@@ -328,6 +280,8 @@ export default function CheckoutOverlay({
                 (pickupPointId === "strelna"
                   ? "Режим работы магазина: 10:00–21:00 ежедневно."
                   : "Режим работы магазина: 9:00–21:00 ежедневно.")}
+            </div>
+          )}
             </div>
           )}
 
@@ -355,8 +309,25 @@ export default function CheckoutOverlay({
           />
 
           <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {totalLabel}</div>
-          <button style={{ ...primaryButtonStyle, width: "100%" }} onClick={onSubmit}>
-            Подтвердить заказ
+          <button
+            style={{
+              ...primaryButtonStyle,
+              width: "100%",
+              opacity:
+                deliveryType === "delivery" && availableDates.length === 0
+                  ? 0.55
+                  : 1,
+              cursor:
+                deliveryType === "delivery" && availableDates.length === 0
+                  ? "not-allowed"
+                  : "pointer",
+            }}
+            onClick={onSubmit}
+            disabled={deliveryType === "delivery" && availableDates.length === 0}
+          >
+            {deliveryType === "delivery" && availableDates.length === 0
+              ? "Доставка недоступна"
+              : "Подтвердить заказ"}
           </button>
         </div>
       </div>

@@ -1283,8 +1283,17 @@ if (cart.length === 0) {
   // slot helpers moved to src/lib/domain/deliverySlots.ts
 
   function getAvailableDeliveryDates() {
-    if (deliveryType === "delivery" && weeklyScheduleSlots.length > 0) {
-      return getWeeklyAvailableDeliveryDates(weeklyScheduleSlots);
+    if (deliveryType === "delivery") {
+      if (!deliveryScheduleLoading && weekdayRules.length > 0) {
+        return getWeeklyAvailableDeliveryDates(weeklyScheduleSlots);
+      }
+
+      return getAvailableDeliveryDatesForType(
+        deliveryType,
+        deliverySlots,
+        DEFAULT_DELIVERY_INTERVALS,
+        DEFAULT_PICKUP_INTERVALS
+      );
     }
 
     return getAvailableDeliveryDatesForType(
@@ -1296,8 +1305,18 @@ if (cart.length === 0) {
   }
 
   function getAvailableTimeSlots() {
-    if (deliveryType === "delivery" && weeklyScheduleSlots.length > 0) {
-      return getWeeklyAvailableTimeSlots(weeklyScheduleSlots, deliveryDate);
+    if (deliveryType === "delivery") {
+      if (!deliveryScheduleLoading && weekdayRules.length > 0) {
+        return getWeeklyAvailableTimeSlots(weeklyScheduleSlots, deliveryDate);
+      }
+
+      return getAvailableTimeSlotsForType(
+        deliveryType,
+        deliveryDate,
+        deliverySlots,
+        DEFAULT_DELIVERY_INTERVALS,
+        DEFAULT_PICKUP_INTERVALS
+      );
     }
 
     return getAvailableTimeSlotsForType(
