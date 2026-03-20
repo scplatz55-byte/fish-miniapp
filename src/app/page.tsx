@@ -1383,23 +1383,62 @@ if (cart.length === 0) {
     alert("Не найден Telegram username или ID пользователя");
   }
 
-  function makeTempId(prefix: string) {
-    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  function applyDeliverySchedulePayload(data: any) {
+    setWeekdayRules((data?.weekdayRules || []) as WeekdayRule[]);
+    setWeekdayIntervals((data?.weekdayIntervals || []) as WeekdayInterval[]);
+    setDateOverrides((data?.overrides || []) as DateOverride[]);
+    setOverrideIntervals((data?.overrideIntervals || []) as OverrideInterval[]);
+    setPickupSettings((data?.pickupSettings || []) as PickupSetting[]);
   }
 
-  function toggleWeekdayRule(ruleId: string, nextEnabled: boolean) {
-    setWeekdayRules((prev) => prev.map((rule) => (rule.id === ruleId ? { ...rule, is_enabled: nextEnabled } : rule)));
+  async function runDeliveryScheduleAction(action: Record<string, any>) {
+    setDeliveryScheduleLoading(true);
+    setDeliveryScheduleError(null);
+
+    try {
+      const res = await fetch("/api/admin/delivery-schedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        const message = data?.error || `Ошибка сохранения расписания (HTTP ${res.status})`;
+        setDeliveryScheduleError(message);
+        alert(message);
+        return false;
+      }
+
+      applyDeliverySchedulePayload(data);
+      return true;
+    } catch (e: any) {
+      const message = e?.message || "Ошибка сети";
+      setDeliveryScheduleError(message);
+      alert(message);
+      return false;
+    } finally {
+      setDeliveryScheduleLoading(false);
+    }
   }
 
-  function toggleWeekdayInterval(intervalId: string, nextEnabled: boolean) {
-    setWeekdayIntervals((prev) =>
-      prev.map((interval) =>
-        interval.id === intervalId ? { ...interval, is_enabled: nextEnabled } : interval
-      )
-    );
+  async function toggleWeekdayRule(ruleId: string, nextEnabled: boolean) {
+    await runDeliveryScheduleAction({
+      type: "toggleWeekday",
+      ruleId,
+      is_enabled: nextEnabled,
+    });
   }
 
-  function addWeekdayInterval() {
+  async function toggleWeekdayInterval(intervalId: string, nextEnabled: boolean) {
+    await runDeliveryScheduleAction({
+      type: "toggleWeekdayInterval",
+      intervalId,
+      is_enabled: nextEnabled,
+    });
+  }
+
+  async function addWeekdayInterval() {
     if (newIntervalDay === null || !newIntervalFrom || !newIntervalTo) {
       alert("Выбери день недели и заполни время начала и конца интервала");
       return;
@@ -1411,91 +1450,70 @@ if (cart.length === 0) {
       return;
     }
 
-    const sortOrder = weekdayIntervals.filter((item) => item.weekday_rule_id === rule.id).length;
+    const ok = await runDeliveryScheduleAction({
+      type: "createWeekdayInterval",
+      weekday_rule_id: rule.id,
+      time_from: newIntervalFrom,
+      time_to: newIntervalTo,
+    });
 
-    setWeekdayIntervals((prev) => [
-      ...prev,
-      {
-        id: makeTempId("weekday-interval"),
-        weekday_rule_id: rule.id,
-        time_from: newIntervalFrom,
-        time_to: newIntervalTo,
-        is_enabled: true,
-        sort_order: sortOrder,
-      },
-    ]);
-
-    setNewIntervalFrom("");
-    setNewIntervalTo("");
+    if (ok) {
+      setNewIntervalFrom("");
+      setNewIntervalTo("");
+    }
   }
 
-  function deleteWeekdayInterval(intervalId: string) {
-    setWeekdayIntervals((prev) => prev.filter((interval) => interval.id !== intervalId));
+  async function deleteWeekdayInterval(intervalId: string) {
+    await runDeliveryScheduleAction({
+      type: "deleteWeekdayInterval",
+      intervalId,
+    });
   }
 
-  function toggleOverrideDayDisabled() {
+  async function toggleOverrideDayDisabled() {
     if (!selectedOverrideDate) {
       alert("Сначала выбери дату");
       return;
     }
 
-    setDateOverrides((prev) => {
-      const existing = prev.find((item) => item.date === selectedOverrideDate);
-      if (!existing) {
-        return [
-          ...prev,
-          { id: makeTempId("override-day"), date: selectedOverrideDate, is_disabled: true },
-        ];
-      }
-      return prev.map((item) =>
-        item.date === selectedOverrideDate
-          ? { ...item, is_disabled: !Boolean(item.is_disabled) }
-          : item
-      );
+    await runDeliveryScheduleAction({
+      type: "toggleOverrideDayDisabled",
+      date: selectedOverrideDate,
     });
   }
 
-  function addOverrideInterval() {
+  async function addOverrideInterval() {
     if (!selectedOverrideDate || !newOverrideFrom || !newOverrideTo) {
       alert("Выбери дату и задай время начала и конца интервала");
       return;
     }
 
-    const existingOverride = dateOverrides.find((item) => item.date === selectedOverrideDate);
-    const overrideId = existingOverride?.id || makeTempId("override-day");
+    const ok = await runDeliveryScheduleAction({
+      type: "createOverrideInterval",
+      date: selectedOverrideDate,
+      time_from: newOverrideFrom,
+      time_to: newOverrideTo,
+    });
 
-    if (!existingOverride) {
-      setDateOverrides((prev) => [
-        ...prev,
-        { id: overrideId, date: selectedOverrideDate, is_disabled: false },
-      ]);
+    if (ok) {
+      setNewOverrideFrom("");
+      setNewOverrideTo("");
     }
-
-    setOverrideIntervals((prev) => [
-      ...prev,
-      {
-        id: makeTempId("override-interval"),
-        override_id: overrideId,
-        time_from: newOverrideFrom,
-        time_to: newOverrideTo,
-        is_enabled: true,
-      },
-    ]);
-
-    setNewOverrideFrom("");
-    setNewOverrideTo("");
   }
 
-  function toggleOverrideInterval(intervalId: string, nextEnabled: boolean) {
-    setOverrideIntervals((prev) =>
-      prev.map((interval) =>
-        interval.id === intervalId ? { ...interval, is_enabled: nextEnabled } : interval
-      )
-    );
+  async function toggleOverrideInterval(intervalId: string, nextEnabled: boolean) {
+    await runDeliveryScheduleAction({
+      type: "toggleOverrideInterval",
+      intervalId,
+      is_enabled: nextEnabled,
+    });
   }
 
-  function deleteOverrideInterval(intervalId: string) {
-    setOverrideIntervals((prev) => prev.filter((interval) => interval.id !== intervalId));
+  async function deleteOverrideInterval(intervalId: string) {
+    await runDeliveryScheduleAction({
+      type: "deleteOverrideInterval",
+      intervalId,
+    });
   }
 
   function openProfileScreen(screen: Exclude<ProfileScreen, "menu">) {
@@ -2641,4 +2659,5 @@ const logoStyle: React.CSSProperties = {
     </div>
   );
 }
+
 

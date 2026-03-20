@@ -38,6 +38,18 @@ type PickupSettingRow = {
   is_active: boolean | null;
 };
 
+type Action =
+  | { type: "list" }
+  | { type: "toggleWeekday"; ruleId: string; is_enabled: boolean }
+  | { type: "createWeekdayInterval"; weekday_rule_id: string; time_from: string; time_to: string }
+  | { type: "toggleWeekdayInterval"; intervalId: string; is_enabled: boolean }
+  | { type: "deleteWeekdayInterval"; intervalId: string }
+  | { type: "toggleOverrideDayDisabled"; date: string }
+  | { type: "createOverrideInterval"; date: string; time_from: string; time_to: string }
+  | { type: "toggleOverrideInterval"; intervalId: string; is_enabled: boolean }
+  | { type: "deleteOverrideInterval"; intervalId: string }
+  | { type: "updatePickupWorktime"; pickupId: string; worktime_text: string };
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceRole = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
@@ -145,27 +157,23 @@ async function ensurePickupSeed() {
     },
   ];
 
-  const { error: insertError } = await supabaseAdmin
-    .from("pickup_settings")
-    .insert(rows);
-
+  const { error: insertError } = await supabaseAdmin.from("pickup_settings").insert(rows);
   if (insertError) throw insertError;
 }
 
-export async function POST(_request: NextRequest) {
-  try {
-    if (!supabaseUrl || !supabaseServiceRole) {
-      return NextResponse.json(
-        { ok: false, error: "Supabase env vars are missing" },
-        { status: 500 }
-      );
-    }
+async function ensureSeed() {
+  const weekdayRules = await ensureWeekdaySeed();
+  await ensureDefaultIntervals(weekdayRules);
+  await ensurePickupSeed();
+}
 
-    const weekdayRules = await ensureWeekdaySeed();
-    await ensureDefaultIntervals(weekdayRules);
-    await ensurePickupSeed();
-
-    const [intervalsRes, overridesRes, overrideIntervalsRes, pickupRes] = await Promise.all([
+async function readFullSchedule() {
+  const [weekdayRulesRes, intervalsRes, overridesRes, overrideIntervalsRes, pickupRes] =
+    await Promise.all([
+      supabaseAdmin
+        .from("delivery_weekday_rules")
+        .select("id, day_of_week, is_enabled")
+        .order("day_of_week", { ascending: true }),
       supabaseAdmin
         .from("delivery_weekday_intervals")
         .select("id, weekday_rule_id, time_from, time_to, is_enabled, sort_order")
@@ -185,19 +193,172 @@ export async function POST(_request: NextRequest) {
         .order("title", { ascending: true }),
     ]);
 
-    if (intervalsRes.error) throw intervalsRes.error;
-    if (overridesRes.error) throw overridesRes.error;
-    if (overrideIntervalsRes.error) throw overrideIntervalsRes.error;
-    if (pickupRes.error) throw pickupRes.error;
+  if (weekdayRulesRes.error) throw weekdayRulesRes.error;
+  if (intervalsRes.error) throw intervalsRes.error;
+  if (overridesRes.error) throw overridesRes.error;
+  if (overrideIntervalsRes.error) throw overrideIntervalsRes.error;
+  if (pickupRes.error) throw pickupRes.error;
 
-    return NextResponse.json({
-      ok: true,
-      weekdayRules,
-      weekdayIntervals: (intervalsRes.data || []) as WeekdayIntervalRow[],
-      overrides: (overridesRes.data || []) as DateOverrideRow[],
-      overrideIntervals: (overrideIntervalsRes.data || []) as OverrideIntervalRow[],
-      pickupSettings: (pickupRes.data || []) as PickupSettingRow[],
+  return {
+    weekdayRules: (weekdayRulesRes.data || []) as WeekdayRuleRow[],
+    weekdayIntervals: (intervalsRes.data || []) as WeekdayIntervalRow[],
+    overrides: (overridesRes.data || []) as DateOverrideRow[],
+    overrideIntervals: (overrideIntervalsRes.data || []) as OverrideIntervalRow[],
+    pickupSettings: (pickupRes.data || []) as PickupSettingRow[],
+  };
+}
+
+async function findOrCreateOverride(date: string) {
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("delivery_date_overrides")
+    .select("id, date, is_disabled")
+    .eq("date", date)
+    .maybeSingle();
+
+  if (existingError) throw existingError;
+  if (existing) return existing as DateOverrideRow;
+
+  const { data: created, error: createError } = await supabaseAdmin
+    .from("delivery_date_overrides")
+    .insert({ date, is_disabled: false })
+    .select("id, date, is_disabled")
+    .single();
+
+  if (createError) throw createError;
+  return created as DateOverrideRow;
+}
+
+async function handleAction(action: Action) {
+  if (action.type === "list") return;
+
+  if (action.type === "toggleWeekday") {
+    const { error } = await supabaseAdmin
+      .from("delivery_weekday_rules")
+      .update({ is_enabled: action.is_enabled })
+      .eq("id", action.ruleId);
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "createWeekdayInterval") {
+    const { data: current, error: currentError } = await supabaseAdmin
+      .from("delivery_weekday_intervals")
+      .select("sort_order")
+      .eq("weekday_rule_id", action.weekday_rule_id)
+      .order("sort_order", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (currentError) throw currentError;
+
+    const nextSortOrder = typeof current?.sort_order === "number" ? current.sort_order + 1 : 0;
+
+    const { error } = await supabaseAdmin.from("delivery_weekday_intervals").insert({
+      weekday_rule_id: action.weekday_rule_id,
+      time_from: action.time_from,
+      time_to: action.time_to,
+      is_enabled: true,
+      sort_order: nextSortOrder,
     });
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "toggleWeekdayInterval") {
+    const { error } = await supabaseAdmin
+      .from("delivery_weekday_intervals")
+      .update({ is_enabled: action.is_enabled })
+      .eq("id", action.intervalId);
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "deleteWeekdayInterval") {
+    const { error } = await supabaseAdmin
+      .from("delivery_weekday_intervals")
+      .delete()
+      .eq("id", action.intervalId);
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "toggleOverrideDayDisabled") {
+    const override = await findOrCreateOverride(action.date);
+
+    const { error } = await supabaseAdmin
+      .from("delivery_date_overrides")
+      .update({ is_disabled: !Boolean(override.is_disabled) })
+      .eq("id", override.id);
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "createOverrideInterval") {
+    const override = await findOrCreateOverride(action.date);
+
+    const { error } = await supabaseAdmin.from("delivery_override_intervals").insert({
+      override_id: override.id,
+      time_from: action.time_from,
+      time_to: action.time_to,
+      is_enabled: true,
+    });
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "toggleOverrideInterval") {
+    const { error } = await supabaseAdmin
+      .from("delivery_override_intervals")
+      .update({ is_enabled: action.is_enabled })
+      .eq("id", action.intervalId);
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "deleteOverrideInterval") {
+    const { error } = await supabaseAdmin
+      .from("delivery_override_intervals")
+      .delete()
+      .eq("id", action.intervalId);
+
+    if (error) throw error;
+    return;
+  }
+
+  if (action.type === "updatePickupWorktime") {
+    const { error } = await supabaseAdmin
+      .from("pickup_settings")
+      .update({ worktime_text: action.worktime_text })
+      .eq("id", action.pickupId);
+
+    if (error) throw error;
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    if (!supabaseUrl || !supabaseServiceRole) {
+      return NextResponse.json(
+        { ok: false, error: "Supabase env vars are missing" },
+        { status: 500 }
+      );
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const action = (body?.action || { type: "list" }) as Action;
+
+    await ensureSeed();
+    await handleAction(action);
+    const full = await readFullSchedule();
+
+    return NextResponse.json({ ok: true, ...full });
   } catch (error: any) {
     return NextResponse.json(
       { ok: false, error: error?.message || "Unknown error" },
