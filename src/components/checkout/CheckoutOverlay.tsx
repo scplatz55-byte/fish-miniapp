@@ -282,8 +282,6 @@ export default function CheckoutOverlay({
                   : "Режим работы магазина: 9:00–21:00 ежедневно.")}
             </div>
           )}
-            </div>
-          )}
 
           <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
