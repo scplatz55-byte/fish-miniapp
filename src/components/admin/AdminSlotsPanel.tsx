@@ -295,12 +295,21 @@ export default function AdminSlotsPanel({
                                 boxSizing: "border-box",
                                 width: "100%",
                               }}
-                              type="time"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="10:00"
+                              maxLength={5}
                               value={isSelectedDay ? newIntervalFrom : ""}
                               onFocus={() => onChangeNewIntervalDay(rule.day_of_week)}
                               onChange={(e) => {
+                                const digits = e.target.value
+                                  .split("")
+                                  .filter((ch) => "0123456789".includes(ch))
+                                  .join("")
+                                  .slice(0, 4);
+                                const formatted = digits.length <= 2 ? digits : digits.slice(0, 2) + ":" + digits.slice(2);
                                 onChangeNewIntervalDay(rule.day_of_week);
-                                onChangeNewIntervalFrom(e.target.value);
+                                onChangeNewIntervalFrom(formatted);
                               }}
                             />
                           </div>
@@ -317,12 +326,21 @@ export default function AdminSlotsPanel({
                                 boxSizing: "border-box",
                                 width: "100%",
                               }}
-                              type="time"
+                              type="text"
+                              inputMode="numeric"
+                              placeholder="13:00"
+                              maxLength={5}
                               value={isSelectedDay ? newIntervalTo : ""}
                               onFocus={() => onChangeNewIntervalDay(rule.day_of_week)}
                               onChange={(e) => {
+                                const digits = e.target.value
+                                  .split("")
+                                  .filter((ch) => "0123456789".includes(ch))
+                                  .join("")
+                                  .slice(0, 4);
+                                const formatted = digits.length <= 2 ? digits : digits.slice(0, 2) + ":" + digits.slice(2);
                                 onChangeNewIntervalDay(rule.day_of_week);
-                                onChangeNewIntervalTo(e.target.value);
+                                onChangeNewIntervalTo(formatted);
                               }}
                             />
                           </div>
@@ -368,9 +386,25 @@ export default function AdminSlotsPanel({
                   boxSizing: "border-box",
                   width: "100%",
                 }}
-                type="date"
+                type="text"
+                inputMode="numeric"
+                placeholder="20-03-2026"
+                maxLength={10}
                 value={selectedOverrideDate}
-                onChange={(e) => onChangeSelectedOverrideDate(e.target.value)}
+                onChange={(e) => {
+                  const digits = e.target.value
+                    .split("")
+                    .filter((ch) => "0123456789".includes(ch))
+                    .join("")
+                    .slice(0, 8);
+                  const formatted =
+                    digits.length <= 2
+                      ? digits
+                      : digits.length <= 4
+                        ? digits.slice(0, 2) + "-" + digits.slice(2)
+                        : digits.slice(0, 2) + "-" + digits.slice(2, 4) + "-" + digits.slice(4);
+                  onChangeSelectedOverrideDate(formatted);
+                }}
               />
 
               <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
@@ -407,9 +441,20 @@ export default function AdminSlotsPanel({
                       boxSizing: "border-box",
                       width: "100%",
                     }}
-                    type="time"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="10:00"
+                    maxLength={5}
                     value={newOverrideFrom}
-                    onChange={(e) => onChangeNewOverrideFrom(e.target.value)}
+                    onChange={(e) => {
+                      const digits = e.target.value
+                        .split("")
+                        .filter((ch) => "0123456789".includes(ch))
+                        .join("")
+                        .slice(0, 4);
+                      const formatted = digits.length <= 2 ? digits : digits.slice(0, 2) + ":" + digits.slice(2);
+                      onChangeNewOverrideFrom(formatted);
+                    }}
                   />
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -423,9 +468,20 @@ export default function AdminSlotsPanel({
                       boxSizing: "border-box",
                       width: "100%",
                     }}
-                    type="time"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="13:00"
+                    maxLength={5}
                     value={newOverrideTo}
-                    onChange={(e) => onChangeNewOverrideTo(e.target.value)}
+                    onChange={(e) => {
+                      const digits = e.target.value
+                        .split("")
+                        .filter((ch) => "0123456789".includes(ch))
+                        .join("")
+                        .slice(0, 4);
+                      const formatted = digits.length <= 2 ? digits : digits.slice(0, 2) + ":" + digits.slice(2);
+                      onChangeNewOverrideTo(formatted);
+                    }}
                   />
                 </div>
                 <button

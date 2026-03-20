@@ -1277,6 +1277,18 @@ if (cart.length === 0) {
 
     return parts.filter(Boolean).join(", ");
   }
+  
+  function formatIsoDateToUi(value: string) {
+  const parts = String(value || "").split("-");
+  if (parts.length !== 3) return value || "";
+  return parts[2] + "-" + parts[1] + "-" + parts[0];
+}
+
+function parseUiDateToIso(value: string) {
+  const parts = String(value || "").split("-");
+  if (parts.length !== 3) return value || "";
+  return parts[2] + "-" + parts[1] + "-" + parts[0];
+}
 
   // slot helpers moved to src/lib/domain/deliverySlots.ts
 
@@ -1479,7 +1491,7 @@ if (cart.length === 0) {
 
     await runDeliveryScheduleAction({
       type: "toggleOverrideDayDisabled",
-      date: selectedOverrideDate,
+      date: parseUiDateToIso(selectedOverrideDate),
     });
   }
 
@@ -1491,7 +1503,7 @@ if (cart.length === 0) {
 
     const ok = await runDeliveryScheduleAction({
       type: "createOverrideInterval",
-      date: selectedOverrideDate,
+      date: parseUiDateToIso(selectedOverrideDate),
       time_from: newOverrideFrom,
       time_to: newOverrideTo,
     });
@@ -2453,7 +2465,7 @@ const logoStyle: React.CSSProperties = {
                 brandAccent={BRAND_ACCENT}
                 weekdayRules={weekdayRules}
                 weekdayIntervals={weekdayIntervals}
-                overrides={dateOverrides}
+                overrides={dateOverrides.map((o) => ({ ...o, date: formatIsoDateToUi(o.date) }))}
                 overrideIntervals={overrideIntervals}
                 pickupSettings={pickupSettings}
                 adminSlotsLoading={deliveryScheduleLoading}
