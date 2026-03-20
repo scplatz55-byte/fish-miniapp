@@ -13,6 +13,7 @@ import AdminHeader from "@/components/admin/AdminHeader";
 import {
   getAvailableDeliveryDatesForType,
   getAvailableTimeSlotsForType,
+  getEffectiveSlots,
   parseLocalDate as parseLocalDateHelper,
 } from "@/lib/domain/deliverySlots";
 
@@ -398,6 +399,45 @@ export default function Page() {
     () => orders.find((o) => o.id === selectedOrderId) || null,
     [orders, selectedOrderId]
   );
+
+  const effectiveAdminDeliverySlots = useMemo(
+    () =>
+      getEffectiveSlots(
+        "delivery",
+        adminSlots,
+        DEFAULT_DELIVERY_INTERVALS,
+        DEFAULT_PICKUP_INTERVALS
+      ),
+    [adminSlots]
+  );
+
+  const effectiveAdminPickupSlots = useMemo(
+    () =>
+      getEffectiveSlots(
+        "pickup",
+        adminSlots,
+        DEFAULT_DELIVERY_INTERVALS,
+        DEFAULT_PICKUP_INTERVALS
+      ),
+    [adminSlots]
+  );
+
+  const effectiveSlotPreviews = useMemo(() => {
+    const groupByDate = (slots: DeliverySlotRow[]) => {
+      const map = new Map<string, string[]>();
+      slots.forEach((slot) => {
+        const list = map.get(slot.slot_date) || [];
+        list.push(slot.slot_label);
+        map.set(slot.slot_date, list);
+      });
+      return Array.from(map.entries()).map(([date, labels]) => ({ date, labels }));
+    };
+
+    return [
+      { title: "Доставка", dates: groupByDate(effectiveAdminDeliverySlots) },
+      { title: "Самовывоз", dates: groupByDate(effectiveAdminPickupSlots) },
+    ];
+  }, [effectiveAdminDeliverySlots, effectiveAdminPickupSlots]);
 
   // ===== Spring indicator animation =====
   const viewIndex = view === "catalog" ? 0 : view === "cart" ? 1 : 2;
@@ -2160,6 +2200,7 @@ const logoStyle: React.CSSProperties = {
                 adminSlots={adminSlots}
                 adminSlotsLoading={adminSlotsLoading}
                 adminSlotsError={adminSlotsError}
+                effectivePreviews={effectiveSlotPreviews}
                 onChangeDate={setSlotFormDate}
                 onChangeLabel={setSlotFormLabel}
                 onChangeType={setSlotFormType}
