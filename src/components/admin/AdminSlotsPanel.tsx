@@ -7,6 +7,14 @@ type DeliverySlotRow = {
   sort_order: number;
 };
 
+type EffectiveSlotPreview = {
+  title: string;
+  dates: {
+    date: string;
+    labels: string[];
+  }[];
+};
+
 type AdminSlotsPanelProps = {
   inputStyle: React.CSSProperties;
   primaryButtonStyle: React.CSSProperties;
@@ -19,6 +27,7 @@ type AdminSlotsPanelProps = {
   adminSlots: DeliverySlotRow[];
   adminSlotsLoading: boolean;
   adminSlotsError: string | null;
+  effectivePreviews: EffectiveSlotPreview[];
   onChangeDate: (value: string) => void;
   onChangeLabel: (value: string) => void;
   onChangeType: (value: "delivery" | "pickup") => void;
@@ -40,6 +49,7 @@ export default function AdminSlotsPanel({
   adminSlots,
   adminSlotsLoading,
   adminSlotsError,
+  effectivePreviews,
   onChangeDate,
   onChangeLabel,
   onChangeType,
@@ -51,6 +61,52 @@ export default function AdminSlotsPanel({
   return (
     <div style={{ marginTop: 12 }}>
       <div style={{ fontWeight: 900, fontSize: 16 }}>Слоты доставки и самовывоза</div>
+
+      {/* 🔥 НОВЫЙ БЛОК — effective preview */}
+      <div
+        style={{
+          marginTop: 12,
+          borderRadius: 16,
+          border: "1px solid rgba(10,19,23,0.08)",
+          background: "rgba(10,19,23,0.03)",
+          padding: 12,
+        }}
+      >
+        <div style={{ fontWeight: 900, fontSize: 14 }}>Что сейчас увидит клиент</div>
+
+        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
+          {effectivePreviews.map((preview) => (
+            <div
+              key={preview.title}
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(10,19,23,0.08)",
+                background: "rgba(255,255,255,0.92)",
+                padding: 12,
+              }}
+            >
+              <div style={{ fontWeight: 900, fontSize: 14 }}>{preview.title}</div>
+
+              {preview.dates.length > 0 ? (
+                <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 8 }}>
+                  {preview.dates.map((entry) => (
+                    <div key={`${preview.title}-${entry.date}`}>
+                      <div style={{ fontSize: 13, fontWeight: 900 }}>{entry.date}</div>
+                      <div style={{ marginTop: 4, fontSize: 13, opacity: 0.82 }}>
+                        {entry.labels.join(" • ")}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ marginTop: 8, fontSize: 13, opacity: 0.72 }}>Нет доступных дат.</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Форма */}
       <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
         <input
           style={inputStyle}
@@ -58,6 +114,7 @@ export default function AdminSlotsPanel({
           value={slotFormDate}
           onChange={(e) => onChangeDate(e.target.value)}
         />
+
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 8 }}>
           <button
             type="button"
@@ -74,17 +131,20 @@ export default function AdminSlotsPanel({
             Самовывоз
           </button>
         </div>
+
         <input
           style={inputStyle}
           placeholder="Интервал, например 13:00–16:00"
           value={slotFormLabel}
           onChange={(e) => onChangeLabel(e.target.value)}
         />
+
         <button style={{ ...primaryButtonStyle, width: "100%" }} onClick={onCreateSlot}>
           Добавить слот
         </button>
       </div>
 
+      {/* Список */}
       {adminSlotsLoading ? (
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
           {renderSkeleton("slot-1")}
@@ -110,7 +170,7 @@ export default function AdminSlotsPanel({
                 alignItems: "center",
               }}
             >
-              <div style={{ minWidth: 0 }}>
+              <div>
                 <div style={{ fontWeight: 900, fontSize: 14 }}>
                   {slot.delivery_type === "delivery" ? "Доставка" : "Самовывоз"}
                 </div>
@@ -118,23 +178,25 @@ export default function AdminSlotsPanel({
                   {slot.slot_date} • {slot.slot_label}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+
+              <div style={{ display: "flex", gap: 8 }}>
                 <button
                   style={tabButtonStyle(slot.is_active)}
                   onClick={() => onToggleSlot(slot.id, !slot.is_active)}
                 >
                   {slot.is_active ? "Вкл" : "Выкл"}
                 </button>
+
                 <button
                   style={ghostButtonStyle}
                   onClick={() => onDeleteSlot(slot.id)}
-                  title="Удалить слот"
                 >
                   ✕
                 </button>
               </div>
             </div>
           ))}
+
           {adminSlots.length === 0 && (
             <div style={{ fontSize: 13, opacity: 0.72 }}>Слотов пока нет.</div>
           )}
