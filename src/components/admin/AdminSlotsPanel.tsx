@@ -264,7 +264,7 @@ export default function AdminSlotsPanel({
                       <input
                         style={{
                           ...inputStyle,
-                          borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : inputStyle.border,
+                          borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
                         }}
                         type="time"
                         value={isSelectedDay ? newIntervalFrom : ""}
@@ -277,7 +277,7 @@ export default function AdminSlotsPanel({
                       <input
                         style={{
                           ...inputStyle,
-                          borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : inputStyle.border,
+                          borderColor: isSelectedDay ? "rgba(212,51,20,0.30)" : undefined,
                         }}
                         type="time"
                         value={isSelectedDay ? newIntervalTo : ""}
