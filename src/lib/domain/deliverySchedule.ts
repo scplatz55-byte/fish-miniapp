@@ -62,7 +62,7 @@ export function isDateVisibleByCutoff(dateStr: string, now = new Date()) {
   return now < getDateCutoff(dateStr);
 }
 
-export function isDateWithinWindow(dateStr: string, now = new Date(), daysAhead = 6) {
+export function isDateWithinWindow(dateStr: string, now = new Date(), daysAhead = 7) {
   const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + daysAhead);
@@ -91,7 +91,7 @@ export function buildWeeklyScheduleSlots(params: {
     overrides,
     overrideIntervals,
     now = new Date(),
-    daysAhead = 6,
+    daysAhead = 7,
   } = params;
 
   const ruleByDay = new Map<number, WeekdayRule>();
