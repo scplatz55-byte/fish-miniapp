@@ -64,9 +64,11 @@ function formatPhoneInput(value: string) {
 
   let normalized = digits;
   if (normalized[0] === "8") normalized = "7" + normalized.slice(1);
-  if (normalized[0] !== "7") normalized = "7" + normalized.slice(0, 10);
+  else if (normalized[0] === "9") normalized = "7" + normalized;
 
   const d = normalized.slice(0, 11);
+  if (d[0] !== "7") return d;
+
   let result = "+7";
   if (d.length > 1) result += " (" + d.slice(1, 4);
   if (d.length >= 4) result += ")";
@@ -149,7 +151,8 @@ export default function CheckoutOverlay({
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [isOpen, orderFullName, orderPhone, deliveryType, orderAddress]);
+    // only autofocus when overlay opens
+  }, [isOpen]);
 	
   if (!isOpen) return null;
 
