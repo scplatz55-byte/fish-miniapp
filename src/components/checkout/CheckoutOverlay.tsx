@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+
 type PickupPoint = {
   id: string;
   title: string;
@@ -56,6 +58,24 @@ type CheckoutOverlayProps = {
   onSubmit: () => void;
 };
 
+function formatPhoneInput(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (!digits) return "";
+
+  let normalized = digits;
+  if (normalized[0] === "8") normalized = "7" + normalized.slice(1);
+  if (normalized[0] !== "7") normalized = "7" + normalized.slice(0, 10);
+
+  const d = normalized.slice(0, 11);
+  let result = "+7";
+  if (d.length > 1) result += " (" + d.slice(1, 4);
+  if (d.length >= 4) result += ")";
+  if (d.length > 4) result += " " + d.slice(4, 7);
+  if (d.length > 7) result += "-" + d.slice(7, 9);
+  if (d.length > 9) result += "-" + d.slice(9, 11);
+  return result;
+}
+
 export default function CheckoutOverlay({
   isOpen,
   headerOffsetTop,
@@ -106,6 +126,31 @@ export default function CheckoutOverlay({
   onChangeOrderComment,
   onSubmit,
 }: CheckoutOverlayProps) {
+	  
+	  const fullNameRef = useRef<HTMLInputElement | null>(null);
+  const phoneRef = useRef<HTMLInputElement | null>(null);
+  const addressRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = window.setTimeout(() => {
+      if (!orderFullName.trim()) {
+        fullNameRef.current?.focus();
+        return;
+      }
+      if (!orderPhone.trim()) {
+        phoneRef.current?.focus();
+        return;
+      }
+      if (deliveryType === "delivery" && !orderAddress.trim()) {
+        addressRef.current?.focus();
+      }
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [isOpen, orderFullName, orderPhone, deliveryType, orderAddress]);
+	
   if (!isOpen) return null;
 
   return (
@@ -170,19 +215,24 @@ export default function CheckoutOverlay({
             </button>
           </div>
 
-          <input
-            style={inputStyle}
-            placeholder="Имя"
+<input
+  ref={fullNameRef}
+  style={inputStyle}
+  placeholder="Имя"
             value={orderFullName}
             onChange={(e) => onChangeFullName(e.target.value)}
           />
 
           <input
-            style={inputStyle}
-            placeholder="Телефон"
-            value={orderPhone}
-            onChange={(e) => onChangePhone(e.target.value)}
-          />
+  ref={phoneRef}
+  style={inputStyle}
+  type="tel"
+  inputMode="tel"
+  autoComplete="tel"
+  placeholder="+7 (999) 123-45-67"
+  value={orderPhone}
+  onChange={(e) => onChangePhone(formatPhoneInput(e.target.value))}
+/>
 
           {deliveryType === "delivery" ? (
             <>
