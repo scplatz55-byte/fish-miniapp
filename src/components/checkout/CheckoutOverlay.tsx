@@ -236,6 +236,71 @@ export default function CheckoutOverlay({
 
           {deliveryType === "delivery" ? (
             <>
+              <input
+                ref={addressRef}
+                style={inputStyle}
+                placeholder="Адрес доставки"
+                value={orderAddress}
+                onChange={(e) => onChangeAddress(e.target.value)}
+              />
+
+              <button
+                type="button"
+                onClick={onTogglePrivateHouse}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  padding: 0,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  width: "100%",
+                }}
+              >
+                <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
+                <div style={iosSwitchWrap(isPrivateHouse)}>
+                  <div style={iosSwitchKnob(isPrivateHouse)} />
+                </div>
+              </button>
+
+              {!isPrivateHouse && (
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 10,
+                    width: "100%",
+                  }}
+                >
+                  <input
+                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    placeholder="Подъезд"
+                    value={orderEntrance}
+                    onChange={(e) => onChangeEntrance(e.target.value)}
+                  />
+                  <input
+                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    placeholder="Этаж"
+                    value={orderFloor}
+                    onChange={(e) => onChangeFloor(e.target.value)}
+                  />
+                  <input
+                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    placeholder="Квартира"
+                    value={orderApartment}
+                    onChange={(e) => onChangeApartment(e.target.value)}
+                  />
+                  <input
+                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    placeholder="Домофон"
+                    value={orderIntercom}
+                    onChange={(e) => onChangeIntercom(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
               {availableDates.length === 0 ? (
                 <div
