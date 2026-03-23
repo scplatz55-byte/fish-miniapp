@@ -58,7 +58,55 @@ type CheckoutOverlayProps = {
   onSubmit: () => void;
 };
 
-sPrivateHouse,
+function formatPhoneInput(value: string) {
+  return value
+    .split("")
+    .filter((ch) => "0123456789+()- ".includes(ch))
+    .join("")
+    .slice(0, 24);
+}
+
+function sanitizePhoneForSubmit(value: string) {
+  const digits = value
+    .split("")
+    .filter((ch) => "0123456789".includes(ch))
+    .join("");
+
+  if (!digits) return "";
+
+  let normalized = digits;
+  if (normalized[0] === "8") normalized = "7" + normalized.slice(1);
+  else if (normalized[0] === "9") normalized = "7" + normalized;
+
+  const d = normalized.slice(0, 11);
+  if (d[0] !== "7") return value;
+
+  let result = "+7";
+  if (d.length > 1) result += " (" + d.slice(1, 4);
+  if (d.length >= 4) result += ")";
+  if (d.length > 4) result += " " + d.slice(4, 7);
+  if (d.length > 7) result += "-" + d.slice(7, 9);
+  if (d.length > 9) result += "-" + d.slice(9, 11);
+  return result;
+}
+
+export default function CheckoutOverlay({
+  isOpen,
+  headerOffsetTop,
+  bottomPadding,
+  backgroundColor,
+  cardStyle,
+  ghostButtonStyle,
+  primaryButtonStyle,
+  tabButtonStyle,
+  inputStyle,
+  iosSwitchWrap,
+  iosSwitchKnob,
+  brandAccent,
+  deliveryType,
+  pickupPoints,
+  pickupPointId,
+  isPrivateHouse,
   orderFullName,
   orderPhone,
   orderAddress,
