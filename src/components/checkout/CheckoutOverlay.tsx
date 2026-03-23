@@ -58,64 +58,7 @@ type CheckoutOverlayProps = {
   onSubmit: () => void;
 };
 
-function formatPhoneInput(value: string) {
-  const digits = value
-    .split("")
-    .filter((ch) => "0123456789".includes(ch))
-    .join("")
-    .slice(0, 11);
-
-  if (!digits) return "";
-
-  let normalized = digits;
-  if (normalized[0] === "8") normalized = "7" + normalized.slice(1);
-  else if (normalized[0] === "9") normalized = "7" + normalized;
-
-  const d = normalized.slice(0, 11);
-
-  if (d[0] !== "7") {
-    return d;
-  }
-
-  let result = "+7";
-  if (d.length > 1) result += " (" + d.slice(1, 4);
-  if (d.length >= 4) result += ")";
-  if (d.length > 4) result += " " + d.slice(4, 7);
-  if (d.length > 7) result += "-" + d.slice(7, 9);
-  if (d.length > 9) result += "-" + d.slice(9, 11);
-  return result;
-}
-
-function sanitizePhoneForSubmit(value: string) {
-  const digits = value
-    .split("")
-    .filter((ch) => "0123456789".includes(ch))
-    .join("");
-
-  if (!digits) return "";
-  if (digits[0] === "8") return formatPhoneInput("7" + digits.slice(1, 11));
-  if (digits[0] === "9") return formatPhoneInput("7" + digits.slice(0, 10));
-  if (digits[0] === "7") return formatPhoneInput(digits.slice(0, 11));
-  return formatPhoneInput(digits);
-}
-
-export default function CheckoutOverlay({
-  isOpen,
-  headerOffsetTop,
-  bottomPadding,
-  backgroundColor,
-  cardStyle,
-  ghostButtonStyle,
-  primaryButtonStyle,
-  tabButtonStyle,
-  inputStyle,
-  iosSwitchWrap,
-  iosSwitchKnob,
-  brandAccent,
-  deliveryType,
-  pickupPoints,
-  pickupPointId,
-  isPrivateHouse,
+sPrivateHouse,
   orderFullName,
   orderPhone,
   orderAddress,
@@ -256,10 +199,7 @@ export default function CheckoutOverlay({
   placeholder="+7 (999) 123-45-67"
   value={orderPhone}
             onBlur={() => onChangePhone(sanitizePhoneForSubmit(orderPhone))}
-            onChange={(e) => {
-              const next = formatPhoneInput(e.target.value);
-              onChangePhone(next);
-            }}
+            onChange={(e) => onChangePhone(formatPhoneInput(e.target.value))}
 />
 
           {deliveryType === "delivery" ? (
