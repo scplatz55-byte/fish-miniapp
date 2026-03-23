@@ -2496,7 +2496,6 @@ const inputErrorStyle: React.CSSProperties = {
                 formatDateTime={formatDateTime}
                 formatPriceRub={formatPriceRub}
                 renderStatusBadge={(status) => <StatusBadge status={status} />}
-              />}
               />
             )}
           </div>
