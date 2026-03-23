@@ -30,6 +30,13 @@ function sanitizePhoneForSubmit(value: string) {
   return result;
 }
 
+function isValidPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 11) return false;
+  if (digits[0] !== "7" && digits[0] !== "8") return false;
+  return true;
+}
+
 type ProfileDataScreenProps = {
   inputStyle: React.CSSProperties;
   fullName: string;
@@ -55,6 +62,8 @@ export default function ProfileDataScreen({
   saveLoading,
   primaryButtonStyle,
 }: ProfileDataScreenProps) {
+  const phoneError = Boolean(phone) && !isValidPhone(phone);
+
   return (
     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
       <input
@@ -63,22 +72,49 @@ export default function ProfileDataScreen({
         value={fullName}
         onChange={(e) => onChangeFullName(e.target.value)}
       />
-      <input
-        style={inputStyle}
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel"
-        placeholder="+7 (999) 123-45-67"
-        value={phone}
-        onBlur={() => onChangePhone(sanitizePhoneForSubmit(phone))}
-        onChange={(e) => onChangePhone(formatPhoneInput(e.target.value))}
-      />
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <input
+          style={
+            phoneError
+              ? {
+                  ...inputStyle,
+                  border: "1px solid rgba(212,51,20,0.55)",
+                  boxShadow: "0 0 0 1px rgba(212,51,20,0.12)",
+                }
+              : inputStyle
+          }
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="+7 (999) 123-45-67"
+          value={phone}
+          onBlur={() => onChangePhone(sanitizePhoneForSubmit(phone))}
+          onChange={(e) => onChangePhone(formatPhoneInput(e.target.value))}
+        />
+        <div
+          style={{
+            fontSize: 12,
+            color: "#D43314",
+            opacity: phoneError ? 1 : 0,
+            transform: phoneError ? "translateY(0)" : "translateY(-4px)",
+            maxHeight: phoneError ? 20 : 0,
+            overflow: "hidden",
+            transition: "opacity 180ms ease, transform 180ms ease, max-height 180ms ease",
+            paddingLeft: 2,
+          }}
+        >
+          Введите корректный номер
+        </div>
+      </div>
+
       <input
         style={inputStyle}
         placeholder="Адрес"
         value={address}
         onChange={(e) => onChangeAddress(e.target.value)}
       />
+
       <button
         style={{ ...primaryButtonStyle, width: "100%", opacity: saveLoading ? 0.7 : 1 }}
         onClick={onSave}
