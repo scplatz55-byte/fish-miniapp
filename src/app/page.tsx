@@ -809,11 +809,23 @@ export default function Page() {
     return full || tgUser?.username || "";
   }
 
+function isValidPhone(value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length !== 11) return false;
+  if (digits[0] !== "7" && digits[0] !== "8") return false;
+  return true;
+}
+
   async function saveProfileData() {
     if (!tgUserId) {
       alert("Не удалось определить Telegram ID");
       return;
     }
+
+if (profileFormPhone && !isValidPhone(profileFormPhone)) {
+  alert("Введите корректный номер телефона");
+  return;
+}
 
     setProfileSaveLoading(true);
 
@@ -882,6 +894,9 @@ export default function Page() {
 
   // Submit order
   async function submitOrder() {
+	  if (orderPhone && !isValidPhone(orderPhone)) {
+  return alert("Введите корректный номер телефона");
+}
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
 if (!orderFullName || !orderPhone) {
   return alert("Заполните Имя и телефон");
@@ -1825,14 +1840,20 @@ const logoStyle: React.CSSProperties = {
   });
 
   const inputStyle: React.CSSProperties = {
-    padding: 12,
-    borderRadius: 14,
-    border: "1px solid rgba(10,19,23,0.12)",
-    background: "#fff",
-    color: BRAND_INK,
-    outline: "none",
-    fontSize: 14,
-  };
+  padding: 12,
+  borderRadius: 14,
+  border: "1px solid rgba(10,19,23,0.12)",
+  background: "#fff",
+  color: BRAND_INK,
+  outline: "none",
+  fontSize: 14,
+};
+
+const inputErrorStyle: React.CSSProperties = {
+  ...inputStyle,
+  border: "1px solid rgba(212,51,20,0.55)",
+  boxShadow: "0 0 0 1px rgba(212,51,20,0.15)",
+};
 
   // ===== Bottom nav =====
   const hideBottomNav = keyboardOpen || checkoutOpen;
@@ -2448,7 +2469,7 @@ const logoStyle: React.CSSProperties = {
                 backgroundColor={BRAND_BG}
                 cardStyle={card}
                 ghostButtonStyle={btnGhost}
-                inputStyle={inputStyle}
+                inputStyle={isValidPhone(profileFormPhone) || !profileFormPhone ? inputStyle : inputErrorStyle}
                 primaryButtonStyle={btnPrimary}
                 smallMutedStyle={smallMuted}
                 selectedMyOrderId={selectedMyOrderId}
@@ -2475,6 +2496,7 @@ const logoStyle: React.CSSProperties = {
                 formatDateTime={formatDateTime}
                 formatPriceRub={formatPriceRub}
                 renderStatusBadge={(status) => <StatusBadge status={status} />}
+              />}
               />
             )}
           </div>
@@ -2749,6 +2771,3 @@ const logoStyle: React.CSSProperties = {
     </div>
   );
 }
-
-
-
