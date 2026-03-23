@@ -93,10 +93,10 @@ function sanitizePhoneForSubmit(value: string) {
     .join("");
 
   if (!digits) return "";
-  if (digits[0] === "8") return "+7" + digits.slice(1, 11);
-  if (digits[0] === "9") return "+7" + digits.slice(0, 10);
-  if (digits[0] === "7") return "+7" + digits.slice(1, 11);
-  return value;
+  if (digits[0] === "8") return formatPhoneInput("7" + digits.slice(1, 11));
+  if (digits[0] === "9") return formatPhoneInput("7" + digits.slice(0, 10));
+  if (digits[0] === "7") return formatPhoneInput(digits.slice(0, 11));
+  return formatPhoneInput(digits);
 }
 
 export default function CheckoutOverlay({
