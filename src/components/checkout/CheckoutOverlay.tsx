@@ -170,6 +170,28 @@ export default function CheckoutOverlay({
 
   const showDeliveryUnavailable = deliveryType === "delivery" && availableDates.length === 0;
 
+  const sectionTitleStyle: React.CSSProperties = {
+    fontWeight: 900,
+    fontSize: 14,
+    marginTop: 8,
+    letterSpacing: "-0.01em",
+  };
+
+  const premiumInputStyle: React.CSSProperties = {
+    ...inputStyle,
+    border: "1px solid rgba(10,19,23,0.10)",
+    boxShadow: "0 8px 20px rgba(10,19,23,0.03), inset 0 1px 0 rgba(255,255,255,0.7)",
+    transition: "border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease",
+  };
+
+  const premiumNoteCardStyle: React.CSSProperties = {
+    borderRadius: 16,
+    border: "1px solid rgba(10,19,23,0.08)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(247,248,250,0.92) 100%)",
+    padding: 14,
+    boxShadow: "0 12px 28px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.8)",
+  };
+
   return (
     <>
       <style>{`
@@ -228,7 +250,17 @@ export default function CheckoutOverlay({
         </div>
 
         <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div
+            style={{
+              display: "inline-flex",
+              gap: 8,
+              padding: 6,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.70)",
+              boxShadow: "inset 0 0 0 1px rgba(10,19,23,0.06), 0 10px 22px rgba(10,19,23,0.04)",
+              alignSelf: "flex-start",
+            }}
+          >
             <button
               type="button"
               style={tabButtonStyle(deliveryType === "delivery")}
@@ -247,7 +279,7 @@ export default function CheckoutOverlay({
 
 <input
   ref={fullNameRef}
-  style={inputStyle}
+  style={premiumInputStyle}
   placeholder="Имя"
             value={orderFullName}
             onChange={(e) => onChangeFullName(e.target.value)}
@@ -255,7 +287,7 @@ export default function CheckoutOverlay({
 
           <input
   ref={phoneRef}
-  style={inputStyle}
+  style={premiumInputStyle}
   type="tel"
   inputMode="tel"
   autoComplete="tel"
@@ -269,7 +301,7 @@ export default function CheckoutOverlay({
             <>
               <input
                 ref={addressRef}
-                style={inputStyle}
+                style={premiumInputStyle}
                 placeholder="Адрес доставки"
                 value={orderAddress}
                 onChange={(e) => onChangeAddress(e.target.value)}
@@ -283,14 +315,21 @@ export default function CheckoutOverlay({
                   alignItems: "center",
                   justifyContent: "space-between",
                   gap: 12,
-                  padding: 0,
-                  border: "none",
-                  background: "transparent",
+                  padding: 12,
+                  border: "1px solid rgba(10,19,23,0.08)",
+                  borderRadius: 16,
+                  background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(247,248,250,0.92) 100%)",
+                  boxShadow: "0 10px 24px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.75)",
                   cursor: "pointer",
                   width: "100%",
                 }}
               >
-                <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
+                <div>
+                  <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
+                  <div style={{ marginTop: 2, fontSize: 12, opacity: 0.62 }}>
+                    Уберём поля подъезда, этажа, квартиры и домофона
+                  </div>
+                </div>
                 <div style={iosSwitchWrap(isPrivateHouse)}>
                   <div style={iosSwitchKnob(isPrivateHouse)} />
                 </div>
@@ -332,7 +371,7 @@ export default function CheckoutOverlay({
                 </div>
               )}
 
-              <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
+              <div style={sectionTitleStyle}>Дата и время</div>
               {showDeliveryUnavailable ? (
                 <div
                   style={{
@@ -428,7 +467,17 @@ export default function CheckoutOverlay({
                       </button>
                     ))}
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+                  <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 8,
+              padding: 6,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.70)",
+              boxShadow: "inset 0 0 0 1px rgba(10,19,23,0.06), 0 10px 22px rgba(10,19,23,0.04)",
+            }}
+          >
                     {availableTimeSlots.map((slot) => (
                       <button
                         key={slot}
@@ -453,19 +502,28 @@ export default function CheckoutOverlay({
                     type="button"
                     style={{
                       ...cardStyle,
-                      padding: 12,
+                      padding: 14,
                       textAlign: "left",
                       cursor: "pointer",
                       border: active
-                        ? "1px solid rgba(212,51,20,0.30)"
-                        : "1px solid rgba(10,19,23,0.10)",
-                      background: active ? "rgba(212,51,20,0.08)" : "rgba(255,255,255,0.96)",
-                      boxShadow: active ? "0 10px 24px rgba(212,51,20,0.10)" : "none",
+                        ? "1px solid rgba(212,51,20,0.24)"
+                        : "1px solid rgba(10,19,23,0.08)",
+                      background: active
+                        ? "linear-gradient(180deg, rgba(255,247,245,0.98) 0%, rgba(255,241,237,0.94) 100%)"
+                        : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+                      boxShadow: active
+                        ? "0 14px 28px rgba(212,51,20,0.10), inset 0 1px 0 rgba(255,255,255,0.8)"
+                        : "0 10px 22px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.75)",
                     }}
                     onClick={() => onChangePickupPointId(point.id)}
                   >
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
-                      <div style={{ fontWeight: 900, fontSize: 15 }}>{point.title}</div>
+                      <div>
+                        <div style={{ fontSize: 11, opacity: 0.55, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+                          Точка самовывоза
+                        </div>
+                        <div style={{ fontWeight: 900, fontSize: 15, marginTop: 2 }}>{point.title}</div>
+                      </div>
                       {active && <span style={{ color: brandAccent, fontWeight: 900 }}>✓</span>}
                     </div>
                     <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
@@ -476,53 +534,105 @@ export default function CheckoutOverlay({
           )}
 
           {deliveryType === "pickup" && (
-            <div
-              style={{
-                borderRadius: 14,
-                border: "1px solid rgba(10,19,23,0.10)",
-                background: "rgba(10,19,23,0.04)",
-                padding: 12,
-                fontSize: 13,
-                lineHeight: 1.45,
-              }}
-            >
-              {pickupPoints.find((point) => point.id === pickupPointId)?.worktime_text ||
-                (pickupPointId === "strelna"
-                  ? "Режим работы магазина: 10:00–21:00 ежедневно."
-                  : "Режим работы магазина: 9:00–21:00 ежедневно.")}
+            <div style={premiumNoteCardStyle}>
+              <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                <div
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 999,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,246,255,0.96) 100%)",
+                    border: "1px solid rgba(76,110,245,0.12)",
+                    boxShadow: "0 8px 18px rgba(76,110,245,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
+                    flexShrink: 0,
+                    color: "#3659D9",
+                    fontSize: 16,
+                    fontWeight: 900,
+                  }}
+                >
+                  ⏰
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 4, letterSpacing: "-0.01em" }}>
+                    Режим работы выбранной точки
+                  </div>
+                  <div style={{ fontSize: 13, lineHeight: 1.55, opacity: 0.84 }}>
+                    {pickupPoints.find((point) => point.id === pickupPointId)?.worktime_text ||
+                      (pickupPointId === "strelna"
+                        ? "Режим работы магазина: 10:00–21:00 ежедневно."
+                        : "Режим работы магазина: 9:00–21:00 ежедневно.")}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Способ оплаты</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8 }}>
+          <div style={sectionTitleStyle}>Способ оплаты</div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 8,
+              padding: 6,
+              borderRadius: 18,
+              background: "rgba(255,255,255,0.70)",
+              boxShadow: "inset 0 0 0 1px rgba(10,19,23,0.06), 0 10px 22px rgba(10,19,23,0.04)",
+            }}
+          >
             <button type="button" style={tabButtonStyle(paymentMethod === "cash")} onClick={() => onChangePaymentMethod("cash")}>Наличные</button>
             <button type="button" style={tabButtonStyle(paymentMethod === "transfer")} onClick={() => onChangePaymentMethod("transfer")}>Перевод</button>
             <button type="button" style={tabButtonStyle(paymentMethod === "qr")} onClick={() => onChangePaymentMethod("qr")}>QR-код</button>
           </div>
 
-          <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Промокод</div>
+          <div style={sectionTitleStyle}>Промокод</div>
           <input
-            style={inputStyle}
+            style={premiumInputStyle}
             placeholder="Введите промокод"
             value={promoCode}
             onChange={(e) => onChangePromoCode(e.target.value)}
           />
 
-          <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Комментарий</div>
+          <div style={sectionTitleStyle}>Комментарий</div>
           <textarea
-            style={{ ...inputStyle, minHeight: 90, resize: "vertical" }}
+            style={{ ...premiumInputStyle, minHeight: 110, resize: "vertical" }}
             placeholder="Комментарий к заказу"
             value={orderComment}
             onChange={(e) => onChangeOrderComment(e.target.value)}
           />
 
-          <div style={{ marginTop: 4, fontWeight: 900 }}>Итого: {totalLabel}</div>
+          <div
+            style={{
+              marginTop: 8,
+              borderRadius: 16,
+              padding: 14,
+              background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+              border: "1px solid rgba(10,19,23,0.08)",
+              boxShadow: "0 12px 24px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.78)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: 12,
+            }}
+          >
+            <div style={{ fontSize: 12, opacity: 0.62, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Итого
+            </div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.02em" }}>{totalLabel}</div>
+          </div>
           <button
             style={{
               ...primaryButtonStyle,
               width: "100%",
+              minHeight: 52,
               opacity: showDeliveryUnavailable ? 0.55 : 1,
               cursor: showDeliveryUnavailable ? "not-allowed" : "pointer",
+              boxShadow: showDeliveryUnavailable
+                ? "none"
+                : "0 16px 26px rgba(212,51,20,0.22), inset 0 1px 0 rgba(255,255,255,0.25)",
+              transition: "opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease",
             }}
             onClick={onSubmit}
             disabled={showDeliveryUnavailable}
