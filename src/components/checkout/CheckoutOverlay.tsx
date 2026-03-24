@@ -342,27 +342,57 @@ export default function CheckoutOverlay({
                     padding: 14,
                     color: "#7A1E0D",
                     animation: "checkoutFadeSlideIn 220ms ease",
-                    boxShadow: "0 10px 24px rgba(212,51,20,0.08)",
+                    boxShadow: "0 12px 28px rgba(212,51,20,0.08), inset 0 1px 0 rgba(255,255,255,0.55)",
                   }}
                 >
                   <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                     <div
                       style={{
-                        width: 28,
-                        height: 28,
+                        width: 36,
+                        height: 36,
                         borderRadius: 999,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        background: "rgba(212,51,20,0.12)",
+                        background:
+                          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,243,239,0.96) 100%)",
+                        border: "1px solid rgba(212,51,20,0.16)",
+                        boxShadow:
+                          "0 6px 14px rgba(212,51,20,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
                         flexShrink: 0,
-                        fontSize: 15,
+                        position: "relative",
                       }}
                     >
-                      ⚠️
+                      <div
+                        style={{
+                          width: 18,
+                          height: 18,
+                          transform: "rotate(45deg)",
+                          borderRadius: 5,
+                          background:
+                            "linear-gradient(180deg, rgba(255,192,87,1) 0%, rgba(255,168,58,1) 100%)",
+                          boxShadow: "0 4px 10px rgba(255,168,58,0.28)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <span
+                          style={{
+                            transform: "rotate(-45deg)",
+                            fontSize: 12,
+                            fontWeight: 900,
+                            color: "#7A1E0D",
+                            lineHeight: 1,
+                            marginTop: -0.5,
+                          }}
+                        >
+                          !
+                        </span>
+                      </div>
                     </div>
                     <div style={{ minWidth: 0 }}>
-                      <div style={{ fontWeight: 900, marginBottom: 4, fontSize: 15 }}>
+                      <div style={{ fontWeight: 900, marginBottom: 4, fontSize: 15, color: "#8E2210", letterSpacing: "-0.01em" }}>
                         Доставка временно недоступна
                       </div>
                       <div style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 10 }}>
