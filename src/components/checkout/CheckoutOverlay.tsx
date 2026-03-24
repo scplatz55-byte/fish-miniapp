@@ -499,7 +499,11 @@ export default function CheckoutOverlay({
           >
             {showDeliveryUnavailable
               ? "Доставка недоступна"
-              : "Подтверди{showDeliveryUnavailable    </div>
+              : "Подтвердить заказ"}
+          </button>
+        </div>
+      </div>
+    </div>
     </>
   );
 }
