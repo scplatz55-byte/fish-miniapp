@@ -186,7 +186,7 @@ export default function ProfileMainScreen({
             <div style={{ fontSize: 11, opacity: 0.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Профиль
             </div>
-            <div style={{ marginTop: 4, fontWeight: 900, fontSize: 22, letterSpacing: "-0.03em", lineHeight: 1.05 }}>{profileData?.full_name || tgDisplayName() || "Профиль"}</div>
+            <div style={{ marginTop: 4, fontWeight: 900, fontSize: 22, letterSpacing: "-0.03em", lineHeight: 1.05 }}>
               {profileData?.full_name || tgDisplayName() || "Профиль"}
             </div>
             <div style={{ marginTop: 6, fontSize: 13, opacity: 0.68, lineHeight: 1.45, letterSpacing: "-0.01em" }}>
