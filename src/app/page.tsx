@@ -1996,10 +1996,13 @@ const logoStyle: React.CSSProperties = {
 
                           <div
                             style={{
-                              width: 168,
-                              minWidth: 168,
+                              width: 136,
+                              minWidth: 136,
+                              height: 46,
                               display: "flex",
                               justifyContent: "flex-end",
+                              alignItems: "center",
+                              flexShrink: 0,
                             }}
                           >
                             {!cartItem ? (
@@ -2009,8 +2012,9 @@ const logoStyle: React.CSSProperties = {
                                 onPointerCancel={onPressUp}
                                 onPointerLeave={onPressUp}
                                 style={{
-                                  padding: "11px 18px",
-                                  minWidth: 138,
+                                  padding: "0 16px",
+                                  width: 136,
+                                  height: 46,
                                   justifyContent: "center",
                                   borderRadius: 999,
                                   border: UI_THEME.addButton.border,
@@ -2022,6 +2026,7 @@ const logoStyle: React.CSSProperties = {
                                   display: "flex",
                                   alignItems: "center",
                                   gap: 6,
+                                  whiteSpace: "nowrap",
                                   transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease",
                                 }}
                                 onClick={() => addToCart(p)}
@@ -2036,8 +2041,9 @@ const logoStyle: React.CSSProperties = {
                                   justifyContent: "space-between",
                                   gap: 8,
                                   padding: "4px",
-                                  width: 168,
-                                  minWidth: 168,
+                                  width: 136,
+                                  minWidth: 136,
+                                  height: 46,
                                   borderRadius: 999,
                                   border: "1px solid rgba(43,128,164,0.14)",
                                   background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,250,0.94) 100%)",
@@ -2050,8 +2056,8 @@ const logoStyle: React.CSSProperties = {
                                   onPointerCancel={onPressUp}
                                   onPointerLeave={onPressUp}
                                   style={{
-                                    width: 38,
-                                    height: 38,
+                                    width: 34,
+                                    height: 34,
                                     borderRadius: 999,
                                     border: "1px solid rgba(43,128,164,0.18)",
                                     background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
@@ -2067,10 +2073,10 @@ const logoStyle: React.CSSProperties = {
 
                                 <div
                                   style={{
-                                    minWidth: 30,
+                                    minWidth: 22,
                                     textAlign: "center",
                                     fontWeight: 900,
-                                    fontSize: 18,
+                                    fontSize: 16,
                                     letterSpacing: "-0.02em",
                                   }}
                                 >
@@ -2083,8 +2089,8 @@ const logoStyle: React.CSSProperties = {
                                   onPointerCancel={onPressUp}
                                   onPointerLeave={onPressUp}
                                   style={{
-                                    width: 38,
-                                    height: 38,
+                                    width: 34,
+                                    height: 34,
                                     borderRadius: 999,
                                     border: "1px solid rgba(43,128,164,0.18)",
                                     background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
