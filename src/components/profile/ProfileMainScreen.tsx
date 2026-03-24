@@ -36,20 +36,72 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
       type="button"
       onClick={onClick}
       onPointerDown={(e) => {
-        e.currentTarget.style.transform = "translateY(1px) scale(0.992)";
-        e.currentTarget.style.boxShadow = "0 8px 18px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.80)";
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = "translateY(1px) scale(0.992)";
+        el.style.boxShadow = "0 8px 18px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.80)";
+        el.style.background = "linear-gradient(180deg, rgba(245,247,249,0.98) 0%, rgba(240,243,246,0.96) 100%)";
+        el.style.borderColor = "rgba(10,19,23,0.12)";
+        const icon = el.querySelector('div > div') as HTMLElement | null;
+        const arrow = el.querySelector('div:last-child') as HTMLElement | null;
+        if (icon) {
+          icon.style.transform = "scale(0.96)";
+          icon.style.filter = "brightness(0.98)";
+        }
+        if (arrow) {
+          arrow.style.transform = "translateX(1px)";
+          arrow.style.opacity = "0.9";
+        }
       }}
       onPointerUp={(e) => {
-        e.currentTarget.style.transform = "translateY(0) scale(1)";
-        e.currentTarget.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = "translateY(0) scale(1)";
+        el.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+        el.style.background = "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)";
+        el.style.borderColor = "rgba(10,19,23,0.08)";
+        const icon = el.querySelector('div > div') as HTMLElement | null;
+        const arrow = el.querySelector('div:last-child') as HTMLElement | null;
+        if (icon) {
+          icon.style.transform = "scale(1)";
+          icon.style.filter = "none";
+        }
+        if (arrow) {
+          arrow.style.transform = "translateX(0)";
+          arrow.style.opacity = "0.72";
+        }
       }}
       onPointerCancel={(e) => {
-        e.currentTarget.style.transform = "translateY(0) scale(1)";
-        e.currentTarget.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = "translateY(0) scale(1)";
+        el.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+        el.style.background = "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)";
+        el.style.borderColor = "rgba(10,19,23,0.08)";
+        const icon = el.querySelector('div > div') as HTMLElement | null;
+        const arrow = el.querySelector('div:last-child') as HTMLElement | null;
+        if (icon) {
+          icon.style.transform = "scale(1)";
+          icon.style.filter = "none";
+        }
+        if (arrow) {
+          arrow.style.transform = "translateX(0)";
+          arrow.style.opacity = "0.72";
+        }
       }}
       onPointerLeave={(e) => {
-        e.currentTarget.style.transform = "translateY(0) scale(1)";
-        e.currentTarget.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+        const el = e.currentTarget as HTMLElement;
+        el.style.transform = "translateY(0) scale(1)";
+        el.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+        el.style.background = "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)";
+        el.style.borderColor = "rgba(10,19,23,0.08)";
+        const icon = el.querySelector('div > div') as HTMLElement | null;
+        const arrow = el.querySelector('div:last-child') as HTMLElement | null;
+        if (icon) {
+          icon.style.transform = "scale(1)";
+          icon.style.filter = "none";
+        }
+        if (arrow) {
+          arrow.style.transform = "translateX(0)";
+          arrow.style.opacity = "0.72";
+        }
       }}
       style={{
         width: "100%",
@@ -95,8 +147,8 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
         </div>
 
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{title}</div>
-          <div style={{ marginTop: 5, fontSize: 13, opacity: 0.64, lineHeight: 1.42, letterSpacing: "-0.01em" }}>{description}</div>
+          <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "-0.02em", lineHeight: 1.15, color: "#0A1317" }}>{title}</div>
+          <div style={{ marginTop: 5, fontSize: 13, opacity: 0.64, lineHeight: 1.42, letterSpacing: "-0.01em", color: "#0A1317" }}>{description}</div>
         </div>
       </div>
 
