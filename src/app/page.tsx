@@ -2026,8 +2026,9 @@ const logoStyle: React.CSSProperties = {
                                 gap: 6,
                                 padding: "4px",
                                 borderRadius: 999,
-                                border: "1px solid rgba(10,19,23,0.10)",
-                                background: "rgba(255,255,255,0.9)",
+                                border: "1px solid rgba(10,19,23,0.08)",
+                                background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,249,251,0.92) 100%)",
+                                boxShadow: "0 10px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.85)",
                               }}
                             >
                               <button
@@ -2036,13 +2037,14 @@ const logoStyle: React.CSSProperties = {
                                 onPointerCancel={onPressUp}
                                 onPointerLeave={onPressUp}
                                 style={{
-                                  width: 34,
-                                  height: 34,
+                                  width: 36,
+                                  height: 36,
                                   borderRadius: 999,
-                                  border: "1px solid rgba(10,19,23,0.10)",
-                                  background: "#fff",
+                                  border: "1px solid rgba(10,19,23,0.08)",
+                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
                                   fontWeight: 900,
                                   cursor: "pointer",
+                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
                                 }}
                                 onClick={() => changeQuantity(p.id, -1)}
                               >
@@ -2066,13 +2068,14 @@ const logoStyle: React.CSSProperties = {
                                 onPointerCancel={onPressUp}
                                 onPointerLeave={onPressUp}
                                 style={{
-                                  width: 34,
-                                  height: 34,
+                                  width: 36,
+                                  height: 36,
                                   borderRadius: 999,
-                                  border: "1px solid rgba(10,19,23,0.10)",
-                                  background: "#fff",
+                                  border: "1px solid rgba(10,19,23,0.08)",
+                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
                                   fontWeight: 900,
                                   cursor: "pointer",
+                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
                                 }}
                                 onClick={() => changeQuantity(p.id, 1)}
                               >
@@ -2149,20 +2152,22 @@ const logoStyle: React.CSSProperties = {
                             gap: 6,
                             padding: "4px",
                             borderRadius: 999,
-                            border: "1px solid rgba(10,19,23,0.10)",
-                            background: "rgba(255,255,255,0.9)",
+                            border: "1px solid rgba(10,19,23,0.08)",
+                                background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,249,251,0.92) 100%)",
+                                boxShadow: "0 10px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.85)",
                             width: "fit-content",
                           }}
                         >
                           <button
                             style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 999,
-                              border: "1px solid rgba(10,19,23,0.10)",
-                              background: "#fff",
-                              fontWeight: 900,
-                              cursor: "pointer",
+                              width: 36,
+                                  height: 36,
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(10,19,23,0.08)",
+                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+                                  fontWeight: 900,
+                                  cursor: "pointer",
+                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
                             }}
                             onClick={() => changeQuantity(item.product.id, -1)}
                           >
@@ -2180,13 +2185,14 @@ const logoStyle: React.CSSProperties = {
                           </div>
                           <button
                             style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 999,
-                              border: "1px solid rgba(10,19,23,0.10)",
-                              background: "#fff",
-                              fontWeight: 900,
-                              cursor: "pointer",
+                              width: 36,
+                                  height: 36,
+                                  borderRadius: 999,
+                                  border: "1px solid rgba(10,19,23,0.08)",
+                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+                                  fontWeight: 900,
+                                  cursor: "pointer",
+                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
                             }}
                             onClick={() => changeQuantity(item.product.id, 1)}
                           >
