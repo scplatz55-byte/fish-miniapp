@@ -401,12 +401,7 @@ export default function Page() {
   const [adminError, setAdminError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderForUi[]>([]);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [adminSlots, setAdminSlots] = useState<DeliverySlotRow[]>([]);
-  const [adminSlotsLoading, setAdminSlotsLoading] = useState(false);
-  const [adminSlotsError, setAdminSlotsError] = useState<string | null>(null);
-  const [slotFormDate, setSlotFormDate] = useState("");
-  const [slotFormLabel, setSlotFormLabel] = useState("");
-  const [slotFormType, setSlotFormType] = useState<"delivery" | "pickup">("delivery");
+  
   const [selectedOverrideDate, setSelectedOverrideDate] = useState("");
   const [newIntervalDay, setNewIntervalDay] = useState<number | null>(null);
   const [newIntervalFrom, setNewIntervalFrom] = useState("");
@@ -414,7 +409,6 @@ export default function Page() {
   const [newOverrideFrom, setNewOverrideFrom] = useState("");
   const [newOverrideTo, setNewOverrideTo] = useState("");
   const [pickupSavingId, setPickupSavingId] = useState<string | null>(null);
-  const [deliveryScheduleActionPending, setDeliveryScheduleActionPending] = useState(false);
   const [adminSection, setAdminSection] = useState<AdminSection>("orders");
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMessages, setChatMessages] = useState<OrderChatMessage[]>([]);
@@ -433,44 +427,6 @@ export default function Page() {
     [orders, selectedOrderId]
   );
 
-  const effectiveAdminDeliverySlots = useMemo(
-    () =>
-      getEffectiveSlots(
-        "delivery",
-        adminSlots,
-        DEFAULT_DELIVERY_INTERVALS,
-        DEFAULT_PICKUP_INTERVALS
-      ),
-    [adminSlots]
-  );
-
-  const effectiveAdminPickupSlots = useMemo(
-    () =>
-      getEffectiveSlots(
-        "pickup",
-        adminSlots,
-        DEFAULT_DELIVERY_INTERVALS,
-        DEFAULT_PICKUP_INTERVALS
-      ),
-    [adminSlots]
-  );
-
-  const effectiveSlotPreviews = useMemo(() => {
-    const groupByDate = (slots: DeliverySlotRow[]) => {
-      const map = new Map<string, string[]>();
-      slots.forEach((slot) => {
-        const list = map.get(slot.slot_date) || [];
-        list.push(slot.slot_label);
-        map.set(slot.slot_date, list);
-      });
-      return Array.from(map.entries()).map(([date, labels]) => ({ date, labels }));
-    };
-
-    return [
-      { title: "Доставка", dates: groupByDate(effectiveAdminDeliverySlots) },
-      { title: "Самовывоз", dates: groupByDate(effectiveAdminPickupSlots) },
-    ];
-  }, [effectiveAdminDeliverySlots, effectiveAdminPickupSlots]);
 
   const weeklyScheduleSlots = useMemo(
     () =>
@@ -1086,111 +1042,6 @@ if (cart.length === 0) {
     }
   }
 
-  async function loadAdminSlots() {
-    if (!initData) return;
-
-    setAdminSlotsLoading(true);
-    setAdminSlotsError(null);
-
-    try {
-      const res = await fetch("/api/admin/delivery-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, action: { type: "list" } }),
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        setAdminSlotsError(data?.error || `Ошибка загрузки слотов (HTTP ${res.status})`);
-        setAdminSlots([]);
-        return;
-      }
-
-      const list = (data.slots || []) as DeliverySlotRow[];
-      setAdminSlots(list);
-      setDeliverySlots(list.filter((slot) => slot.is_active));
-    } catch (e: any) {
-      setAdminSlotsError(e?.message || "Ошибка сети");
-      setAdminSlots([]);
-    } finally {
-      setAdminSlotsLoading(false);
-    }
-  }
-
-  async function toggleAdminSlot(id: string, is_active: boolean) {
-    if (!initData) return;
-
-    try {
-      const res = await fetch("/api/admin/delivery-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, action: { type: "toggle", id, is_active } }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        alert(data?.error || `Не удалось обновить слот (HTTP ${res.status})`);
-        return;
-      }
-      await loadWeeklyDeliverySchedule();
-    } catch (e: any) {
-      alert(e?.message || "Ошибка сети");
-    }
-  }
-
-  async function createAdminSlot() {
-    if (!initData) return;
-    if (!slotFormDate || !slotFormLabel.trim()) {
-      alert("Заполните дату и интервал");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/admin/delivery-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          initData,
-          action: {
-            type: "create",
-            slot_date: slotFormDate,
-            slot_label: slotFormLabel.trim(),
-            delivery_type: slotFormType,
-            sort_order: 0,
-          },
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        alert(data?.error || `Не удалось создать слот (HTTP ${res.status})`);
-        return;
-      }
-      setSlotFormDate("");
-      setSlotFormLabel("");
-      await loadWeeklyDeliverySchedule();
-    } catch (e: any) {
-      alert(e?.message || "Ошибка сети");
-    }
-  }
-
-  async function deleteAdminSlot(id: string) {
-    if (!initData) return;
-
-    try {
-      const res = await fetch("/api/admin/delivery-slots", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, action: { type: "delete", id } }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        alert(data?.error || `Не удалось удалить слот (HTTP ${res.status})`);
-        return;
-      }
-      await loadWeeklyDeliverySchedule();
-    } catch (e: any) {
-      alert(e?.message || "Ошибка сети");
-    }
-  }
 
   async function loadOrderChat(orderId: string, silent = false) {
     if (!initData) return;
@@ -1460,7 +1311,6 @@ if (cart.length === 0) {
 
   async function runDeliveryScheduleAction(action: Record<string, any>) {
     setDeliveryScheduleError(null);
-    setDeliveryScheduleActionPending(true);
     const scrollTop = contentRef.current?.scrollTop ?? 0;
 
     try {
@@ -1491,7 +1341,6 @@ if (cart.length === 0) {
       alert(message);
       return false;
     } finally {
-      setDeliveryScheduleActionPending(false);
     }
   }
 
@@ -1885,11 +1734,6 @@ const logoStyle: React.CSSProperties = {
   fontSize: 14,
 };
 
-const inputErrorStyle: React.CSSProperties = {
-  ...inputStyle,
-  border: "1px solid rgba(212,51,20,0.55)",
-  boxShadow: "0 0 0 1px rgba(212,51,20,0.15)",
-};
 
   // ===== Bottom nav =====
   const hideBottomNav = keyboardOpen || checkoutOpen;
@@ -1931,9 +1775,9 @@ const inputErrorStyle: React.CSSProperties = {
     width: NAV_BTN_W - IND_INSET * 2,
     height: NAV_BTN_H - IND_INSET * 2,
     borderRadius: 13,
-    background: "rgba(212,51,20,0.22)",
-    border: "1px solid rgba(212,51,20,0.35)",
-    boxShadow: "0 12px 28px rgba(212,51,20,0.25)",
+    background: "rgba(43,128,164,0.18)",
+    border: "1px solid rgba(43,128,164,0.30)",
+    boxShadow: "0 12px 28px rgba(43,128,164,0.18)",
     transition: "none",
   };
 
@@ -2125,10 +1969,12 @@ const inputErrorStyle: React.CSSProperties = {
                         style={{
                           padding: "8px 12px",
                           borderRadius: 999,
-                          border: `1px solid ${
-                            active ? "rgba(212,51,20,0.35)" : "rgba(10,19,23,0.12)"
-                          }`,
-                          background: active ? "rgba(212,51,20,0.10)" : "rgba(10,19,23,0.04)",
+                          border: active
+                            ? "1px solid rgba(43,128,164,0.24)"
+                            : "1px solid rgba(10,19,23,0.12)",
+                          background: active
+                            ? "linear-gradient(180deg, rgba(43,128,164,0.12) 0%, rgba(43,128,164,0.08) 100%)"
+                            : "rgba(10,19,23,0.04)",
                           color: BRAND_INK,
                           cursor: "pointer",
                           fontWeight: 900,
@@ -2757,7 +2603,7 @@ const inputErrorStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_ACCENT} />
+            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_BG} />
           </button>
 
           <button
@@ -2770,7 +2616,7 @@ const inputErrorStyle: React.CSSProperties = {
             onPointerLeave={onPressUp}
           >
             <div style={{ position: "relative" }}>
-              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_ACCENT} />
+              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_BG} />
               {cart.length > 0 && (
                 <div
                   style={{
@@ -2810,7 +2656,7 @@ const inputErrorStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_ACCENT} />
+            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_BG} />
           </button>
         </div>
       </div>
