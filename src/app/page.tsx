@@ -1367,8 +1367,7 @@ if (cart.length === 0) {
       parts.push(`Комментарий: ${orderComment.trim()}`);
     }
 
-    return parts.join("
-");
+    return parts.join("\\n");
   }
 
   useEffect(() => {
