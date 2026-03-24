@@ -1964,15 +1964,16 @@ const logoStyle: React.CSSProperties = {
                       <div
                         key={p.id}
                         style={{
-                          borderRadius: 14,
-                          border: "1px solid rgba(10,19,23,0.10)",
-                          padding: 12,
-                          background: "rgba(10,19,23,0.02)",
+                          borderRadius: 18,
+                          border: "1px solid rgba(10,19,23,0.08)",
+                          padding: 16,
+                          background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+                          boxShadow: "0 12px 24px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.78)",
                         }}
                       >
-                        <div style={{ fontWeight: 900 }}>{p.title}</div>
+                        <div style={{ fontWeight: 900, fontSize: 17, letterSpacing: "-0.02em" }}>{p.title}</div>
                         {p.description && (
-                          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.8 }}>
+                          <div style={{ marginTop: 2, fontSize: 13, opacity: 0.72, lineHeight: 1.45 }}>
                             {p.description}
                           </div>
                         )}
@@ -1986,7 +1987,7 @@ const logoStyle: React.CSSProperties = {
                             alignItems: "center",
                           }}
                         >
-                          <div style={{ fontWeight: 900 }}>
+                          <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.02em" }}>
                             {formatPriceRub(p.price)}{" "}
                             <span style={{ fontWeight: 700, opacity: 0.7, fontSize: 12 }}>
                               {p.unit_type === "weight" ? "за кг" : "за шт"}
@@ -1995,18 +1996,23 @@ const logoStyle: React.CSSProperties = {
 
                           {!cartItem ? (
                             <button
+                              onPointerDown={onPressDown}
+                              onPointerUp={onPressUp}
+                              onPointerCancel={onPressUp}
+                              onPointerLeave={onPressUp}
                               style={{
-                                padding: "10px 16px",
+                                padding: "11px 18px",
                                 borderRadius: 999,
                                 border: UI_THEME.addButton.border,
-                                background: "linear-gradient(180deg, rgba(43,128,164,0.22) 0%, rgba(43,128,164,0.14) 100%)",
+                                background: "linear-gradient(180deg, rgba(43,128,164,0.24) 0%, rgba(43,128,164,0.15) 100%)",
                                 color: BRAND_INK,
                                 fontWeight: 900,
                                 cursor: "pointer",
-                                boxShadow: "0 8px 18px rgba(43,128,164,0.12), inset 0 1px 0 rgba(255,255,255,0.68)",
+                                boxShadow: "0 10px 22px rgba(43,128,164,0.14), inset 0 1px 0 rgba(255,255,255,0.74)",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 6,
+                                transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease",
                               }}
                               onClick={() => addToCart(p)}
                             >
@@ -2025,6 +2031,10 @@ const logoStyle: React.CSSProperties = {
                               }}
                             >
                               <button
+                                onPointerDown={onPressDown}
+                                onPointerUp={onPressUp}
+                                onPointerCancel={onPressUp}
+                                onPointerLeave={onPressUp}
                                 style={{
                                   width: 34,
                                   height: 34,
@@ -2051,6 +2061,10 @@ const logoStyle: React.CSSProperties = {
                               </div>
 
                               <button
+                                onPointerDown={onPressDown}
+                                onPointerUp={onPressUp}
+                                onPointerCancel={onPressUp}
+                                onPointerLeave={onPressUp}
                                 style={{
                                   width: 34,
                                   height: 34,
@@ -2112,10 +2126,11 @@ const logoStyle: React.CSSProperties = {
                       <div
                         key={item.product.id}
                         style={{
-                          borderRadius: 14,
-                          border: "1px solid rgba(10,19,23,0.10)",
-                          padding: 12,
-                          background: "rgba(10,19,23,0.02)",
+                          borderRadius: 18,
+                          border: "1px solid rgba(10,19,23,0.08)",
+                          padding: 16,
+                          background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+                          boxShadow: "0 12px 24px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.78)",
                         }}
                       >
                         <div style={{ fontWeight: 900 }}>{item.product.title}</div>
