@@ -168,8 +168,23 @@ export default function CheckoutOverlay({
 	
   if (!isOpen) return null;
 
+  const showDeliveryUnavailable = deliveryType === "delivery" && availableDates.length === 0;
+
   return (
-    <div
+    <>
+      <style>{`
+        @keyframes checkoutFadeSlideIn {
+          0% {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+      <div
       style={{
         position: "fixed",
         left: 0,
@@ -318,21 +333,55 @@ export default function CheckoutOverlay({
               )}
 
               <div style={{ fontWeight: 900, fontSize: 14, marginTop: 6 }}>Дата и время</div>
-              {availableDates.length === 0 ? (
+              {showDeliveryUnavailable ? (
                 <div
                   style={{
-                    borderRadius: 14,
-                    border: "1px solid rgba(212,51,20,0.32)",
-                    background: "rgba(212,51,20,0.08)",
-                    padding: 12,
-                    fontSize: 13,
-                    lineHeight: 1.45,
+                    borderRadius: 16,
+                    border: "1px solid rgba(212,51,20,0.28)",
+                    background: "linear-gradient(180deg, rgba(255,245,243,0.96) 0%, rgba(255,240,236,0.92) 100%)",
+                    padding: 14,
                     color: "#7A1E0D",
+                    animation: "checkoutFadeSlideIn 220ms ease",
+                    boxShadow: "0 10px 24px rgba(212,51,20,0.08)",
                   }}
                 >
-                  <div style={{ fontWeight: 900, marginBottom: 4 }}>Доставка сейчас недоступна</div>
-                  <div>
-                    Мы пока не принимаем заказы на доставку. Попробуйте позже или выберите самовывоз.
+                  <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 999,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "rgba(212,51,20,0.12)",
+                        flexShrink: 0,
+                        fontSize: 15,
+                      }}
+                    >
+                      ⚠️
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900, marginBottom: 4, fontSize: 15 }}>
+                        Доставка временно недоступна
+                      </div>
+                      <div style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 10 }}>
+                        Мы пока не принимаем заказы на доставку. Попробуйте чуть позже или воспользуйтесь самовывозом.
+                      </div>
+                      <button
+                        type="button"
+                        style={{
+                          ...ghostButtonStyle,
+                          border: "1px solid rgba(212,51,20,0.22)",
+                          background: "rgba(255,255,255,0.82)",
+                          color: "#7A1E0D",
+                          fontWeight: 800,
+                        }}
+                        onClick={() => onChangeDeliveryType("pickup")}
+                      >
+                        Переключиться на самовывоз
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -442,24 +491,15 @@ export default function CheckoutOverlay({
             style={{
               ...primaryButtonStyle,
               width: "100%",
-              opacity:
-                deliveryType === "delivery" && availableDates.length === 0
-                  ? 0.55
-                  : 1,
-              cursor:
-                deliveryType === "delivery" && availableDates.length === 0
-                  ? "not-allowed"
-                  : "pointer",
+              opacity: showDeliveryUnavailable ? 0.55 : 1,
+              cursor: showDeliveryUnavailable ? "not-allowed" : "pointer",
             }}
             onClick={onSubmit}
-            disabled={deliveryType === "delivery" && availableDates.length === 0}
+            disabled={showDeliveryUnavailable}
           >
-            {deliveryType === "delivery" && availableDates.length === 0
+            {showDeliveryUnavailable
               ? "Доставка недоступна"
-              : "Подтвердить заказ"}
-          </button>
-        </div>
-      </div>
-    </div>
+              : "Подтверди{showDeliveryUnavailable    </div>
+    </>
   );
 }
