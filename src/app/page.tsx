@@ -1994,95 +1994,112 @@ const logoStyle: React.CSSProperties = {
                             </span>
                           </div>
 
-                          {!cartItem ? (
-                            <button
-                              onPointerDown={onPressDown}
-                              onPointerUp={onPressUp}
-                              onPointerCancel={onPressUp}
-                              onPointerLeave={onPressUp}
-                              style={{
-                                padding: "11px 18px",
-                                borderRadius: 999,
-                                border: UI_THEME.addButton.border,
-                                background: "linear-gradient(180deg, rgba(43,128,164,0.24) 0%, rgba(43,128,164,0.15) 100%)",
-                                color: BRAND_INK,
-                                fontWeight: 900,
-                                cursor: "pointer",
-                                boxShadow: "0 10px 22px rgba(43,128,164,0.14), inset 0 1px 0 rgba(255,255,255,0.74)",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                                transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease",
-                              }}
-                              onClick={() => addToCart(p)}
-                            >
-                              + Добавить
-                            </button>
-                          ) : (
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 6,
-                                padding: "4px",
-                                borderRadius: 999,
-                                border: "1px solid rgba(10,19,23,0.08)",
-                                background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,249,251,0.92) 100%)",
-                                boxShadow: "0 10px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.85)",
-                              }}
-                            >
+                          <div
+                            style={{
+                              width: 168,
+                              minWidth: 168,
+                              display: "flex",
+                              justifyContent: "flex-end",
+                            }}
+                          >
+                            {!cartItem ? (
                               <button
                                 onPointerDown={onPressDown}
                                 onPointerUp={onPressUp}
                                 onPointerCancel={onPressUp}
                                 onPointerLeave={onPressUp}
                                 style={{
-                                  width: 36,
-                                  height: 36,
+                                  padding: "11px 18px",
+                                  minWidth: 138,
+                                  justifyContent: "center",
                                   borderRadius: 999,
-                                  border: "1px solid rgba(10,19,23,0.08)",
-                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
+                                  border: UI_THEME.addButton.border,
+                                  background: "linear-gradient(180deg, rgba(43,128,164,0.24) 0%, rgba(43,128,164,0.15) 100%)",
+                                  color: BRAND_INK,
                                   fontWeight: 900,
                                   cursor: "pointer",
-                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+                                  boxShadow: "0 10px 22px rgba(43,128,164,0.14), inset 0 1px 0 rgba(255,255,255,0.74)",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 6,
+                                  transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease",
                                 }}
-                                onClick={() => changeQuantity(p.id, -1)}
+                                onClick={() => addToCart(p)}
                               >
-                                −
+                                + Добавить
                               </button>
-
+                            ) : (
                               <div
                                 style={{
-                                  minWidth: 26,
-                                  textAlign: "center",
-                                  fontWeight: 900,
-                                  fontSize: 14,
-                                }}
-                              >
-                                {cartItem.quantity}
-                              </div>
-
-                              <button
-                                onPointerDown={onPressDown}
-                                onPointerUp={onPressUp}
-                                onPointerCancel={onPressUp}
-                                onPointerLeave={onPressUp}
-                                style={{
-                                  width: 36,
-                                  height: 36,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                  gap: 8,
+                                  padding: "4px",
+                                  width: 168,
+                                  minWidth: 168,
                                   borderRadius: 999,
-                                  border: "1px solid rgba(10,19,23,0.08)",
-                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
-                                  fontWeight: 900,
-                                  cursor: "pointer",
-                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+                                  border: "1px solid rgba(43,128,164,0.14)",
+                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,250,0.94) 100%)",
+                                  boxShadow: "0 10px 18px rgba(43,128,164,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
                                 }}
-                                onClick={() => changeQuantity(p.id, 1)}
                               >
-                                +
-                              </button>
-                            </div>
-                          )}
+                                <button
+                                  onPointerDown={onPressDown}
+                                  onPointerUp={onPressUp}
+                                  onPointerCancel={onPressUp}
+                                  onPointerLeave={onPressUp}
+                                  style={{
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(43,128,164,0.18)",
+                                    background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
+                                    fontWeight: 900,
+                                    color: BRAND_BG,
+                                    cursor: "pointer",
+                                    boxShadow: "0 8px 16px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+                                  }}
+                                  onClick={() => changeQuantity(p.id, -1)}
+                                >
+                                  −
+                                </button>
+
+                                <div
+                                  style={{
+                                    minWidth: 30,
+                                    textAlign: "center",
+                                    fontWeight: 900,
+                                    fontSize: 18,
+                                    letterSpacing: "-0.02em",
+                                  }}
+                                >
+                                  {cartItem.quantity}
+                                </div>
+
+                                <button
+                                  onPointerDown={onPressDown}
+                                  onPointerUp={onPressUp}
+                                  onPointerCancel={onPressUp}
+                                  onPointerLeave={onPressUp}
+                                  style={{
+                                    width: 38,
+                                    height: 38,
+                                    borderRadius: 999,
+                                    border: "1px solid rgba(43,128,164,0.18)",
+                                    background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
+                                    fontWeight: 900,
+                                    color: BRAND_BG,
+                                    cursor: "pointer",
+                                    boxShadow: "0 8px 16px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
+                                  }}
+                                  onClick={() => changeQuantity(p.id, 1)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -2614,8 +2631,8 @@ const logoStyle: React.CSSProperties = {
                 <div
                   style={{
                     position: "absolute",
-                    top: -7,
-                    right: -12,
+                    top: -9,
+                    right: -8,
                     minWidth: 18,
                     height: 18,
                     padding: "0 6px",
@@ -2628,6 +2645,7 @@ const logoStyle: React.CSSProperties = {
                     alignItems: "center",
                     justifyContent: "center",
                     boxShadow: "0 10px 18px rgba(212,51,20,0.25)",
+                    zIndex: 2,
                   }}
                 >
                   {cart.length}
