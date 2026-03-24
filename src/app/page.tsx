@@ -1836,12 +1836,18 @@ const logoStyle: React.CSSProperties = {
     padding: "10px 12px",
     borderRadius: 14,
     border: active
-      ? "1px solid rgba(212,51,20,0.30)"
+      ? "1px solid rgba(43,128,164,0.24)"
       : "1px solid rgba(0,0,0,0.10)",
-    background: active ? "rgba(212,51,20,0.10)" : "rgba(255,255,255,0.85)",
+    background: active
+      ? "linear-gradient(180deg, rgba(43,128,164,0.12) 0%, rgba(43,128,164,0.08) 100%)"
+      : "rgba(255,255,255,0.85)",
     color: BRAND_INK,
     fontWeight: 900,
     cursor: "pointer",
+    boxShadow: active
+      ? "0 10px 22px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.65)"
+      : "none",
+    transition: "transform 140ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
   });
 
   const iosSwitchWrap = (active: boolean): React.CSSProperties => ({
@@ -1970,26 +1976,37 @@ const inputErrorStyle: React.CSSProperties = {
     return (
       <div style={root}>
         <style>{`
-          @keyframes appPulse {
-            0% { opacity: 0.45; }
-            50% { opacity: 1; }
-            100% { opacity: 0.45; }
-          }
-          .app-skeleton {
-            background: linear-gradient(
-              90deg,
-              rgba(255,255,255,0.35) 0%,
-              rgba(255,255,255,0.65) 50%,
-              rgba(255,255,255,0.35) 100%
-            );
-            background-size: 200% 100%;
-            animation: appShimmer 1.2s ease-in-out infinite;
-          }
-          @keyframes appShimmer {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-          }
-        `}</style>
+        @keyframes appShimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        @keyframes orderSheetIn {
+          0% { opacity: 0; transform: translateY(28px) scale(0.985); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .app-skeleton {
+          background: linear-gradient(
+            90deg,
+            rgba(10,19,23,0.06) 0%,
+            rgba(10,19,23,0.12) 50%,
+            rgba(10,19,23,0.06) 100%
+          );
+          background-size: 200% 100%;
+          animation: appShimmer 1.2s ease-in-out infinite;
+        }
+        button,
+        [role="button"] {
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
+        }
+        button:active,
+        [role="button"]:active {
+          transform: translateY(1px) scale(0.992);
+        }
+      `}</style>
 
         <div
           style={{
@@ -2800,3 +2817,4 @@ const inputErrorStyle: React.CSSProperties = {
     </div>
   );
 }
+

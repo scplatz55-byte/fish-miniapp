@@ -217,17 +217,28 @@ export default function CheckoutOverlay({
         }
 
         .checkout-pressable {
-          transition: transform 140ms ease, box-shadow 160ms ease, opacity 160ms ease;
+          transition: transform 140ms ease, box-shadow 160ms ease, opacity 160ms ease, filter 160ms ease;
           will-change: transform;
+          -webkit-tap-highlight-color: transparent;
+          -webkit-touch-callout: none;
+          user-select: none;
+          -webkit-user-select: none;
+          touch-action: manipulation;
         }
 
         .checkout-pressable:active {
           transform: translateY(1px) scale(0.992);
+          filter: saturate(0.98);
         }
 
         .checkout-cta:active {
           transform: translateY(1px) scale(0.992);
           box-shadow: 0 10px 18px rgba(212,51,20,0.16), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+        }
+
+        button,
+        [role="button"] {
+          -webkit-tap-highlight-color: transparent;
         }
       `}</style>
       <div
@@ -357,9 +368,6 @@ export default function CheckoutOverlay({
               >
                 <div>
                   <div style={{ fontWeight: 900, fontSize: 14 }}>Частный дом</div>
-                  <div style={{ marginTop: 2, fontSize: 12, opacity: 0.62 }}>
-                    Уберём поля подъезда, этажа, квартиры и домофона
-                  </div>
                 </div>
                 <div style={iosSwitchWrap(isPrivateHouse)}>
                   <div style={iosSwitchKnob(isPrivateHouse)} />
