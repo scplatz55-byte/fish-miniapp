@@ -154,7 +154,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     <span
       style={{
         padding: "4px 10px",
-        borderRadius: 999,
+        borderRadius: cart.length > 9 ? 999 : "50%"
         fontSize: 12,
         fontWeight: 900,
         background: color + "22",
@@ -1659,7 +1659,7 @@ const logoStyle: React.CSSProperties = {
   const iosSwitchWrap = (active: boolean): React.CSSProperties => ({
     width: 50,
     height: 30,
-    borderRadius: 999,
+    borderRadius: cart.length > 9 ? 999 : "50%"
     border: active ? "1px solid rgba(107, 214, 95, 0.55)" : "1px solid rgba(10,19,23,0.12)",
     background: active ? "#6BD65F" : "rgba(10,19,23,0.08)",
     position: "relative",
@@ -1675,7 +1675,7 @@ const logoStyle: React.CSSProperties = {
     left: active ? 23 : 3,
     width: 24,
     height: 24,
-    borderRadius: 999,
+    borderRadius: cart.length > 9 ? 999 : "50%"
     background: "#fff",
     boxShadow: "0 4px 10px rgba(0,0,0,0.18)",
     transition: "all 160ms ease",
@@ -1910,7 +1910,7 @@ const logoStyle: React.CSSProperties = {
               <div style={{ fontWeight: 900, fontSize: 16 }}>Категории</div>
 
               {categoriesLoading ? (
-                <div style={{ marginTop: 10, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ marginTop: 10, display: "flex", gap: 4, flexWrap: "wrap" }}>
                   <SkeletonBlock height={34} radius={999} style={{ width: 90 }} />
                   <SkeletonBlock height={34} radius={999} style={{ width: 110 }} />
                   <SkeletonBlock height={34} radius={999} style={{ width: 100 }} />
@@ -1925,7 +1925,7 @@ const logoStyle: React.CSSProperties = {
                         onClick={() => setSelectedCategoryId(c.id)}
                         style={{
                           padding: "8px 12px",
-                          borderRadius: 999,
+                          borderRadius: cart.length > 9 ? 999 : "50%"
                           border: active
                             ? UI_THEME.categoryActive.border
                             : "1px solid rgba(10,19,23,0.12)",
@@ -1996,9 +1996,9 @@ const logoStyle: React.CSSProperties = {
 
                           <div
                             style={{
-                              width: 136,
-                              minWidth: 136,
-                              height: 46,
+                              width: 112,
+                              minWidth: 112,
+                              height: 40,
                               display: "flex",
                               justifyContent: "flex-end",
                               alignItems: "center",
@@ -2012,11 +2012,11 @@ const logoStyle: React.CSSProperties = {
                                 onPointerCancel={onPressUp}
                                 onPointerLeave={onPressUp}
                                 style={{
-                                  padding: "0 16px",
-                                  width: 136,
-                                  height: 46,
+                                  padding: "0 12px",
+                                  width: 112,
+                                  height: 40,
                                   justifyContent: "center",
-                                  borderRadius: 999,
+                                  borderRadius: cart.length > 9 ? 999 : "50%"
                                   border: UI_THEME.addButton.border,
                                   background: "linear-gradient(180deg, rgba(43,128,164,0.24) 0%, rgba(43,128,164,0.15) 100%)",
                                   color: BRAND_INK,
@@ -2041,10 +2041,10 @@ const logoStyle: React.CSSProperties = {
                                   justifyContent: "space-between",
                                   gap: 8,
                                   padding: "4px",
-                                  width: 136,
-                                  minWidth: 136,
-                                  height: 46,
-                                  borderRadius: 999,
+                                  width: 112,
+                                  minWidth: 112,
+                                  height: 40,
+                                  borderRadius: cart.length > 9 ? 999 : "50%"
                                   border: "1px solid rgba(43,128,164,0.14)",
                                   background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,250,0.94) 100%)",
                                   boxShadow: "0 10px 18px rgba(43,128,164,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
@@ -2056,9 +2056,9 @@ const logoStyle: React.CSSProperties = {
                                   onPointerCancel={onPressUp}
                                   onPointerLeave={onPressUp}
                                   style={{
-                                    width: 34,
-                                    height: 34,
-                                    borderRadius: 999,
+                                    width: 30,
+                                    height: 30,
+                                    borderRadius: cart.length > 9 ? 999 : "50%"
                                     border: "1px solid rgba(43,128,164,0.18)",
                                     background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
                                     fontWeight: 900,
@@ -2073,10 +2073,10 @@ const logoStyle: React.CSSProperties = {
 
                                 <div
                                   style={{
-                                    minWidth: 22,
+                                    minWidth: 18,
                                     textAlign: "center",
                                     fontWeight: 900,
-                                    fontSize: 16,
+                                    fontSize: 14,
                                     letterSpacing: "-0.02em",
                                   }}
                                 >
@@ -2089,9 +2089,9 @@ const logoStyle: React.CSSProperties = {
                                   onPointerCancel={onPressUp}
                                   onPointerLeave={onPressUp}
                                   style={{
-                                    width: 34,
-                                    height: 34,
-                                    borderRadius: 999,
+                                    width: 30,
+                                    height: 30,
+                                    borderRadius: cart.length > 9 ? 999 : "50%"
                                     border: "1px solid rgba(43,128,164,0.18)",
                                     background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
                                     fontWeight: 900,
@@ -2174,7 +2174,7 @@ const logoStyle: React.CSSProperties = {
                             alignItems: "center",
                             gap: 6,
                             padding: "4px",
-                            borderRadius: 999,
+                            borderRadius: cart.length > 9 ? 999 : "50%"
                             border: "1px solid rgba(10,19,23,0.08)",
                                 background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,249,251,0.92) 100%)",
                                 boxShadow: "0 10px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.85)",
@@ -2185,7 +2185,7 @@ const logoStyle: React.CSSProperties = {
                             style={{
                               width: 36,
                                   height: 36,
-                                  borderRadius: 999,
+                                  borderRadius: cart.length > 9 ? 999 : "50%"
                                   border: "1px solid rgba(10,19,23,0.08)",
                                   background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
                                   fontWeight: 900,
@@ -2210,7 +2210,7 @@ const logoStyle: React.CSSProperties = {
                             style={{
                               width: 36,
                                   height: 36,
-                                  borderRadius: 999,
+                                  borderRadius: cart.length > 9 ? 999 : "50%"
                                   border: "1px solid rgba(10,19,23,0.08)",
                                   background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
                                   fontWeight: 900,
@@ -2223,9 +2223,9 @@ const logoStyle: React.CSSProperties = {
                           </button>
                           <button
                             style={{
-                              width: 34,
-                              height: 34,
-                              borderRadius: 999,
+                              width: 30,
+                                    height: 30,
+                              borderRadius: cart.length > 9 ? 999 : "50%"
                               border: "1px solid rgba(10,19,23,0.10)",
                               background: "#fff",
                               display: "flex",
@@ -2637,12 +2637,12 @@ const logoStyle: React.CSSProperties = {
                 <div
                   style={{
                     position: "absolute",
-                    top: -9,
-                    right: -8,
+                    top: -12,
+                    right: -10,
                     minWidth: 18,
                     height: 18,
-                    padding: "0 6px",
-                    borderRadius: 999,
+                    padding: cart.length > 9 ? "0 6px" : 0,
+                    borderRadius: cart.length > 9 ? 999 : "50%"
                     background: BRAND_ACCENT,
                     color: "#fff",
                     fontSize: 11,
