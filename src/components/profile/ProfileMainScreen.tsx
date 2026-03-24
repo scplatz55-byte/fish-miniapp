@@ -35,6 +35,22 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
     <button
       type="button"
       onClick={onClick}
+      onPointerDown={(e) => {
+        e.currentTarget.style.transform = "translateY(1px) scale(0.992)";
+        e.currentTarget.style.boxShadow = "0 8px 18px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.80)";
+      }}
+      onPointerUp={(e) => {
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+        e.currentTarget.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+      }}
+      onPointerCancel={(e) => {
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+        e.currentTarget.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+      }}
+      onPointerLeave={(e) => {
+        e.currentTarget.style.transform = "translateY(0) scale(1)";
+        e.currentTarget.style.boxShadow = "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)";
+      }}
       style={{
         width: "100%",
         border: "1px solid rgba(10,19,23,0.08)",
@@ -42,17 +58,19 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
         padding: 14,
         background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
         boxShadow: "0 12px 26px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
+        willChange: "transform",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
         gap: 12,
         textAlign: "left",
         cursor: "pointer",
-        transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease",
+        transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease, border-color 160ms ease, background 160ms ease",
+        transform: "translateY(0)",
         WebkitTapHighlightColor: "transparent",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
         <div
           style={{
             width: 42,
@@ -63,7 +81,8 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
             justifyContent: "center",
             flexShrink: 0,
             background: accent,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.72)",
+            boxShadow: "0 8px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.72)",
+            transition: "transform 160ms ease, box-shadow 160ms ease, filter 160ms ease",
             fontSize: 18,
           }}
         >
@@ -90,6 +109,7 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
           fontSize: 16,
           opacity: 0.72,
           boxShadow: "0 8px 16px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.86)",
+          transition: "transform 160ms ease, opacity 160ms ease, box-shadow 160ms ease",
         }}
       >
         ›
