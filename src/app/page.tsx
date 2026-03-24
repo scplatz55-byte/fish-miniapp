@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { UI_THEME } from "@/lib/ui-theme";
 import ProfileMainScreen from "@/components/profile/ProfileMainScreen";
 import ProfileOverlay from "@/components/profile/ProfileOverlay";
 import OrderChatBlock from "@/components/admin/OrderChatBlock";
@@ -293,11 +294,10 @@ export default function Page() {
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [tgUser, setTgUser] = useState<TgUser | null>(null);
 
-  // Brand colors
-  const BRAND_BG = "#2B80A4";
-  const BRAND_ACCENT = "#D43314";
-  const BRAND_INK = "#0A1317";
-  const CARD_BG = "#FFFFFF";
+  const BRAND_BG = UI_THEME.brand.primary;
+  const BRAND_ACCENT = UI_THEME.brand.accent;
+  const BRAND_INK = UI_THEME.brand.ink;
+  const CARD_BG = UI_THEME.brand.card;
 
   // Header
   const HEADER_H = 64;
@@ -1685,16 +1685,16 @@ const logoStyle: React.CSSProperties = {
     padding: "10px 12px",
     borderRadius: 14,
     border: active
-      ? "1px solid rgba(43,128,164,0.24)"
+                            ? UI_THEME.categoryActive.border
       : "1px solid rgba(0,0,0,0.10)",
     background: active
-      ? "linear-gradient(180deg, rgba(43,128,164,0.12) 0%, rgba(43,128,164,0.08) 100%)"
+      ? UI_THEME.tabActive.bg
       : "rgba(255,255,255,0.85)",
     color: BRAND_INK,
     fontWeight: 900,
     cursor: "pointer",
     boxShadow: active
-      ? "0 10px 22px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.65)"
+      ? UI_THEME.categoryActive.shadow
       : "none",
     transition: "transform 140ms ease, box-shadow 160ms ease, background 160ms ease, border-color 160ms ease",
   });
@@ -1760,11 +1760,12 @@ const logoStyle: React.CSSProperties = {
     gap: NAV_GAP,
     alignItems: "center",
     padding: NAV_PAD,
-    borderRadius: 18,
-    background: "rgba(255,255,255,0.52)",
-    border: "1px solid rgba(10,19,23,0.10)",
-    backdropFilter: "blur(14px)",
-    boxShadow: "0 18px 45px rgba(0,0,0,0.22)",
+    borderRadius: 22,
+    background: "linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.20) 100%)",
+    border: "1px solid rgba(255,255,255,0.28)",
+    backdropFilter: "blur(18px)",
+    WebkitBackdropFilter: "blur(18px)",
+    boxShadow: "0 20px 48px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.30)",
   };
 
   const IND_INSET = 1;
@@ -1774,18 +1775,18 @@ const logoStyle: React.CSSProperties = {
     left: indicatorLeft + IND_INSET,
     width: NAV_BTN_W - IND_INSET * 2,
     height: NAV_BTN_H - IND_INSET * 2,
-    borderRadius: 13,
-    background: "rgba(43,128,164,0.18)",
-    border: "1px solid rgba(43,128,164,0.30)",
-    boxShadow: "0 12px 28px rgba(43,128,164,0.18)",
+    borderRadius: 15,
+    background: "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(242,247,250,0.78) 100%)",
+    border: "1px solid rgba(255,255,255,0.55)",
+    boxShadow: "0 10px 24px rgba(8,24,33,0.12), inset 0 1px 0 rgba(255,255,255,0.95)",
     transition: "none",
   };
 
   const navBtnBase: React.CSSProperties = {
     width: NAV_BTN_W,
     height: NAV_BTN_H,
-    borderRadius: 14,
-    border: "1px solid rgba(10,19,23,0.06)",
+    borderRadius: 16,
+    border: "1px solid rgba(255,255,255,0.10)",
     background: "transparent",
     display: "flex",
     alignItems: "center",
@@ -1793,7 +1794,7 @@ const logoStyle: React.CSSProperties = {
     cursor: "pointer",
     userSelect: "none",
     WebkitTapHighlightColor: "transparent",
-    transition: "transform 140ms ease, opacity 140ms ease",
+    transition: "transform 140ms ease, opacity 140ms ease, filter 160ms ease",
   };
 
   function onPressDown(e: any) {
@@ -1845,10 +1846,6 @@ const logoStyle: React.CSSProperties = {
           user-select: none;
           -webkit-user-select: none;
           touch-action: manipulation;
-        }
-        button:active,
-        [role="button"]:active {
-          transform: translateY(1px) scale(0.992);
         }
       `}</style>
 
@@ -1973,7 +1970,7 @@ const logoStyle: React.CSSProperties = {
                             ? "1px solid rgba(43,128,164,0.24)"
                             : "1px solid rgba(10,19,23,0.12)",
                           background: active
-                            ? "linear-gradient(180deg, rgba(43,128,164,0.12) 0%, rgba(43,128,164,0.08) 100%)"
+                            ? UI_THEME.categoryActive.bg
                             : "rgba(10,19,23,0.04)",
                           color: BRAND_INK,
                           cursor: "pointer",
@@ -2040,8 +2037,8 @@ const logoStyle: React.CSSProperties = {
                               style={{
                                 padding: "10px 16px",
                                 borderRadius: 999,
-                                border: "1px solid rgba(212,51,20,0.25)",
-                                background: "rgba(212,51,20,0.10)",
+                                border: UI_THEME.addButton.border,
+                                background: UI_THEME.addButton.bg,
                                 color: BRAND_INK,
                                 fontWeight: 900,
                                 cursor: "pointer",
@@ -2603,7 +2600,7 @@ const logoStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_BG} />
+            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
 
           <button
@@ -2616,7 +2613,7 @@ const logoStyle: React.CSSProperties = {
             onPointerLeave={onPressUp}
           >
             <div style={{ position: "relative" }}>
-              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_BG} />
+              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_ACCENT} />
               {cart.length > 0 && (
                 <div
                   style={{
@@ -2656,7 +2653,7 @@ const logoStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_BG} />
+            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_ACCENT} />
           </button>
         </div>
       </div>
