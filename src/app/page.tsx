@@ -445,52 +445,9 @@ export default function Page() {
   const targetLeft = NAV_PAD + viewIndex * (NAV_BTN_W + NAV_GAP);
 
   const [indicatorLeft, setIndicatorLeft] = useState<number>(targetLeft);
-  const animRef = useRef<number | null>(null);
-  const xRef = useRef<number>(targetLeft);
-  const vRef = useRef<number>(0);
 
   useEffect(() => {
-    const target = targetLeft;
-
-    if (animRef.current) cancelAnimationFrame(animRef.current);
-
-    const stiffness = 0.095;
-    const damping = 0.84;
-    const maxStep = 18;
-
-    const tick = () => {
-      const x = xRef.current;
-      let v = vRef.current;
-
-      const force = (target - x) * stiffness;
-      v = v * damping + force;
-
-      if (v > maxStep) v = maxStep;
-      if (v < -maxStep) v = -maxStep;
-
-      const nextX = x + v;
-
-      xRef.current = nextX;
-      vRef.current = v;
-      setIndicatorLeft(nextX);
-
-      const done = Math.abs(target - nextX) < 0.25 && Math.abs(v) < 0.25;
-      if (!done) {
-        animRef.current = requestAnimationFrame(tick);
-      } else {
-        xRef.current = target;
-        vRef.current = 0;
-        setIndicatorLeft(target);
-        animRef.current = null;
-      }
-    };
-
-    animRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      if (animRef.current) cancelAnimationFrame(animRef.current);
-      animRef.current = null;
-    };
+    setIndicatorLeft(targetLeft);
   }, [targetLeft]);
 
   // Telegram init
@@ -1779,7 +1736,8 @@ const logoStyle: React.CSSProperties = {
     background: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(243,248,251,0.82) 100%)",
     border: "1px solid rgba(255,255,255,0.62)",
     boxShadow: "0 8px 18px rgba(8,24,33,0.10), inset 0 1px 0 rgba(255,255,255,0.98)",
-    transition: "none",
+    transition: "left 240ms cubic-bezier(0.22, 1, 0.36, 1)",
+    zIndex: 0,
   };
 
   const navBtnBase: React.CSSProperties = {
@@ -1795,6 +1753,8 @@ const logoStyle: React.CSSProperties = {
     userSelect: "none",
     WebkitTapHighlightColor: "transparent",
     transition: "transform 140ms ease, opacity 140ms ease, filter 160ms ease",
+    position: "relative",
+    zIndex: 1,
   };
 
   function onPressDown(e: any) {
@@ -2602,7 +2562,7 @@ const logoStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_BG} />
+            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_INK} />
           </button>
 
           <button
@@ -2615,7 +2575,7 @@ const logoStyle: React.CSSProperties = {
             onPointerLeave={onPressUp}
           >
             <div style={{ position: "relative" }}>
-              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_BG} />
+              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_INK} />
               {cart.length > 0 && (
                 <div
                   style={{
@@ -2655,7 +2615,7 @@ const logoStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_BG} />
+            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_INK} />
           </button>
         </div>
       </div>
