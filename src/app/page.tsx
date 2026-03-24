@@ -454,9 +454,9 @@ export default function Page() {
 
     if (animRef.current) cancelAnimationFrame(animRef.current);
 
-    const stiffness = 0.12;
-    const damping = 0.78;
-    const maxStep = 24;
+    const stiffness = 0.095;
+    const damping = 0.84;
+    const maxStep = 18;
 
     const tick = () => {
       const x = xRef.current;
@@ -1776,9 +1776,9 @@ const logoStyle: React.CSSProperties = {
     width: NAV_BTN_W - IND_INSET * 2,
     height: NAV_BTN_H - IND_INSET * 2,
     borderRadius: 15,
-    background: "linear-gradient(180deg, rgba(255,255,255,0.92) 0%, rgba(242,247,250,0.78) 100%)",
-    border: "1px solid rgba(255,255,255,0.55)",
-    boxShadow: "0 10px 24px rgba(8,24,33,0.12), inset 0 1px 0 rgba(255,255,255,0.95)",
+    background: "linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(243,248,251,0.82) 100%)",
+    border: "1px solid rgba(255,255,255,0.62)",
+    boxShadow: "0 8px 18px rgba(8,24,33,0.10), inset 0 1px 0 rgba(255,255,255,0.98)",
     transition: "none",
   };
 
@@ -1967,7 +1967,7 @@ const logoStyle: React.CSSProperties = {
                           padding: "8px 12px",
                           borderRadius: 999,
                           border: active
-                            ? "1px solid rgba(43,128,164,0.24)"
+                            ? UI_THEME.categoryActive.border
                             : "1px solid rgba(10,19,23,0.12)",
                           background: active
                             ? UI_THEME.categoryActive.bg
@@ -1975,6 +1975,7 @@ const logoStyle: React.CSSProperties = {
                           color: BRAND_INK,
                           cursor: "pointer",
                           fontWeight: 900,
+                          boxShadow: active ? UI_THEME.categoryActive.shadow : "none",
                         }}
                       >
                         {c.name}
@@ -2038,10 +2039,11 @@ const logoStyle: React.CSSProperties = {
                                 padding: "10px 16px",
                                 borderRadius: 999,
                                 border: UI_THEME.addButton.border,
-                                background: UI_THEME.addButton.bg,
+                                background: "linear-gradient(180deg, rgba(43,128,164,0.22) 0%, rgba(43,128,164,0.14) 100%)",
                                 color: BRAND_INK,
                                 fontWeight: 900,
                                 cursor: "pointer",
+                                boxShadow: "0 8px 18px rgba(43,128,164,0.12), inset 0 1px 0 rgba(255,255,255,0.68)",
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 6,
@@ -2600,7 +2602,7 @@ const logoStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_ACCENT} />
+            <IconCatalog active={viewIndex === 0} ink={BRAND_INK} accent={BRAND_BG} />
           </button>
 
           <button
@@ -2613,7 +2615,7 @@ const logoStyle: React.CSSProperties = {
             onPointerLeave={onPressUp}
           >
             <div style={{ position: "relative" }}>
-              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_ACCENT} />
+              <IconCart active={viewIndex === 1} ink={BRAND_INK} accent={BRAND_BG} />
               {cart.length > 0 && (
                 <div
                   style={{
@@ -2653,7 +2655,7 @@ const logoStyle: React.CSSProperties = {
             onPointerCancel={onPressUp}
             onPointerLeave={onPressUp}
           >
-            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_ACCENT} />
+            <IconProfile active={viewIndex === 2} ink={BRAND_INK} accent={BRAND_BG} />
           </button>
         </div>
       </div>
