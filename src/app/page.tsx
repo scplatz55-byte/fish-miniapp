@@ -2175,22 +2175,27 @@ const logoStyle: React.CSSProperties = {
                             gap: 6,
                             padding: "4px",
                             borderRadius: 999,
-                            border: "1px solid rgba(10,19,23,0.08)",
-                                background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,249,251,0.92) 100%)",
-                                boxShadow: "0 10px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.85)",
+                            border: "1px solid rgba(43,128,164,0.14)",
+                            background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(241,247,250,0.94) 100%)",
+                            boxShadow: "0 10px 18px rgba(43,128,164,0.08), inset 0 1px 0 rgba(255,255,255,0.88)",
                             width: "fit-content",
                           }}
                         >
                           <button
+                            onPointerDown={onPressDown}
+                            onPointerUp={onPressUp}
+                            onPointerCancel={onPressUp}
+                            onPointerLeave={onPressUp}
                             style={{
-                              width: 36,
-                                  height: 36,
-                                  borderRadius: cart.length > 9 ? 999 : "50%"
-                                  border: "1px solid rgba(10,19,23,0.08)",
-                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
-                                  fontWeight: 900,
-                                  cursor: "pointer",
-                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+                              width: 30,
+                              height: 30,
+                              borderRadius: 999,
+                              border: "1px solid rgba(43,128,164,0.18)",
+                              background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
+                              fontWeight: 900,
+                              color: BRAND_BG,
+                              cursor: "pointer",
+                              boxShadow: "0 8px 16px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
                             }}
                             onClick={() => changeQuantity(item.product.id, -1)}
                           >
@@ -2198,7 +2203,7 @@ const logoStyle: React.CSSProperties = {
                           </button>
                           <div
                             style={{
-                              minWidth: 26,
+                              minWidth: 18,
                               textAlign: "center",
                               fontWeight: 900,
                               fontSize: 14,
@@ -2207,24 +2212,33 @@ const logoStyle: React.CSSProperties = {
                             {item.quantity}
                           </div>
                           <button
+                            onPointerDown={onPressDown}
+                            onPointerUp={onPressUp}
+                            onPointerCancel={onPressUp}
+                            onPointerLeave={onPressUp}
                             style={{
-                              width: 36,
-                                  height: 36,
-                                  borderRadius: cart.length > 9 ? 999 : "50%"
-                                  border: "1px solid rgba(10,19,23,0.08)",
-                                  background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
-                                  fontWeight: 900,
-                                  cursor: "pointer",
-                                  boxShadow: "0 8px 16px rgba(10,19,23,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+                              width: 30,
+                              height: 30,
+                              borderRadius: 999,
+                              border: "1px solid rgba(43,128,164,0.18)",
+                              background: "linear-gradient(180deg, rgba(240,249,253,0.98) 0%, rgba(230,243,249,0.94) 100%)",
+                              fontWeight: 900,
+                              color: BRAND_BG,
+                              cursor: "pointer",
+                              boxShadow: "0 8px 16px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.92)",
                             }}
                             onClick={() => changeQuantity(item.product.id, 1)}
                           >
                             +
                           </button>
                           <button
+                            onPointerDown={onPressDown}
+                            onPointerUp={onPressUp}
+                            onPointerCancel={onPressUp}
+                            onPointerLeave={onPressUp}
                             style={{
-                              width: 30,
-                                    height: 30,
+                              width: 28,
+                              height: 28,
                               borderRadius: 999,
                               border: "1px solid rgba(10,19,23,0.10)",
                               background: "#fff",
@@ -2237,7 +2251,7 @@ const logoStyle: React.CSSProperties = {
                             onClick={() => removeFromCart(item.product.id)}
                             title="Убрать из корзины"
                           >
-                            <span style={{color: "#D43314", fontSize: 18, fontWeight: 900, lineHeight: 1}}>✕</span>
+                            <span style={{ color: "#D43314", fontSize: 18, fontWeight: 900, lineHeight: 1 }}>✕</span>
                           </button>
                         </div>
                       </div>
