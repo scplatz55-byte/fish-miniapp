@@ -205,6 +205,30 @@ export default function CheckoutOverlay({
             transform: translateY(0);
           }
         }
+
+        .checkout-premium-input {
+          transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease, background 160ms ease;
+        }
+
+        .checkout-premium-input:focus {
+          border-color: rgba(212,51,20,0.24) !important;
+          box-shadow: 0 0 0 4px rgba(212,51,20,0.10), 0 10px 24px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.78) !important;
+          transform: translateY(-1px);
+        }
+
+        .checkout-pressable {
+          transition: transform 140ms ease, box-shadow 160ms ease, opacity 160ms ease;
+          will-change: transform;
+        }
+
+        .checkout-pressable:active {
+          transform: translateY(1px) scale(0.992);
+        }
+
+        .checkout-cta:active {
+          transform: translateY(1px) scale(0.992);
+          box-shadow: 0 10px 18px rgba(212,51,20,0.16), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+        }
       `}</style>
       <div
       style={{
@@ -231,6 +255,7 @@ export default function CheckoutOverlay({
           }}
         >
           <button
+            className="checkout-pressable checkout-cta"
             style={{
               ...ghostButtonStyle,
               width: 48,
@@ -263,6 +288,7 @@ export default function CheckoutOverlay({
           >
             <button
               type="button"
+              className="checkout-pressable"
               style={tabButtonStyle(deliveryType === "delivery")}
               onClick={() => onChangeDeliveryType("delivery")}
             >
@@ -270,6 +296,7 @@ export default function CheckoutOverlay({
             </button>
             <button
               type="button"
+              className="checkout-pressable"
               style={tabButtonStyle(deliveryType === "pickup")}
               onClick={() => onChangeDeliveryType("pickup")}
             >
@@ -279,6 +306,7 @@ export default function CheckoutOverlay({
 
 <input
   ref={fullNameRef}
+  className="checkout-premium-input"
   style={premiumInputStyle}
   placeholder="Имя"
             value={orderFullName}
@@ -287,6 +315,7 @@ export default function CheckoutOverlay({
 
           <input
   ref={phoneRef}
+  className="checkout-premium-input"
   style={premiumInputStyle}
   type="tel"
   inputMode="tel"
@@ -301,6 +330,7 @@ export default function CheckoutOverlay({
             <>
               <input
                 ref={addressRef}
+                className="checkout-premium-input"
                 style={premiumInputStyle}
                 placeholder="Адрес доставки"
                 value={orderAddress}
@@ -309,6 +339,7 @@ export default function CheckoutOverlay({
 
               <button
                 type="button"
+                className="checkout-pressable"
                 onClick={onTogglePrivateHouse}
                 style={{
                   display: "flex",
@@ -345,25 +376,29 @@ export default function CheckoutOverlay({
                   }}
                 >
                   <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    className="checkout-premium-input"
+                    style={{ ...premiumInputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                     placeholder="Подъезд"
                     value={orderEntrance}
                     onChange={(e) => onChangeEntrance(e.target.value)}
                   />
                   <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    className="checkout-premium-input"
+                    style={{ ...premiumInputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                     placeholder="Этаж"
                     value={orderFloor}
                     onChange={(e) => onChangeFloor(e.target.value)}
                   />
                   <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    className="checkout-premium-input"
+                    style={{ ...premiumInputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                     placeholder="Квартира"
                     value={orderApartment}
                     onChange={(e) => onChangeApartment(e.target.value)}
                   />
                   <input
-                    style={{ ...inputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
+                    className="checkout-premium-input"
+                    style={{ ...premiumInputStyle, width: "100%", minWidth: 0, boxSizing: "border-box" }}
                     placeholder="Домофон"
                     value={orderIntercom}
                     onChange={(e) => onChangeIntercom(e.target.value)}
@@ -439,6 +474,7 @@ export default function CheckoutOverlay({
                       </div>
                       <button
                         type="button"
+                        className="checkout-pressable"
                         style={{
                           ...ghostButtonStyle,
                           border: "1px solid rgba(212,51,20,0.22)",
@@ -460,6 +496,7 @@ export default function CheckoutOverlay({
                       <button
                         key={d.value}
                         type="button"
+                        className="checkout-pressable"
                         style={tabButtonStyle(deliveryDate === d.value)}
                         onClick={() => onChangeDeliveryDate(d.value)}
                       >
@@ -482,6 +519,7 @@ export default function CheckoutOverlay({
                       <button
                         key={slot}
                         type="button"
+                        className="checkout-pressable"
                         style={tabButtonStyle(deliverySlot === slot)}
                         onClick={() => onChangeDeliverySlot(slot)}
                       >
@@ -500,6 +538,7 @@ export default function CheckoutOverlay({
                   <button
                     key={point.id}
                     type="button"
+                    className="checkout-pressable"
                     style={{
                       ...cardStyle,
                       padding: 14,
@@ -582,13 +621,14 @@ export default function CheckoutOverlay({
               boxShadow: "inset 0 0 0 1px rgba(10,19,23,0.06), 0 10px 22px rgba(10,19,23,0.04)",
             }}
           >
-            <button type="button" style={tabButtonStyle(paymentMethod === "cash")} onClick={() => onChangePaymentMethod("cash")}>Наличные</button>
-            <button type="button" style={tabButtonStyle(paymentMethod === "transfer")} onClick={() => onChangePaymentMethod("transfer")}>Перевод</button>
-            <button type="button" style={tabButtonStyle(paymentMethod === "qr")} onClick={() => onChangePaymentMethod("qr")}>QR-код</button>
+            <button type="button" className="checkout-pressable" style={tabButtonStyle(paymentMethod === "cash")} onClick={() => onChangePaymentMethod("cash")}>Наличные</button>
+            <button type="button" className="checkout-pressable" style={tabButtonStyle(paymentMethod === "transfer")} onClick={() => onChangePaymentMethod("transfer")}>Перевод</button>
+            <button type="button" className="checkout-pressable" style={tabButtonStyle(paymentMethod === "qr")} onClick={() => onChangePaymentMethod("qr")}>QR-код</button>
           </div>
 
           <div style={sectionTitleStyle}>Промокод</div>
           <input
+            className="checkout-premium-input"
             style={premiumInputStyle}
             placeholder="Введите промокод"
             value={promoCode}
@@ -597,6 +637,7 @@ export default function CheckoutOverlay({
 
           <div style={sectionTitleStyle}>Комментарий</div>
           <textarea
+            className="checkout-premium-input"
             style={{ ...premiumInputStyle, minHeight: 110, resize: "vertical" }}
             placeholder="Комментарий к заказу"
             value={orderComment}
