@@ -2213,8 +2213,21 @@ const logoStyle: React.CSSProperties = {
                   </div>
 
                   <button
-                    style={{ ...btnPrimary, width: "100%", marginTop: 12 }}
+                    style={{
+                      ...btnPrimary,
+                      width: "100%",
+                      marginTop: 14,
+                      minHeight: 54,
+                      fontSize: 16,
+                      letterSpacing: "-0.01em",
+                      boxShadow: "0 18px 30px rgba(212,51,20,0.24), inset 0 1px 0 rgba(255,255,255,0.18)",
+                      transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease",
+                    }}
                     onClick={() => setCheckoutOpen(true)}
+                    onPointerDown={onPressDown}
+                    onPointerUp={onPressUp}
+                    onPointerCancel={onPressUp}
+                    onPointerLeave={onPressUp}
                   >
                     Оформить заказ
                   </button>
