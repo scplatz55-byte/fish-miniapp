@@ -68,6 +68,11 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
         transition: "transform 140ms ease, box-shadow 160ms ease, filter 160ms ease, border-color 160ms ease, background 160ms ease",
         transform: "translateY(0)",
         WebkitTapHighlightColor: "transparent",
+        WebkitTouchCallout: "none",
+        userSelect: "none",
+        WebkitUserSelect: "none",
+        touchAction: "manipulation",
+        fontFamily: '"SF Pro Display", "Inter", system-ui, sans-serif',
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
@@ -90,8 +95,8 @@ function PremiumMenuCard({ title, description, icon, accent, onClick }: MenuItem
         </div>
 
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 900, fontSize: 15, letterSpacing: "-0.01em" }}>{title}</div>
-          <div style={{ marginTop: 4, fontSize: 13, opacity: 0.68, lineHeight: 1.45 }}>{description}</div>
+          <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "-0.02em", lineHeight: 1.15 }}>{title}</div>
+          <div style={{ marginTop: 5, fontSize: 13, opacity: 0.64, lineHeight: 1.42, letterSpacing: "-0.01em" }}>{description}</div>
         </div>
       </div>
 
@@ -132,7 +137,7 @@ export default function ProfileMainScreen({
   onOpenAdmin,
 }: ProfileMainScreenProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: '"SF Pro Display", "Inter", system-ui, sans-serif' }}>
       <div
         style={{
           ...cardStyle,
@@ -181,10 +186,10 @@ export default function ProfileMainScreen({
             <div style={{ fontSize: 11, opacity: 0.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>
               Профиль
             </div>
-            <div style={{ marginTop: 4, fontWeight: 900, fontSize: 20, letterSpacing: "-0.02em" }}>
+            <div style={{ marginTop: 4, fontWeight: 900, fontSize: 22, letterSpacing: "-0.03em", lineHeight: 1.05 }}>{profileData?.full_name || tgDisplayName() || "Профиль"}</div>
               {profileData?.full_name || tgDisplayName() || "Профиль"}
             </div>
-            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.72, lineHeight: 1.45 }}>
+            <div style={{ marginTop: 6, fontSize: 13, opacity: 0.68, lineHeight: 1.45, letterSpacing: "-0.01em" }}>
               {tgUser?.username ? `@${tgUser.username}` : `ID: ${tgUserId || "—"}`}
             </div>
           </div>
