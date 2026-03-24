@@ -63,6 +63,7 @@ export default function ProfileDataScreen({
   primaryButtonStyle,
 }: ProfileDataScreenProps) {
   const phoneError = Boolean(phone) && !isValidPhone(phone);
+  const saveDisabled = saveLoading || phoneError;
 
   return (
     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -116,12 +117,20 @@ export default function ProfileDataScreen({
       />
 
       <button
-        style={{ ...primaryButtonStyle, width: "100%", opacity: saveLoading ? 0.7 : 1 }}
+        style={{
+          ...primaryButtonStyle,
+          width: "100%",
+          opacity: saveDisabled ? 0.7 : 1,
+          cursor: saveDisabled ? "not-allowed" : "pointer",
+          transform: saveDisabled ? "none" : "translateY(0)",
+          transition: "opacity 160ms ease, transform 160ms ease",
+        }}
         onClick={onSave}
-        disabled={saveLoading}
+        disabled={saveDisabled}
       >
         {saveLoading ? "Сохраняем..." : "Сохранить"}
       </button>
     </div>
   );
 }
+
