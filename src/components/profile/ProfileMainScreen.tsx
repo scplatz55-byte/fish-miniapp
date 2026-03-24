@@ -260,7 +260,7 @@ export default function ProfileMainScreen({
         title="Мои данные"
         description="Имя, телефон и адрес доставки"
         icon="👤"
-        accent="linear-gradient(180deg, rgba(76,110,245,0.16) 0%, rgba(76,110,245,0.10) 100%)"
+        accent="linear-gradient(180deg, rgba(43,128,164,0.18) 0%, rgba(43,128,164,0.10) 100%)"
         onClick={onOpenData}
       />
 
@@ -268,7 +268,7 @@ export default function ProfileMainScreen({
         title="Тех. поддержка"
         description="Связаться с нами в Telegram"
         icon="💬"
-        accent="linear-gradient(180deg, rgba(37,211,102,0.16) 0%, rgba(37,211,102,0.10) 100%)"
+        accent="linear-gradient(180deg, rgba(43,128,164,0.18) 0%, rgba(43,128,164,0.10) 100%)"
         onClick={onOpenSupport}
       />
 
@@ -277,7 +277,7 @@ export default function ProfileMainScreen({
           title="Админка"
           description="Просмотр и управление заказами"
           icon="🛠️"
-          accent="linear-gradient(180deg, rgba(255,184,77,0.18) 0%, rgba(255,184,77,0.10) 100%)"
+          accent="linear-gradient(180deg, rgba(43,128,164,0.18) 0%, rgba(43,128,164,0.10) 100%)"
           onClick={onOpenAdmin}
         />
       )}
