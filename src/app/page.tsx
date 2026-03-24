@@ -1367,8 +1367,39 @@ if (cart.length === 0) {
       parts.push(`Комментарий: ${orderComment.trim()}`);
     }
 
-    return parts.join("\n");
+    return parts.join("
+");
   }
+
+  useEffect(() => {
+    if (deliveryType !== "delivery") return;
+
+    const dates = getAvailableDeliveryDates();
+    const hasSelectedDate = dates.some((d) => d.value === deliveryDate);
+
+    if (deliveryDate && !hasSelectedDate) {
+      setDeliveryDate("");
+      setDeliverySlot("");
+      return;
+    }
+
+    const slots = getAvailableTimeSlots();
+    const hasSelectedSlot = slots.includes(deliverySlot);
+
+    if (deliverySlot && !hasSelectedSlot) {
+      setDeliverySlot("");
+    }
+  }, [
+    deliveryType,
+    deliveryDate,
+    deliverySlot,
+    deliverySlots,
+    deliveryScheduleLoading,
+    weekdayRules,
+    weekdayIntervals,
+    dateOverrides,
+    overrideIntervals,
+  ]);
 
   function openSupport() {
     const SUPPORT_LINK = process.env.NEXT_PUBLIC_SUPPORT_LINK || "";
