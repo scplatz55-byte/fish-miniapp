@@ -20,7 +20,8 @@ type ProfileOrderDetailsProps = {
 };
 
 function normalizeText(value: string | null | undefined) {
-  return (value || "").split("\\n").join("\n").trim();
+  return (value || "").split("\n").join("
+").trim();
 }
 
 function getPaymentLabel(method: string) {
@@ -39,9 +40,23 @@ function getPaymentLabel(method: string) {
 function parseItems(text: string | null | undefined) {
   const normalized = normalizeText(text);
   return normalized
-    .split("\n")
+    .split("
+")
     .map((l) => l.replace(/^•\s*/, "").trim())
     .filter(Boolean);
+}
+
+function getInlineStatusMeta(status: OrderStatus) {
+  switch (status) {
+    case "delivered":
+      return { label: "Доставлен", color: "#2ecc71" };
+    case "canceled":
+      return { label: "Отменён", color: "#e74c3c" };
+    case "on_the_way":
+      return { label: "В пути", color: "#f1c40f" };
+    default:
+      return { label: "Собирается", color: "#2B80A4" };
+  }
 }
 
 function InfoRow({ label, value, icon }: { label: string; value: React.ReactNode; icon: string }) {
@@ -77,14 +92,11 @@ function ItemRow({ line, formatPriceRub }: { line: string; formatPriceRub: any }
   const titlePart = parts[0] || line;
   const totalPart = parts.slice(1).join(" — ");
 
-  // пытаемся вытащить количество
   const qtyMatch = titlePart.match(/×\s*(\d+)/);
   const qty = qtyMatch ? Number(qtyMatch[1]) : 1;
 
-  // вытаскиваем сумму
   const priceNumMatch = totalPart.replace(/[^0-9]/g, "");
   const total = priceNumMatch ? Number(priceNumMatch) : 0;
-
   const unitPrice = qty > 0 ? Math.round(total / qty) : total;
 
   return (
@@ -111,9 +123,7 @@ function ItemRow({ line, formatPriceRub }: { line: string; formatPriceRub: any }
         />
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <div style={{ fontSize: 14, color: "#0A1317" }}>{titlePart}</div>
-          <div style={{ fontSize: 12, opacity: 0.5 }}>
-            {formatPriceRub(unitPrice)} / шт
-          </div>
+          <div style={{ fontSize: 12, opacity: 0.5 }}>{formatPriceRub(unitPrice)} / шт</div>
         </div>
       </div>
 
@@ -122,13 +132,14 @@ function ItemRow({ line, formatPriceRub }: { line: string; formatPriceRub: any }
   );
 }
 
-export default function ProfileOrderDetails({ order, formatDateTime, formatPriceRub, smallMutedStyle, renderStatusBadge }: ProfileOrderDetailsProps) {
+export default function ProfileOrderDetails({ order, formatDateTime, formatPriceRub, smallMutedStyle }: ProfileOrderDetailsProps) {
   if (!order) {
     return <div style={{ marginTop: 12, opacity: 0.75 }}>Заказ не найден.</div>;
   }
 
   const comment = normalizeText(order.comment);
   const items = parseItems(order.items_text);
+  const statusMeta = getInlineStatusMeta(order.status);
 
   return (
     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -141,12 +152,35 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
           padding: 16,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div>
             <div style={{ fontWeight: 900, fontSize: 22 }}>#{order.id.slice(0, 8)}</div>
-            <div style={{ ...smallMutedStyle, marginTop: 6 }}>{formatDateTime(order.created_at)}</div>
+            <div
+              style={{
+                marginTop: 8,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                fontSize: 14,
+                fontWeight: 800,
+                color: statusMeta.color,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 999,
+                  background: statusMeta.color,
+                  boxShadow: `0 0 0 4px ${statusMeta.color}22, 0 0 10px ${statusMeta.color}33`,
+                  flexShrink: 0,
+                }}
+              />
+              <span>{statusMeta.label}</span>
+            </div>
+            <div style={{ ...smallMutedStyle, marginTop: 8 }}>{formatDateTime(order.created_at)}</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center" }}>{renderStatusBadge(order.status)}</div>
         </div>
 
         <div style={{ marginTop: 14, fontWeight: 900, fontSize: 22 }}>{formatPriceRub(order.total_amount)}</div>
