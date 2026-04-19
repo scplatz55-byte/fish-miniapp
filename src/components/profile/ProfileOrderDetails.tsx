@@ -72,10 +72,20 @@ function InfoRow({ label, value, icon }: { label: string; value: React.ReactNode
   );
 }
 
-function ItemRow({ line }: { line: string }) {
+function ItemRow({ line, formatPriceRub }: { line: string; formatPriceRub: any }) {
   const parts = line.split(" — ");
-  const title = parts[0];
-  const price = parts.slice(1).join(" — ");
+  const titlePart = parts[0] || line;
+  const totalPart = parts.slice(1).join(" — ");
+
+  // пытаемся вытащить количество
+  const qtyMatch = titlePart.match(/×\s*(\d+)/);
+  const qty = qtyMatch ? Number(qtyMatch[1]) : 1;
+
+  // вытаскиваем сумму
+  const priceNumMatch = totalPart.replace(/[^0-9]/g, "");
+  const total = priceNumMatch ? Number(priceNumMatch) : 0;
+
+  const unitPrice = qty > 0 ? Math.round(total / qty) : total;
 
   return (
     <div
@@ -92,20 +102,22 @@ function ItemRow({ line }: { line: string }) {
       <div style={{ display: "flex", gap: 10, minWidth: 0, flex: 1 }}>
         <div
           style={{
-            width: 8,
-            height: 8,
+            width: 6,
+            height: 6,
             borderRadius: 999,
-            marginTop: 7,
-            background: "#2B80A4",
-            boxShadow: "0 0 0 4px rgba(43,128,164,0.08)",
+            marginTop: 8,
+            background: "rgba(10,19,23,0.25)",
           }}
         />
-        <div style={{ fontSize: 14, lineHeight: 1.5, color: "#0A1317" }}>{title}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ fontSize: 14, color: "#0A1317" }}>{titlePart}</div>
+          <div style={{ fontSize: 12, opacity: 0.5 }}>
+            {formatPriceRub(unitPrice)} / шт
+          </div>
+        </div>
       </div>
 
-      {price && (
-        <div style={{ fontWeight: 900, fontSize: 15, color: "#0A1317" }}>{price}</div>
-      )}
+      <div style={{ fontWeight: 900, fontSize: 15, color: "#0A1317" }}>{totalPart}</div>
     </div>
   );
 }
@@ -129,12 +141,12 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
           padding: 16,
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontWeight: 900, fontSize: 22 }}>#{order.id.slice(0, 8)}</div>
             <div style={{ ...smallMutedStyle, marginTop: 6 }}>{formatDateTime(order.created_at)}</div>
           </div>
-          {renderStatusBadge(order.status)}
+          <div style={{ display: "flex", alignItems: "center" }}>{renderStatusBadge(order.status)}</div>
         </div>
 
         <div style={{ marginTop: 14, fontWeight: 900, fontSize: 22 }}>{formatPriceRub(order.total_amount)}</div>
@@ -153,7 +165,7 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
       >
         <InfoRow label="Адрес" value={order.address} icon="📍" />
         <InfoRow label="Оплата" value={getPaymentLabel(order.payment_method)} icon="💳" />
-        {comment && <InfoRow label="Комментарий" value={<span style={{ whiteSpace: "pre-wrap" }}>{comment}</span>} icon="💬" />}
+        {comment && <InfoRow label="Детали заказа" value={<span style={{ whiteSpace: "pre-wrap" }}>{comment}</span>} icon="💬" />}
       </div>
 
       <div
@@ -167,7 +179,22 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
         <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", opacity: 0.5 }}>Состав заказа</div>
 
         <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 10 }}>
-          {items.length ? items.map((line, i) => <ItemRow key={i} line={line} />) : <div>Нет данных</div>}
+          {items.length ? items.map((line, i) => <ItemRow key={i} line={line} formatPriceRub={formatPriceRub} />) : <div>Нет данных</div>}
+        </div>
+
+        <div
+          style={{
+            marginTop: 12,
+            paddingTop: 12,
+            borderTop: "1px dashed rgba(10,19,23,0.1)",
+            display: "flex",
+            justifyContent: "space-between",
+            fontWeight: 900,
+            fontSize: 16,
+          }}
+        >
+          <span>Итого</span>
+          <span>{formatPriceRub(order.total_amount)}</span>
         </div>
       </div>
     </div>
