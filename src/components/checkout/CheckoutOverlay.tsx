@@ -593,7 +593,27 @@ export default function CheckoutOverlay({
                         </div>
                         <div style={{ fontWeight: 900, fontSize: 15, marginTop: 2 }}>{point.title}</div>
                       </div>
-                      {active && <span style={{ color: "#2B80A4", fontWeight: 900 }}>✓</span>}
+                      {active && (
+                        <span
+                          style={{
+                            minWidth: 24,
+                            height: 24,
+                            padding: "0 8px",
+                            borderRadius: 999,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "linear-gradient(180deg, rgba(238,248,252,0.98) 0%, rgba(229,243,249,0.94) 100%)",
+                            border: "1px solid rgba(43,128,164,0.18)",
+                            boxShadow: "0 8px 16px rgba(43,128,164,0.08), inset 0 1px 0 rgba(255,255,255,0.9)",
+                            color: "#0A1317",
+                            fontWeight: 900,
+                            fontSize: 13,
+                          }}
+                        >
+                          ✓
+                        </span>
+                      )}
                     </div>
                     <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
                   </button>
@@ -613,11 +633,11 @@ export default function CheckoutOverlay({
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(242,246,255,0.96) 100%)",
-                    border: "1px solid rgba(76,110,245,0.12)",
-                    boxShadow: "0 8px 18px rgba(76,110,245,0.10), inset 0 1px 0 rgba(255,255,255,0.9)",
+                    background: "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(246,248,250,0.96) 100%)",
+                    border: "1px solid rgba(10,19,23,0.08)",
+                    boxShadow: "0 8px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.9)",
                     flexShrink: 0,
-                    color: "#3659D9",
+                    color: "#0A1317",
                     fontSize: 16,
                     fontWeight: 900,
                   }}
@@ -625,10 +645,10 @@ export default function CheckoutOverlay({
                   ⏰
                 </div>
                 <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 4, letterSpacing: "-0.01em" }}>
+                  <div style={{ fontWeight: 900, fontSize: 14, marginBottom: 4, letterSpacing: "-0.01em", color: "#0A1317" }}>
                     Режим работы выбранной точки
                   </div>
-                  <div style={{ fontSize: 13, lineHeight: 1.55, opacity: 0.84 }}>
+                  <div style={{ fontSize: 13, lineHeight: 1.55, opacity: 0.78, color: "#0A1317" }}>
                     {pickupPoints.find((point) => point.id === pickupPointId)?.worktime_text ||
                       (pickupPointId === "strelna"
                         ? "Режим работы магазина: 10:00–21:00 ежедневно."
