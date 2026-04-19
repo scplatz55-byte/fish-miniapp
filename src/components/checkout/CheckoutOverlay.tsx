@@ -214,8 +214,8 @@ export default function CheckoutOverlay({
         }
 
         .checkout-premium-input:focus {
-          border-color: rgba(212,51,20,0.24) !important;
-          box-shadow: 0 0 0 4px rgba(212,51,20,0.10), 0 10px 24px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.78) !important;
+          border-color: rgba(43,128,164,0.24) !important;
+          box-shadow: 0 0 0 4px rgba(43,128,164,0.10), 0 10px 24px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.78) !important;
           transform: translateY(-1px);
         }
 
@@ -237,6 +237,21 @@ export default function CheckoutOverlay({
         .checkout-cta:active {
           transform: translateY(1px) scale(0.992);
           box-shadow: 0 10px 18px rgba(212,51,20,0.16), inset 0 1px 0 rgba(255,255,255,0.18) !important;
+        }
+
+        @keyframes checkoutSpin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .checkout-spinner {
+          width: 16px;
+          height: 16px;
+          border-radius: 999px;
+          border: 2px solid rgba(255,255,255,0.28);
+          border-top-color: rgba(255,255,255,0.92);
+          animation: checkoutSpin 0.8s linear infinite;
+          flex-shrink: 0;
         }
 
         button,
@@ -692,15 +707,22 @@ export default function CheckoutOverlay({
                 ? "none"
                 : "0 16px 26px rgba(212,51,20,0.22), inset 0 1px 0 rgba(255,255,255,0.25)",
               transition: "opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
             }}
             onClick={onSubmit}
             disabled={showDeliveryUnavailable || isSubmitting}
           >
-            {showDeliveryUnavailable
-              ? "Доставка недоступна"
-              : isSubmitting
-                ? "Оформляем заказ..."
-                : "Подтвердить заказ"}
+            {isSubmitting ? <span className="checkout-spinner" /> : null}
+            <span>
+              {showDeliveryUnavailable
+                ? "Доставка недоступна"
+                : isSubmitting
+                  ? "Оформляем заказ..."
+                  : "Подтвердить заказ"}
+            </span>
           </button>
         </div>
       </div>
