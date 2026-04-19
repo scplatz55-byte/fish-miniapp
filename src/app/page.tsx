@@ -2307,6 +2307,7 @@ const logoStyle: React.CSSProperties = {
               )}
             </div>
             <CheckoutOverlay
+			  isSubmitting={checkoutSubmitting}
               isOpen={checkoutOpen}
               headerOffsetTop={`calc(env(safe-area-inset-top, 0px) + ${HEADER_H - 16}px)`}
               bottomPadding={contentBottomPadding}

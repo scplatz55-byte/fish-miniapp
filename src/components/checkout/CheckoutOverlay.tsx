@@ -8,6 +8,7 @@ type PickupPoint = {
 };
 
 type CheckoutOverlayProps = {
+  isSubmitting?: boolean;
   isOpen: boolean;
   headerOffsetTop: string;
   bottomPadding: string;
@@ -91,6 +92,7 @@ function sanitizePhoneForSubmit(value: string) {
 }
 
 export default function CheckoutOverlay({
+  isSubmitting = false,
   isOpen,
   headerOffsetTop,
   bottomPadding,
@@ -169,6 +171,7 @@ export default function CheckoutOverlay({
   if (!isOpen) return null;
 
   const showDeliveryUnavailable = deliveryType === "delivery" && availableDates.length === 0;
+  const showTimeSlots = deliveryType === "delivery" && Boolean(deliveryDate) && availableTimeSlots.length > 0;
 
   const sectionTitleStyle: React.CSSProperties = {
     fontWeight: 900,
@@ -362,6 +365,7 @@ export default function CheckoutOverlay({
                   borderRadius: 16,
                   background: "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(247,248,250,0.92) 100%)",
                   boxShadow: "0 10px 24px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.75)",
+                  color: "#0A1317",
                   cursor: "pointer",
                   width: "100%",
                 }}
@@ -512,17 +516,18 @@ export default function CheckoutOverlay({
                       </button>
                     ))}
                   </div>
+                  {showTimeSlots ? (
                   <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 8,
-              padding: 6,
-              borderRadius: 18,
-              background: "rgba(255,255,255,0.70)",
-              boxShadow: "inset 0 0 0 1px rgba(10,19,23,0.06), 0 10px 22px rgba(10,19,23,0.04)",
-            }}
-          >
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                      gap: 8,
+                      padding: 6,
+                      borderRadius: 18,
+                      background: "rgba(255,255,255,0.70)",
+                      boxShadow: "inset 0 0 0 1px rgba(10,19,23,0.06), 0 10px 22px rgba(10,19,23,0.04)",
+                    }}
+                  >
                     {availableTimeSlots.map((slot) => (
                       <button
                         key={slot}
@@ -535,6 +540,7 @@ export default function CheckoutOverlay({
                       </button>
                     ))}
                   </div>
+                ) : null}
                 </>
               )}
             </>
@@ -553,14 +559,15 @@ export default function CheckoutOverlay({
                       textAlign: "left",
                       cursor: "pointer",
                       border: active
-                        ? "1px solid rgba(212,51,20,0.24)"
+                        ? "1px solid rgba(43,128,164,0.24)"
                         : "1px solid rgba(10,19,23,0.08)",
                       background: active
-                        ? "linear-gradient(180deg, rgba(255,247,245,0.98) 0%, rgba(255,241,237,0.94) 100%)"
+                        ? "linear-gradient(180deg, rgba(238,248,252,0.98) 0%, rgba(229,243,249,0.94) 100%)"
                         : "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,249,251,0.94) 100%)",
                       boxShadow: active
-                        ? "0 14px 28px rgba(212,51,20,0.10), inset 0 1px 0 rgba(255,255,255,0.8)"
+                        ? "0 14px 28px rgba(43,128,164,0.10), inset 0 1px 0 rgba(255,255,255,0.84)"
                         : "0 10px 22px rgba(10,19,23,0.04), inset 0 1px 0 rgba(255,255,255,0.75)",
+                      color: "#0A1317",
                     }}
                     onClick={() => onChangePickupPointId(point.id)}
                   >
@@ -571,7 +578,7 @@ export default function CheckoutOverlay({
                         </div>
                         <div style={{ fontWeight: 900, fontSize: 15, marginTop: 2 }}>{point.title}</div>
                       </div>
-                      {active && <span style={{ color: brandAccent, fontWeight: 900 }}>✓</span>}
+                      {active && <span style={{ color: "#2B80A4", fontWeight: 900 }}>✓</span>}
                     </div>
                     <div style={{ marginTop: 6, fontSize: 13, opacity: 0.78 }}>{point.address}</div>
                   </button>
@@ -672,23 +679,28 @@ export default function CheckoutOverlay({
             <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.02em" }}>{totalLabel}</div>
           </div>
           <button
+            className="checkout-pressable checkout-cta"
             style={{
               ...primaryButtonStyle,
               width: "100%",
-              minHeight: 52,
-              opacity: showDeliveryUnavailable ? 0.55 : 1,
-              cursor: showDeliveryUnavailable ? "not-allowed" : "pointer",
-              boxShadow: showDeliveryUnavailable
+              minHeight: 54,
+              fontSize: 16,
+              letterSpacing: "-0.01em",
+              opacity: showDeliveryUnavailable || isSubmitting ? 0.72 : 1,
+              cursor: showDeliveryUnavailable || isSubmitting ? "not-allowed" : "pointer",
+              boxShadow: showDeliveryUnavailable || isSubmitting
                 ? "none"
                 : "0 16px 26px rgba(212,51,20,0.22), inset 0 1px 0 rgba(255,255,255,0.25)",
               transition: "opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease",
             }}
             onClick={onSubmit}
-            disabled={showDeliveryUnavailable}
+            disabled={showDeliveryUnavailable || isSubmitting}
           >
             {showDeliveryUnavailable
               ? "Доставка недоступна"
-              : "Подтвердить заказ"}
+              : isSubmitting
+                ? "Оформляем заказ..."
+                : "Подтвердить заказ"}
           </button>
         </div>
       </div>
