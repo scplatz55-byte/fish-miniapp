@@ -376,6 +376,7 @@ export default function Page() {
   const [orderComment, setOrderComment] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [promoCode, setPromoCode] = useState("");
+  const [checkoutSubmitting, setCheckoutSubmitting] = useState(false);
 
   // Admin
   const [isAdmin, setIsAdmin] = useState(false);
@@ -807,77 +808,92 @@ if (profileFormPhone && !isValidPhone(profileFormPhone)) {
 
   // Submit order
   async function submitOrder() {
-	  if (orderPhone && !isValidPhone(orderPhone)) {
-  return alert("Введите корректный номер телефона");
-}
+    if (checkoutSubmitting) return;
+    if (orderPhone && !isValidPhone(orderPhone)) {
+      return alert("Введите корректный номер телефона");
+    }
     if (!tgUserId) return alert("Ошибка авторизации (нет Telegram user id)");
-if (!orderFullName || !orderPhone) {
-  return alert("Заполните Имя и телефон");
-}
-if (deliveryType === "delivery" && !orderAddress.trim()) {
-  return alert("Введите адрес доставки");
-}
-if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
-  return alert("Выберите точку самовывоза");
-}
-if (deliveryType === "delivery" && !deliveryDate) {
-  return alert("Выберите дату");
-}
-if (deliveryType === "delivery" && !getAvailableTimeSlots().includes(deliverySlot)) {
-  return alert("Выберите доступный интервал времени");
-}
-if (cart.length === 0) {
-  return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
-}
+    if (!orderFullName || !orderPhone) {
+      return alert("Заполните Имя и телефон");
+    }
+    if (deliveryType === "delivery" && !orderAddress.trim()) {
+      return alert("Введите адрес доставки");
+    }
+    if (deliveryType === "pickup" && !getSelectedPickupPoint()) {
+      return alert("Выберите точку самовывоза");
+    }
+    if (deliveryType === "delivery" && !deliveryDate) {
+      return alert("Выберите дату");
+    }
+    if (deliveryType === "delivery" && !getAvailableTimeSlots().includes(deliverySlot)) {
+      return alert("Выберите доступный интервал времени");
+    }
+    if (cart.length === 0) {
+      return alert("🧺 Корзина пока пуста
 
-    const { data, error } = await supabase
-      .from("orders")
-      .insert([
-        {
-          user_telegram_id: tgUserId,
-          customer_name: orderFullName,
-          phone: orderPhone,
-          address: deliveryType === "pickup" ? getSelectedPickupPoint().address : buildDeliveryAddress(),
-          comment: buildOrderComment(),
-          payment_method: paymentMethod,
-          total_amount: total,
-          status: "assembling",
-        },
-      ])
-      .select()
-      .single();
+Добавьте товары из каталога, чтобы оформить заказ.");
+    }
 
-    if (error) return alert(error.message);
-
-    const orderId = data.id as string;
-
-    const items = cart.map((item) => ({
-      order_id: orderId,
-      product_id: item.product.id,
-      product_title: item.product.title,
-      price: item.product.price,
-      quantity: item.quantity,
-    }));
-
-    const { error: itemsErr } = await supabase.from("order_items").insert(items);
-    if (itemsErr) return alert(itemsErr.message);
+    setCheckoutSubmitting(true);
 
     try {
-      await fetch("/api/notify-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ initData, orderId }),
-      });
-    } catch {}
+      const { data, error } = await supabase
+        .from("orders")
+        .insert([
+          {
+            user_telegram_id: tgUserId,
+            customer_name: orderFullName,
+            phone: orderPhone,
+            address: deliveryType === "pickup" ? getSelectedPickupPoint().address : buildDeliveryAddress(),
+            comment: buildOrderComment(),
+            payment_method: paymentMethod,
+            total_amount: total,
+            status: "assembling",
+          },
+        ])
+        .select()
+        .single();
 
-    alert("Заказ оформлен!");
-    setCart([]);
-    setCheckoutOpen(false);
-    setOrderComment("");
-    setPromoCode("");
-    setView("profile");
-    setProfileScreen("history");
-    await loadMyOrders();
+      if (error) {
+        alert(error.message);
+        return;
+      }
+
+      const orderId = data.id as string;
+
+      const items = cart.map((item) => ({
+        order_id: orderId,
+        product_id: item.product.id,
+        product_title: item.product.title,
+        price: item.product.price,
+        quantity: item.quantity,
+      }));
+
+      const { error: itemsErr } = await supabase.from("order_items").insert(items);
+      if (itemsErr) {
+        alert(itemsErr.message);
+        return;
+      }
+
+      try {
+        await fetch("/api/notify-order", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ initData, orderId }),
+        });
+      } catch {}
+
+      alert("Заказ оформлен!");
+      setCart([]);
+      setCheckoutOpen(false);
+      setOrderComment("");
+      setPromoCode("");
+      setView("profile");
+      setProfileScreen("history");
+      await loadMyOrders();
+    } finally {
+      setCheckoutSubmitting(false);
+    }
   }
 
   // Profile: load my orders
@@ -1175,7 +1191,8 @@ if (cart.length === 0) {
       parts.push(`Комментарий: ${orderComment.trim()}`);
     }
 
-    return parts.join("\\n");
+    return parts.join("
+");
   }
 
   useEffect(() => {
