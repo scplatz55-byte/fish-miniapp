@@ -20,8 +20,7 @@ type ProfileOrderDetailsProps = {
 };
 
 function normalizeText(value: string | null | undefined) {
-  return (value || "").split("\n").join("
-").trim();
+  return (value || "").split("\\n").join("\n").trim();
 }
 
 function getPaymentLabel(method: string) {
@@ -39,11 +38,10 @@ function getPaymentLabel(method: string) {
 
 function parseItems(text: string | null | undefined) {
   const normalized = normalizeText(text);
-  return normalized
-    .split("
-")
-    .map((l) => l.replace(/^•\s*/, "").trim())
-    .filter(Boolean);
+return normalized
+  .split("\n")
+  .map((l) => l.replace(/^•\s*/, "").trim())
+  .filter(Boolean);
 }
 
 function getInlineStatusMeta(status: OrderStatus) {
