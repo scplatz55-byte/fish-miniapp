@@ -19,14 +19,16 @@ type ProfileOrdersListProps = {
 };
 
 function OrderIconBadge({ status }: { status: OrderStatus }) {
-  const icon =
+  const color =
     status === "delivered"
-      ? "✓"
+      ? "#2ecc71"
       : status === "canceled"
-        ? "✕"
+        ? "#e74c3c"
         : status === "on_the_way"
-          ? "→"
-          : "•";
+          ? "#f1c40f"
+          : "#2B80A4";
+
+  const isAssembling = status === "assembling";
 
   return (
     <div
@@ -37,18 +39,27 @@ function OrderIconBadge({ status }: { status: OrderStatus }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "linear-gradient(180deg, rgba(43,128,164,0.16) 0%, rgba(43,128,164,0.10) 100%)",
-        border: "1px solid rgba(43,128,164,0.12)",
-        boxShadow: "0 8px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.82)",
-        color: "#0A1317",
-        fontWeight: 900,
+        background: "linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(245,247,249,0.9) 100%)",
+        border: "1px solid rgba(10,19,23,0.08)",
+        boxShadow: "0 8px 18px rgba(10,19,23,0.05), inset 0 1px 0 rgba(255,255,255,0.9)",
         flexShrink: 0,
       }}
     >
-      {icon}
+      <div
+        style={{
+          width: 10,
+          height: 10,
+          borderRadius: 999,
+          background: color,
+          boxShadow: `0 0 0 4px ${color}22, 0 0 10px ${color}55`,
+          animation: isAssembling ? "pulse 1.6s ease-in-out infinite" : undefined,
+          transformOrigin: "center",
+        }}
+      />
     </div>
   );
 }
+
 
 export default function ProfileOrdersList({
   profileLoading,
@@ -83,6 +94,7 @@ export default function ProfileOrdersList({
 
   return (
     <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 12 }}>
+      <style>{`@keyframes pulse {0%{transform: scale(1); opacity:1;}50%{transform: scale(1.25); opacity:0.7;}100%{transform: scale(1); opacity:1;}}`}</style>
       {orders.map((o) => (
         <button
           key={o.id}
@@ -142,18 +154,7 @@ export default function ProfileOrdersList({
             <div style={{ display: "flex", gap: 12, minWidth: 0, flex: 1 }}>
               <OrderIconBadge status={o.status} />
               <div style={{ minWidth: 0, flex: 1 }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    letterSpacing: "0.05em",
-                    opacity: 0.5,
-                  }}
-                >
-                  История заказа
-                </div>
-                <div
+                                <div
                   style={{
                     marginTop: 4,
                     fontWeight: 900,
