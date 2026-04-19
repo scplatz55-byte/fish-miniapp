@@ -20,7 +20,8 @@ type ProfileOrderDetailsProps = {
 };
 
 function normalizeText(value: string | null | undefined) {
-  return (value || "").split("\\n").join("\n").trim();
+  const nl = String.fromCharCode(10);
+  return (value || "").split("\n").join(nl).trim();
 }
 
 function getPaymentLabel(method: string) {
@@ -38,10 +39,11 @@ function getPaymentLabel(method: string) {
 
 function parseItems(text: string | null | undefined) {
   const normalized = normalizeText(text);
-return normalized
-  .split("\n")
-  .map((l) => l.replace(/^•\s*/, "").trim())
-  .filter(Boolean);
+  const nl = String.fromCharCode(10);
+  return normalized
+    .split(nl)
+    .map((line) => (line.startsWith("• ") ? line.slice(2) : line).trim())
+    .filter(Boolean);
 }
 
 function getInlineStatusMeta(status: OrderStatus) {
@@ -78,23 +80,33 @@ function InfoRow({ label, value, icon }: { label: string; value: React.ReactNode
       </div>
 
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.5 }}>{label}</div>
-        <div style={{ marginTop: 4, fontSize: 14, lineHeight: 1.5, color: "#0A1317", wordBreak: "break-word" }}>{value}</div>
+        <div style={{ fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", opacity: 0.5 }}>
+          {label}
+        </div>
+        <div style={{ marginTop: 4, fontSize: 14, lineHeight: 1.5, color: "#0A1317", wordBreak: "break-word" }}>
+          {value}
+        </div>
       </div>
     </div>
   );
 }
 
-function ItemRow({ line, formatPriceRub }: { line: string; formatPriceRub: any }) {
+function ItemRow({
+  line,
+  formatPriceRub,
+}: {
+  line: string;
+  formatPriceRub: (value: string | number) => string;
+}) {
   const parts = line.split(" — ");
   const titlePart = parts[0] || line;
   const totalPart = parts.slice(1).join(" — ");
 
-  const qtyMatch = titlePart.match(/×\s*(\d+)/);
-  const qty = qtyMatch ? Number(qtyMatch[1]) : 1;
+  const qtyText = titlePart.includes("×") ? titlePart.split("×").pop()?.trim() || "1" : "1";
+  const qty = Number(qtyText) || 1;
 
-  const priceNumMatch = totalPart.replace(/[^0-9]/g, "");
-  const total = priceNumMatch ? Number(priceNumMatch) : 0;
+  const digits = totalPart.split("").filter((ch) => ch >= "0" && ch <= "9").join("");
+  const total = digits ? Number(digits) : 0;
   const unitPrice = qty > 0 ? Math.round(total / qty) : total;
 
   return (
@@ -117,20 +129,28 @@ function ItemRow({ line, formatPriceRub }: { line: string; formatPriceRub: any }
             borderRadius: 999,
             marginTop: 8,
             background: "rgba(10,19,23,0.25)",
+            flexShrink: 0,
           }}
         />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <div style={{ fontSize: 14, color: "#0A1317" }}>{titlePart}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <div style={{ fontSize: 14, color: "#0A1317", wordBreak: "break-word" }}>{titlePart}</div>
           <div style={{ fontSize: 12, opacity: 0.5 }}>{formatPriceRub(unitPrice)} / шт</div>
         </div>
       </div>
 
-      <div style={{ fontWeight: 900, fontSize: 15, color: "#0A1317" }}>{totalPart}</div>
+      <div style={{ fontWeight: 800, fontSize: 14, color: "#0A1317", opacity: 0.9, flexShrink: 0 }}>
+        {totalPart}
+      </div>
     </div>
   );
 }
 
-export default function ProfileOrderDetails({ order, formatDateTime, formatPriceRub, smallMutedStyle }: ProfileOrderDetailsProps) {
+export default function ProfileOrderDetails({
+  order,
+  formatDateTime,
+  formatPriceRub,
+  smallMutedStyle,
+}: ProfileOrderDetailsProps) {
   if (!order) {
     return <div style={{ marginTop: 12, opacity: 0.75 }}>Заказ не найден.</div>;
   }
@@ -151,7 +171,7 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-          <div>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 900, fontSize: 22 }}>#{order.id.slice(0, 8)}</div>
             <div
               style={{
@@ -179,9 +199,31 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
             </div>
             <div style={{ ...smallMutedStyle, marginTop: 8 }}>{formatDateTime(order.created_at)}</div>
           </div>
-        </div>
 
-        <div style={{ marginTop: 14, fontWeight: 900, fontSize: 22 }}>{formatPriceRub(order.total_amount)}</div>
+          <div
+            style={{
+              flexShrink: 0,
+              minWidth: 110,
+              textAlign: "right",
+              paddingLeft: 8,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 800,
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+                opacity: 0.45,
+              }}
+            >
+              Итого
+            </div>
+            <div style={{ marginTop: 6, fontWeight: 900, fontSize: 22, letterSpacing: "-0.03em" }}>
+              {formatPriceRub(order.total_amount)}
+            </div>
+          </div>
+        </div>
       </div>
 
       <div
@@ -197,7 +239,9 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
       >
         <InfoRow label="Адрес" value={order.address} icon="📍" />
         <InfoRow label="Оплата" value={getPaymentLabel(order.payment_method)} icon="💳" />
-        {comment && <InfoRow label="Детали заказа" value={<span style={{ whiteSpace: "pre-wrap" }}>{comment}</span>} icon="💬" />}
+        {comment ? (
+          <InfoRow label="Примечание" value={<span style={{ whiteSpace: "pre-wrap" }}>{comment}</span>} icon="💬" />
+        ) : null}
       </div>
 
       <div
@@ -222,7 +266,7 @@ export default function ProfileOrderDetails({ order, formatDateTime, formatPrice
             display: "flex",
             justifyContent: "space-between",
             fontWeight: 900,
-            fontSize: 16,
+            fontSize: 18,
           }}
         >
           <span>Итого</span>
