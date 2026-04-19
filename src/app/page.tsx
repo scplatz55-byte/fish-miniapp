@@ -1117,19 +1117,54 @@ if (profileFormPhone && !isValidPhone(profileFormPhone)) {
     return parts.filter(Boolean).join(", ");
   }
 
+  function startOfLocalDay(date: Date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+
+  function diffCalendarDays(from: Date, to: Date) {
+    const ms = startOfLocalDay(to).getTime() - startOfLocalDay(from).getTime();
+    return Math.round(ms / 86400000);
+  }
+
+  function isDateVisibleForCheckout(dateValue: string) {
+    const slotDate = parseLocalDateHelper(dateValue);
+    const now = new Date();
+    const dayOffset = diffCalendarDays(now, slotDate);
+
+    if (dayOffset < 0 || dayOffset > 7) return false;
+
+    const cutoff = new Date(
+      slotDate.getFullYear(),
+      slotDate.getMonth(),
+      slotDate.getDate() - 1,
+      21,
+      0,
+      0,
+      0
+    );
+
+    return now.getTime() < cutoff.getTime();
+  }
+
+  function filterVisibleDeliveryDates<T extends { value: string }>(dates: T[]) {
+    return dates.filter((item) => isDateVisibleForCheckout(item.value));
+  }
+
   // slot helpers moved to src/lib/domain/deliverySlots.ts
 
   function getAvailableDeliveryDates() {
     if (deliveryType === "delivery") {
       if (!deliveryScheduleLoading && weekdayRules.length > 0) {
-        return getWeeklyAvailableDeliveryDates(weeklyScheduleSlots);
+        return filterVisibleDeliveryDates(getWeeklyAvailableDeliveryDates(weeklyScheduleSlots));
       }
 
-      return getAvailableDeliveryDatesForType(
-        deliveryType,
-        deliverySlots,
-        DEFAULT_DELIVERY_INTERVALS,
-        DEFAULT_PICKUP_INTERVALS
+      return filterVisibleDeliveryDates(
+        getAvailableDeliveryDatesForType(
+          deliveryType,
+          deliverySlots,
+          DEFAULT_DELIVERY_INTERVALS,
+          DEFAULT_PICKUP_INTERVALS
+        )
       );
     }
 
