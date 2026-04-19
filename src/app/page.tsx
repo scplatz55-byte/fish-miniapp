@@ -829,10 +829,8 @@ if (profileFormPhone && !isValidPhone(profileFormPhone)) {
       return alert("Выберите доступный интервал времени");
     }
     if (cart.length === 0) {
-      return alert("🧺 Корзина пока пуста
-
-Добавьте товары из каталога, чтобы оформить заказ.");
-    }
+  return alert("🧺 Корзина пока пуста\n\nДобавьте товары из каталога, чтобы оформить заказ.");
+}
 
     setCheckoutSubmitting(true);
 
@@ -1191,8 +1189,7 @@ if (profileFormPhone && !isValidPhone(profileFormPhone)) {
       parts.push(`Комментарий: ${orderComment.trim()}`);
     }
 
-    return parts.join("
-");
+    return parts.join("\n");
   }
 
   useEffect(() => {
